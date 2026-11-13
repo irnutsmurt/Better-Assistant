@@ -1,3 +1,5 @@
+<p align="center"><img src="brand/icon@2x.png" alt="Better Assistant" width="160"></p>
+
 # Better Assistant for Home Assistant
 
 A Google Assistant-style voice assistant for Home Assistant's Assist: timers, alarms, reminders, notes,
