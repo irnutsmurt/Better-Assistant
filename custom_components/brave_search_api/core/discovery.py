@@ -285,6 +285,13 @@ def _sleepiq(bed: list[Entity], people: list[Person]) -> tuple[dict, dict]:
         kind = _sleepiq_kind(e)
         if person and kind:
             sleepers.setdefault(person, {}).setdefault(kind, e.entity_id)
+        elif kind:
+            # a bed name that matches nobody ("robin" when the person is named "admin"): keep it so a
+            # person picked for a side in the settings can claim it
+            suffix = next((sfx for sfx, k in SLEEPIQ_KINDS if k == kind and ident.endswith("_" + sfx)), None)
+            name = ident[: -len(suffix) - 1].rsplit("_", 1)[-1] if suffix else ""
+            if name.isalpha() and name not in ("left", "right") and ident.startswith("sleepnumber_"):
+                sleepers.setdefault("name:" + name, {}).setdefault(kind, e.entity_id)
         side = "left" if re.search(r"(^|_)left(_|$)", ident) else "right" if re.search(r"(^|_)right(_|$)", ident) else None
         if side and e.domain in ("select", "number"):
             sides.setdefault(side, {}).setdefault("presets" if e.domain == "select" else "actuators", []).append(e.entity_id)

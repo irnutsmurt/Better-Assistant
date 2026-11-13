@@ -20,8 +20,12 @@ def async_snapshot(hass: HomeAssistant) -> Snapshot:
     snap.areas = {a.id: a.name for a in ar.async_get(hass).async_list_areas()}
 
     mobile_users = {e.entry_id: e.data.get("user_id") for e in hass.config_entries.async_entries("mobile_app")}
-    for d in devs.devices.values():
-        user = next((mobile_users[c] for c in d.config_entries if c in mobile_users), None)
+    devices = list(devs.devices)
+    if devices and isinstance(devices[0], str):          # before 2027: a mapping of id -> device
+        devices = list(devs.devices.values())
+    for d in devices:
+        owners = [d.config_entry_id] if hasattr(d, "config_entry_id") else d.config_entries
+        user = next((mobile_users[c] for c in owners if c in mobile_users), None)
         snap.devices[d.id] = Device(id=d.id, area_id=d.area_id, name=d.name_by_user or d.name or "",
                                     model=d.model or "", manufacturer=d.manufacturer or "", user_id=user)
 

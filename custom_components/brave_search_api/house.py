@@ -737,7 +737,13 @@ class HouseSkills:
         return None
 
     def _sleeper(self, person: str | None) -> dict[str, str]:
-        return ((self._bed().get("sleepers") or {}).get(person or "") or {})
+        sleepers = self._bed().get("sleepers") or {}
+        if sleepers.get(person or ""):
+            return sleepers[person]
+        unclaimed = [v for k, v in sleepers.items() if k.startswith("name:")]
+        if person and self._side(person) and len(unclaimed) == 1:
+            return unclaimed[0]                    # the one bed sleeper whose name matches no person
+        return {}
 
     def _side_entities(self, kind: str, person: str | None) -> list[str]:
         ents = list(self._bed().get(kind) or [])

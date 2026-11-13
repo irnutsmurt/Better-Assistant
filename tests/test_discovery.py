@@ -205,6 +205,7 @@ def test_sleepiq_sleepers(house):
         "heart_rate": f"sensor.{bed}_robin_heart_rate_average", "sleep_number": f"sensor.{bed}_robin_sleepnumber",
         "firmness": f"number.{bed}_robin_firmness", "in_bed": f"binary_sensor.{bed}_robin_is_in_bed"}
     assert "person.casey" not in b["sleepers"]                     # no such person in the house
+    assert b["sleepers"]["name:casey"] == {"score": f"sensor.{bed}_casey_sleep_score"}   # kept for a side pick
     assert b["sides"]["left"] == {"actuators": [f"number.{bed}_left_head_position"],
                                   "presets": [f"select.{bed}_foundation_preset_left"]}
     assert b["sides"]["right"]["presets"] == [f"select.{bed}_foundation_preset_right"]
