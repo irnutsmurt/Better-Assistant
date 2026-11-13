@@ -118,14 +118,14 @@ async def test_recordings_tab_permissions_assign_and_delete(hass, monkeypatch):
     assert {x["id"] for x in c.out["clips"]} == {"test~unknown~20261113T130100Z_2", "train~leila~20261113T130200Z_3"}
     assert [p["person"] for p in c.out["people"]] == ["person.leila"]
     c.out = c.err = None
-    voice_panel.ws_clip_action(hass, c, {"id": 3, "action": "assign", "id": "test~unknown~20261113T130100Z_2",
+    voice_panel.ws_clip_action(hass, c, {"id": 3, "action": "assign", "clip": "test~unknown~20261113T130100Z_2",
                                          "person": "person.rob"})
     await done(c)
     assert c.err[0] == "unauthorized"                     # can't label someone else's voice
 
     c = Conn(leila)                                       # "That was me"
     c.out = c.err = None
-    voice_panel.ws_clip_action(hass, c, {"id": 4, "action": "assign", "id": "test~unknown~20261113T130100Z_2",
+    voice_panel.ws_clip_action(hass, c, {"id": 4, "action": "assign", "clip": "test~unknown~20261113T130100Z_2",
                                          "person": "person.leila"})
     await done(c)
     moved = root / "test" / "leila" / "20261113T130100Z_2.wav"
@@ -136,13 +136,13 @@ async def test_recordings_tab_permissions_assign_and_delete(hass, monkeypatch):
 
     c = Conn(admin)                                       # "Someone else / the TV", then delete
     c.out = c.err = None
-    voice_panel.ws_clip_action(hass, c, {"id": 5, "action": "assign", "id": "test~rob~20261113T130000Z_1",
+    voice_panel.ws_clip_action(hass, c, {"id": 5, "action": "assign", "clip": "test~rob~20261113T130000Z_1",
                                          "person": "other"})
     await done(c)
     other = root / "other" / "other" / "20261113T130000Z_1.wav"
     assert other.exists() and not rob_clip.exists()
     c.out = c.err = None
-    voice_panel.ws_clip_action(hass, c, {"id": 6, "action": "delete", "id": "other~other~20261113T130000Z_1"})
+    voice_panel.ws_clip_action(hass, c, {"id": 6, "action": "delete", "clip": "other~other~20261113T130000Z_1"})
     await done(c)
     assert not other.exists() and not other.with_suffix(".json").exists()
 

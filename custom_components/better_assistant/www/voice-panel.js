@@ -121,7 +121,7 @@ class BetterAssistantVoicePanel extends HTMLElement {
     if (action === "delete_person" && !confirm("Delete every recording of this voice? Voice match will forget them.")) return;
     try {
       await this._hass.callWS({ type: "better_assistant/voice/clip_action", action,
-                                ...(id ? { id } : {}), ...(person ? { person } : {}) });
+                                ...(id ? { clip: id } : {}), ...(person ? { person } : {}) });
     } catch (err) { this._error = err.message || String(err); }
     this._clips = null; this._render();
   }

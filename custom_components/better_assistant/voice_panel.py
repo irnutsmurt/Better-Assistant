@@ -180,7 +180,7 @@ async def ws_clips(hass: HomeAssistant, connection: websocket_api.ActiveConnecti
 
 @websocket_api.websocket_command({vol.Required("type"): "better_assistant/voice/clip_action",
                                   vol.Required("action"): vol.In(["assign", "delete", "delete_person"]),
-                                  vol.Optional("id"): str, vol.Optional("person"): str})
+                                  vol.Optional("clip"): str, vol.Optional("person"): str})
 @websocket_api.async_response
 async def ws_clip_action(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
     """assign a clip to a person (or "other"), delete a clip, or delete everything of one person."""
@@ -203,7 +203,7 @@ async def ws_clip_action(hass: HomeAssistant, connection: websocket_api.ActiveCo
                 if vmf.read_meta(w).get("person") == person:
                     vmf.delete_clip(w)
             return None
-        wav = vmf.clip_path(root, msg.get("id", ""))
+        wav = vmf.clip_path(root, msg.get("clip", ""))
         if wav is None:
             return "That recording is gone."
         meta = vmf.read_meta(wav)
