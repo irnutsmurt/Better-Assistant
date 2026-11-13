@@ -3,4 +3,5 @@ pytest-asyncio
 aiohttp
 hassil>=3.0
 PyYAML
+numpy
 # optional: homeassistant (enables tests/test_security_ha.py; skipped without it)

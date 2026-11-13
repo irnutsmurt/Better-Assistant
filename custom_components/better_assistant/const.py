@@ -26,6 +26,7 @@ OPT_VT_RECORD_TEST = "voice_record_test"   # also record everyday requests (labe
 OPT_VT_PHONE = "voice_training_phone"      # show the phrases on the person's phone; the speaker stays silent
 OPT_VT_SATELLITE = "voice_training_satellite"  # speaker the phone's Start button trains on
 OPT_VT_STT = "voice_stt_engine"            # engine the pass-through wraps (None = pick one)
+OPT_VM_ENABLED = "voice_match"            # recognise trained voices (downloads the model once)
 OPT_VT_ORIGINALS = "voice_stt_originals"   # pipeline id -> its speech-to-text before we switched it
 
 DEFAULTS = {

@@ -227,6 +227,12 @@ class VoiceTrainer:
     def _end(self, session: Session, status: str = "done") -> None:
         self._publish(session, status)
         session.until = 0.0                            # over: later replies don't publish "training"
+        matcher = getattr(getattr(self.entry, "runtime_data", None), "matcher", None)
+        if matcher and session.saved:                  # new clips: rebuild the voiceprints once they're written
+            async def rebuild() -> None:
+                await asyncio.sleep(5)
+                await matcher.async_rebuild()
+            self.entry.async_create_background_task(self.hass, rebuild(), "better_assistant_voice_rebuild")
         if session.borrowed:
             borrowed, session.borrowed = session.borrowed, None
             self.entry.async_create_background_task(self.hass, self._give_back(borrowed),

@@ -52,6 +52,7 @@ from .const import (
     OPT_SNOOZE_LIMIT,
     OPT_SPEAK_SOURCE,
     OPT_VOICE_PENDING,
+    OPT_VM_ENABLED,
     OPT_VT_ENABLED,
     OPT_VT_ORIGINALS,
     OPT_VT_PHONE,
@@ -296,6 +297,7 @@ class BetterAssistantOptionsFlow(VoiceSetupMixin, OptionsFlow):
             values = {OPT_VT_ENABLED: bool(user_input.get(OPT_VT_ENABLED)),
                       OPT_VT_RECORD_TEST: bool(user_input.get(OPT_VT_RECORD_TEST)),
                       OPT_VT_PHONE: bool(user_input.get(OPT_VT_PHONE, True)),
+                      OPT_VM_ENABLED: bool(user_input.get(OPT_VM_ENABLED)),
                       OPT_VT_SATELLITE: user_input.get(OPT_VT_SATELLITE) or None,
                       OPT_VT_STT: user_input.get(OPT_VT_STT) or None}
             originals = await vt.async_switch_pipelines(
@@ -307,6 +309,8 @@ class BetterAssistantOptionsFlow(VoiceSetupMixin, OptionsFlow):
         found = vt.pipelines(self.hass)
         fields: dict[Any, Any] = {
             vol.Required(OPT_VT_ENABLED, default=bool(self._opt(OPT_VT_ENABLED))): BooleanSelector(),
+            vol.Required(OPT_VM_ENABLED, default=bool(self.config_entry.options.get(OPT_VM_ENABLED))):
+                BooleanSelector(),
             vol.Required(OPT_VT_RECORD_TEST, default=bool(self._opt(OPT_VT_RECORD_TEST))): BooleanSelector(),
             vol.Required(OPT_VT_PHONE, default=bool(self.config_entry.options.get(OPT_VT_PHONE, True))):
                 BooleanSelector(),

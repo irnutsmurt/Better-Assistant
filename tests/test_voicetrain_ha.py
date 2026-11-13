@@ -247,7 +247,7 @@ async def test_options_flow(hass, monkeypatch):
     form = await flow.async_step_voice_training()
     assert form["description_placeholders"]["counts"] == "rob: 1 training"
     keys = [str(k) for k in form["data_schema"].schema]
-    assert keys == ["voice_training", "voice_record_test", "voice_training_phone", "voice_training_satellite",
+    assert keys == ["voice_training", "voice_match", "voice_record_test", "voice_training_phone", "voice_training_satellite",
                     "voice_stt_engine", "pipelines",
                     "delete_recordings"]
     defaults = {str(k): k.default() for k in form["data_schema"].schema if callable(getattr(k, "default", None))}
@@ -256,7 +256,7 @@ async def test_options_flow(hass, monkeypatch):
                                                    "pipelines": ["p1"], "delete_recordings": True})
     assert result["type"] == "create_entry"
     assert result["data"] == {"web_search": False, "voice_training": True, "voice_record_test": False, "voice_training_phone": True,
-                                 "voice_training_satellite": None,
+                                 "voice_training_satellite": None, "voice_match": False,
                               "voice_stt_engine": None, "voice_stt_originals": {"p1": "stt.cloud"}}
     assert switched == [(True, ["p1"])] and not voice_root(hass).exists()
 
@@ -344,7 +344,9 @@ async def test_start_from_phone_needs_training_on(house):
 
 async def test_voice_page_commands(house, monkeypatch):
     from custom_components.better_assistant import voice_panel
-    monkeypatch.setattr(voice_panel, "_trainer_and_skills", lambda hass: (house.trainer, house.skills))
+    fake_entry = types.SimpleNamespace(options=house.entry.options, runtime_data=types.SimpleNamespace(
+        trainer=house.trainer, skills=house.skills, matcher=None))
+    monkeypatch.setattr(voice_panel, "_entry", lambda hass: fake_entry)
     started = []
 
     async def fake_start(call):

@@ -453,7 +453,8 @@
           "pipelines": "Voice assistants that use Better Assistant speech-to-text",
           "delete_recordings": "Delete all recordings",
           "voice_training_phone": "Show the phrases on my phone (the speaker stays silent)",
-          "voice_training_satellite": "Speaker for the Start voice training button"
+          "voice_training_satellite": "Speaker for the Start voice training button",
+          "voice_match": "Voice match: recognise who's speaking"
         },
         "data_description": {
           "voice_record_test": "Every request heard on a speaker is saved as a \"test\" clip, labelled with the only person in the house or \"unknown\".",
@@ -461,7 +462,8 @@
           "pipelines": "Ticked ones switch their speech-to-text to Better Assistant speech-to-text; unticking (or turning voice training off) switches them back.",
           "delete_recordings": "Removes every clip and its notes from the folder above.",
           "voice_training_phone": "Uses the Home Assistant app on the phone linked to the person being trained. Without one, the speaker reads the phrases out.",
-          "voice_training_satellite": "The phone's Start voice training button makes this speaker listen without the wake word. Empty: the first voice speaker."
+          "voice_training_satellite": "The phone's Start voice training button makes this speaker listen without the wake word. Empty: the first voice speaker.",
+          "voice_match": "Uses the voices trained on the Voice training page, on this machine (downloads a 19 MB model once). Never used to unlock doors. Everyday requests are kept 14 days so you can check who it thought it was on the Recordings tab."
         }
       }
     },

@@ -16,12 +16,13 @@ from homeassistant.core import HomeAssistant
 from homeassistant.components.http import StaticPathConfig
 
 from .const import (ALARM_URL, DOMAIN, HISTORY_SIZE, OPT_SNOOZE, OPT_SNOOZE_ENABLED, OPT_SNOOZE_LIMIT,
-                    OPT_VOICE_PENDING, OPT_VT_ENABLED)
+                    OPT_VM_ENABLED, OPT_VOICE_PENDING, OPT_VT_ENABLED)
 from .autodetect import AutoDetect
 from .store import BetterAssistantStore
 
 if TYPE_CHECKING:
     from .skills import Skills
+    from .voice_match import VoiceMatcher
     from .voice_training import VoiceTrainer
 
 PLATFORMS = [Platform.BUTTON, Platform.CONVERSATION, Platform.SENSOR, Platform.STT, Platform.SWITCH, Platform.TODO]
@@ -32,6 +33,7 @@ class BetterAssistantRuntimeData:
     store: BetterAssistantStore
     skills: Skills | None = None
     trainer: VoiceTrainer | None = None
+    matcher: VoiceMatcher | None = None
     options: dict = field(default_factory=dict)        # options the entry was set up with
     heard: deque[str] = field(default_factory=lambda: deque(maxlen=HISTORY_SIZE))
 
@@ -57,6 +59,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: BetterAssistantConfigEnt
     async def _phone_action(event) -> None:                 # Skip / Stop on the training notification
         await trainer.async_phone_action(str(event.data.get("action") or ""), skills)
     entry.async_on_unload(hass.bus.async_listen("mobile_app_notification_action", _phone_action))
+    if entry.options.get(OPT_VT_ENABLED) and entry.options.get(OPT_VM_ENABLED):
+        from .voice_match import VoiceMatcher  # noqa: PLC0415
+
+        matcher = VoiceMatcher(hass, entry)
+        entry.runtime_data.matcher = matcher
+        entry.async_on_unload(matcher.async_stop)
+        entry.async_create_background_task(hass, matcher.async_start(), f"{DOMAIN}_voice_match")
     if store.data.get("vt_borrowed"):                      # a training session was cut short by a restart
         entry.async_create_background_task(hass, trainer.async_give_back_leftovers(), f"{DOMAIN}_voice_give_back")
     entry.async_on_unload(skills.async_stop)

@@ -149,6 +149,10 @@ class Skills(HouseSkills, SecuritySkills):
             for state in persons:
                 if state.attributes.get("user_id") == user_id:
                     return state.entity_id
+        matcher = getattr(getattr(self.entry, "runtime_data", None), "matcher", None)
+        heard = matcher.recent() if matcher else None
+        if heard and heard.person and self.hass.states.get(heard.person):
+            return heard.person                            # voice match recognised them
         return persons[0].entity_id if len(persons) == 1 else None
 
     def satellite_for(self, user_input: conversation.ConversationInput) -> str | None:

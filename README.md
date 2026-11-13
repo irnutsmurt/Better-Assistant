@@ -265,6 +265,23 @@ twice, then skipped. What you say during training is never run as a command. Say
 training" to stop. Recording only works through a speaker (the same microphone voice match will
 use), not typed chat. The speaker for the phone button is set under Voice training.
 
+**Voice match (experimental, off by default):** recognises who's speaking, so "my calendar", "my
+reminders" and "how did I sleep" work for whoever asks on a shared speaker. Turn it on with **Turn on
+voice match** on the Voice training page (or under Configure > Voice training). It runs on this machine
+with numpy, which Home Assistant already has; the speaker model (TitaNet-S, about 19 MB) is downloaded
+once from this project's GitHub repository and checked against a checksum. Nothing is sent anywhere.
+
+- **Self-checking:** after each training session every clip is compared with the others and ones that
+  don't sound like the rest (the TV, someone else, the speaker hearing itself) are left out. The
+  threshold for each person is set automatically between how their own clips score and how a bundled
+  set of strangers' voices score, and the page shows **Ready ✓** or **Needs a better sample**.
+- **Not sure means not sure:** a request that doesn't clearly match one person is treated as before
+  (the signed-in user, or asking who you are). It's never used to unlock doors or turn off guest mode.
+- **Recordings tab:** what your speakers heard and who voice match thought it was, with **Play**,
+  **That was…** (a person, or "Someone else / the TV") and **Delete**. Labelling a recording teaches voice
+  match. Administrators see everyone's recordings; other users only their own and unassigned ones.
+  Unlabelled everyday recordings are deleted after 14 days. **Delete voice** forgets a person entirely.
+
 **Everyday clips (optional):** "Also record everyday requests" saves every request heard on a speaker
 as a "test" clip, labelled with the only person in the house, or "unknown".
 
@@ -316,3 +333,6 @@ python -m venv .venv && .venv/bin/pip install -r requirements_test.txt
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+Voice match uses the TitaNet-S speaker model by NVIDIA (NeMo Toolkit, Apache 2.0), converted to run with
+numpy, and reference voiceprints computed from LibriSpeech (Panayotov et al., CC BY 4.0).

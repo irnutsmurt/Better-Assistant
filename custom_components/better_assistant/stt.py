@@ -18,7 +18,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import BetterAssistantConfigEntry
-from .const import OPT_VT_ENABLED, OPT_VT_RECORD_TEST
+from .const import OPT_VM_ENABLED, OPT_VT_ENABLED, OPT_VT_RECORD_TEST
 from .core.voicetrain import NOTHING_HEARD, TEST, TRAIN, CaptureSlot, is_stop, matches_phrase, max_bytes, too_short
 from .sensor import device_info
 from .voice_setup import pipeline_select
@@ -91,7 +91,8 @@ class PassThroughSTT(stt.SpeechToTextEntity):
         slot = hub(self.hass).take(time.time())
         if slot:
             return slot
-        if self._entry.options.get(OPT_VT_RECORD_TEST):
+        if self._entry.options.get(OPT_VT_RECORD_TEST) or self._entry.options.get(OPT_VM_ENABLED):
+            # everyday requests, kept 14 days for the Recordings tab (and voice match's decisions)
             return CaptureSlot(person=guess_person(self.hass), label=TEST)
         return None
 
@@ -110,13 +111,16 @@ class PassThroughSTT(stt.SpeechToTextEntity):
             slot, pcm_ok = None, False
         if not pcm_ok:
             slot = None
+        matcher = getattr(getattr(self._entry, "runtime_data", None), "matcher", None) if pcm_ok else None
+        identify = bool(matcher and matcher.status == "ready" and matcher.prints)
+        keep = bool(slot) or identify
         chunks: list[bytes] = []
-        limit = max_bytes(int(metadata.sample_rate)) if slot else 0
+        limit = max_bytes(int(metadata.sample_rate)) if keep else 0
 
         async def tee() -> AsyncIterable[bytes]:
             size = 0
             async for chunk in stream:
-                if slot and size < limit:
+                if keep and size < limit:
                     chunks.append(chunk)
                     size += len(chunk)
                 yield chunk
@@ -125,15 +129,20 @@ class PassThroughSTT(stt.SpeechToTextEntity):
             result = await engine.internal_async_process_audio_stream(metadata, tee())
         else:
             result = await engine.async_process_audio_stream(metadata, tee())
+        match = None
+        if identify and (not slot or slot.label != TRAIN) and result.result == stt.SpeechResultState.SUCCESS:
+            # who is speaking, ready before the agent answers (about a tenth of a second)
+            match = await matcher.async_identify(b"".join(chunks), int(metadata.sample_rate))
         if slot and result.result == stt.SpeechResultState.SUCCESS:
-            self._save(slot, metadata, b"".join(chunks), result.text or "")
+            self._save(slot, metadata, b"".join(chunks), result.text or "", match)
         if slot and slot.label == TRAIN and result.result == stt.SpeechResultState.SUCCESS \
                 and not (result.text or "").strip():
             # "no text" would end the conversation; mid-training it should be asked again instead
             return stt.SpeechResult(NOTHING_HEARD, stt.SpeechResultState.SUCCESS)
         return result
 
-    def _save(self, slot: CaptureSlot, metadata: stt.SpeechMetadata, pcm: bytes, transcript: str) -> None:
+    def _save(self, slot: CaptureSlot, metadata: stt.SpeechMetadata, pcm: bytes, transcript: str,
+              match=None) -> None:
         """Write in the background. Not for empty audio, "stop voice training" or a mumble."""
         try:
             if not pcm or too_short(transcript) or is_stop(transcript):
@@ -144,6 +153,9 @@ class PassThroughSTT(stt.SpeechToTextEntity):
                 "transcript": transcript, "prompt": slot.phrase, "satellite": slot.satellite,
                 "device_id": slot.device_id, "pipeline": self._pipeline_of(slot.satellite),
                 "language": metadata.language}
+            if match is not None:                          # what voice match decided, for the Recordings tab
+                info["match"] = {"person": match.person, "score": round(match.score, 3),
+                                 "runner_up": match.runner_up}
             capture = hub(self.hass)
             capture.note_saved(slot.token)                 # counted now: the agent's turn comes next
 
