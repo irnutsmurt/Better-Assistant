@@ -110,7 +110,7 @@ async def test_answer_end_to_end():
         "Mount Everest is 29,032 feet tall, the highest mountain above sea level on Earth."]))
     session = FakeSession(data=data)
     res = await search.answer(session, "k", "how tall is mount everest", slots(5), country="gb")
-    assert res["ok"] and res["answer"].startswith("From example dot org, mount Everest is 29,032 feet")
+    assert res["ok"] and res["answer"].startswith("From example dot org, Mount Everest is 29,032 feet")
     assert session.calls[0]["country"] == "gb" and "goggles" not in session.calls[0]
 
 
@@ -134,3 +134,62 @@ async def test_brave_422_bad_token_is_invalid_auth():
         await search.validate_key(FakeSession(status=422, data=bad), "k")
     other = {"error": {"code": "VALIDATION", "meta": {"component": "query"}}}
     assert (await search.answer(FakeSession(status=422, data=other), "k", "how tall is everest", slots(1)))["reason"] == "error"
+
+
+# ---------------------------------------------------------------- synonyms
+USAGE_NOTE = ("How does the adjective happy differ from other similar words? Some common synonyms of happy are "
+              "fortunate, lucky, and providential. While all these words mean 'meeting with unforeseen success,' "
+              "happy combines the implications of lucky and fortunate with being blessed.")
+
+
+def test_synonym_list_beats_usage_note():
+    data = payload(("https://www.merriam-webster.com/thesaurus/happy", [
+        USAGE_NOTE, "Synonyms for HAPPY: glad, cheerful, joyful, content, delighted, pleased, happy"]))
+    text, _ = compose("what's another word for happy", data, "synonym", ["merriam-webster.com"])
+    assert text == "From merriam-webster dot com, words for happy include glad, cheerful, joyful, content, and delighted."
+
+
+def test_synonyms_similar_words_heading_and_bullets():
+    data = payload(("https://www.thesaurus.com/browse/big", [
+        "Synonyms & Similar Words • large • huge • enormous • big • massive • giant • vast"]))
+    text, _ = compose("give me a synonym for big", data, "synonym", speak_source=False)
+    assert text == "Words for big include large, huge, enormous, massive, and giant."
+
+
+def test_synonyms_bare_comma_run():
+    data = payload(("https://example.org/words", [
+        "Related words:\nangry, mad, furious, irate, cross"]))
+    text, _ = compose("synonyms of angry", data, "synonym", speak_source=False)
+    assert text == "Words for angry include mad, furious, irate, and cross."
+
+
+def test_synonyms_fall_back_to_sentence_but_never_usage_note():
+    data = payload(("https://www.example.org/happy", [
+        USAGE_NOTE, "Being glad or pleased is another way of describing a happy person in English."]))
+    text, _ = compose("what's another word for happy", data, "synonym", speak_source=False)
+    assert "while all these words" not in text.lower()
+    assert text.startswith("Being glad or pleased")
+
+
+# ---------------------------------------------------------------- capitals after "From x dot com,"
+@pytest.mark.parametrize("answer,term,expected", [
+    ("Mount Everest is 29,032 feet tall.", None, "Mount Everest is 29,032 feet tall."),
+    ("Ubiquitous means found everywhere.", "ubiquitous", "ubiquitous means found everywhere."),
+    ("Symptoms of strep throat include a sore throat.", None, "symptoms of strep throat include a sore throat."),
+    ("NASA says the moon is far.", None, "NASA says the moon is far."),
+    ("New York is a big city.", None, "New York is a big city."),
+    ("I think so.", None, "I think so."),
+    ("The Eiffel Tower is in Paris.", None, "the Eiffel Tower is in Paris."),
+    ("Dogs should never eat grapes.", None, "dogs should never eat grapes."),
+    ("Grapes are toxic to dogs.", None, "Grapes are toxic to dogs."),
+    ("A black hole is a region of space.", "black hole", "a black hole is a region of space."),
+])
+def test_lower_first(answer, term, expected):
+    assert search.spoken(answer, "example.com", term) == "From example dot com, " + expected
+
+
+def test_everest_end_to_end_keeps_capital():
+    data = payload(("https://www.magicalnepal.com/everest", [
+        "Mount Everest is 8,849 meters tall, the highest mountain above sea level on Earth."]))
+    text, _ = compose("how tall is mount everest", data, None)
+    assert text.startswith("From magicalnepal dot com, Mount Everest is 8,849")

@@ -52,7 +52,8 @@ def words(t):
 
 PROMO = re.compile(r"(learn|read|click|discover|find out|see|check out|sign up|subscribe|explore|get)\b", re.I)
 BOILER = re.compile(r"synonyms|antonyms|thesaurus|hypernyms|and much more|related words|usage examples|senior member|"
-                    r"community answer|expert.verified|enter your search|cookie|all rights reserved", re.I)
+                    r"community answer|expert.verified|enter your search|cookie|all rights reserved|"
+                    r"while all (?:these|of these|the) words|share a common meaning|can be used", re.I)
 # Sentences that lean on the one before them ("Other dogs can eat grapes…") mislead when read alone.
 DEPENDENT = re.compile(r"(other|others|some|however|but|also|this|these|that|those|they|it|its|he|she|his|her|"
                        r"in addition|additionally|meanwhile|still|yet|so|and|or|unlike|instead|similarly|likewise|"
@@ -120,14 +121,87 @@ def best_answer(q, data, sites=(), lists_ok=False):
     return out, host.lower().removeprefix("www.")
 
 
-def spoken(answer, host):
+# First words that are safe to lowercase after "From site dot com, ...". Anything else (Mount Everest,
+# NASA, New York, a person's name) keeps its capital.
+STARTERS = set("the a an it its this these those there they you your yes no all most many some symptoms common "
+               "people dogs cats each every in on at for when while if during after before because according "
+               "generally typically usually unlike like words".split())
+
+
+def lower_first(answer, term=None):
+    """Lowercase the first letter only when the first word is an ordinary sentence-starter or the
+    defined term itself (and isn't followed by another capitalised word)."""
+    m = re.match(r"([A-Za-z']+)(\s+(\S+))?", answer)
+    if not m:
+        return answer
+    first, nxt = m.group(1), m.group(3) or ""
+    if first.isupper() and len(first) > 1 or first == "I":
+        return answer
+    is_term = bool(term) and first.lower() == term.split()[0].lower()
+    if first.lower() not in STARTERS and not is_term:
+        return answer
+    if nxt[:1].isupper() and not is_term and first.lower() not in ("the", "a", "an", "in", "on", "at", "for",
+                                                                  "according", "unlike", "like", "when",
+                                                                  "during", "after", "before", "if", "while"):
+        return answer                                 # "Dogs Trust ..." style names
+    return answer[:1].lower() + answer[1:]
+
+
+def spoken(answer, host, term=None):
     """'From webmd dot com, the maximum daily dose is...'"""
     site = re.sub(r"\.(com|org|gov|net|edu|co\.uk)$", lambda m: " dot " + m.group(1).replace(".", " dot "), host)
     if not site:
         return answer
-    if not re.match(r"[A-Z]{2}|I\b", answer):
-        answer = answer[:1].lower() + answer[1:]
-    return f"From {site}, {answer}"
+    return f"From {site}, {lower_first(answer, term)}"
+
+
+SYN_HEAD = re.compile(r"(?:synonyms?|similar words|other words|another word)(?:\s*(?:&|and)\s*similar words)?"
+                      r"(?:\s+(?:for|of|to))?(?:\s+['\"]?[\w-]+['\"]?)?\s*[:\-–—•·|]\s*(?P<list>[^.\n]+)", re.I)
+
+
+def _syn_words(text, word):
+    out = []
+    for w in re.split(r"\s*(?:,|;|•|·|\||/|\n)\s*", text):
+        w = re.sub(r"[\[\]*_`()\"]", "", w).strip(" .'-")
+        if not re.fullmatch(r"[a-z][a-z-]*(?: [a-z][a-z-]*)?", w) or w in ("and", "or", "more", "see more"):
+            continue
+        w = re.sub(r"^(?:and|or) ", "", w)
+        if word and w == word.lower() or w in out:
+            continue
+        out.append(w)
+    return out
+
+
+def synonym_list(q, data):
+    """(words, host) from the first real synonym list in the snippets, or ([], "")."""
+    m = re.search(r"(?:for|of|means?|to)\s+['\"]?([\w-]+)['\"]?\W*$", q, re.I)
+    word = m.group(1).lower() if m else None
+    for item in (data.get("grounding") or {}).get("generic") or []:
+        url = item.get("url", "")
+        host = (data.get("sources") or {}).get(url, {}).get("hostname") or urllib.parse.urlparse(url).netloc
+        for snip in item.get("snippets") or []:
+            raw = html.unescape(re.sub(r"<[^>]+>", " ", snip))
+            raw = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", raw)
+            found = []
+            for h in SYN_HEAD.finditer(raw):              # "Synonyms for happy: glad, cheerful, ..."
+                found = _syn_words(h.group("list"), word)
+                if len(found) >= 2:
+                    break
+            if len(found) < 2:                            # a bare run of 4+ single words
+                for run in re.finditer(r"(?:^|\n|:)\s*((?:[a-z][a-z-]*\s*(?:,|•|·|;)\s*){3,}[a-z][a-z-]*)", raw):
+                    found = _syn_words(run.group(1), word)
+                    if len(found) >= 3:
+                        break
+            if len(found) >= 2:
+                return found[:5], host.lower().removeprefix("www.")
+    return [], ""
+
+
+def say_synonyms(word, found):
+    found = found[:5]
+    if len(found) == 1:
+        return f"Another word for {word} is {found[0]}."
+    return f"Words for {word} include {', '.join(found[:-1])}{',' if len(found) > 2 else ''} and {found[-1]}."
 
 
 def dictionary_word(q):
@@ -196,6 +270,12 @@ def compose(q: str, data: dict, kind: str | None, sites=(), word: str | None = N
         mw = merriam_webster(word, data)
         if mw:
             return ("From merriam-webster dot com, " + mw if speak_source else mw[:1].upper() + mw[1:]), True
+    if kind == "synonym":                             # a real list beats any sentence
+        found, host = synonym_list(q, data)
+        m = re.search(r"(?:for|of|means?|to)\s+['\"]?([\w-]+)['\"]?\W*$", q, re.I)
+        if found and m:
+            text = say_synonyms(m.group(1), found)
+            return (spoken(text, host) if speak_source else text), False
     answer, src = best_answer(q, data, sites, lists_ok=kind == "synonym")
     is_def = bool(word and re.match(r"(?:(?:an?|the)\s+)?" + re.escape(word) + r"\s+(is|are|refers to|means|describes)\b", answer, re.I))
     if kind == "synonym" and answer and not re.search(r"[.,;]", answer):
@@ -205,7 +285,14 @@ def compose(q: str, data: dict, kind: str | None, sites=(), word: str | None = N
             answer = f"Words for {m.group(1)} include {', '.join(listed[:-1])}, and {listed[-1]}."
     if not answer:
         return "", False
-    return (spoken(answer, src) if speak_source else answer), is_def
+    term = word or _question_term(q)
+    return (spoken(answer, src, term) if speak_source else answer), is_def
+
+
+def _question_term(q):
+    """'what is a black hole' -> 'black hole' (for keeping or lowering the first word)."""
+    m = re.search(r"(?:what (?:is|are|does)|what's|whats|define|meaning of)\s+(?:an? |the )?([\w' -]+?)(?:\s+mean)?\W*$", q, re.I)
+    return m.group(1) if m else None
 
 
 async def answer(session: aiohttp.ClientSession, key: str, q: str,
