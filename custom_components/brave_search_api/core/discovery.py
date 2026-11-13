@@ -255,7 +255,7 @@ def _unavailable(h: _House) -> tuple[dict[str, list[str]], dict[str, str]]:
 
 
 SLEEPIQ_KINDS = [("sleep_score", "score"), ("sleep_duration", "duration"), ("heart_rate_average", "heart_rate"),
-                 ("respiratory_rate_average", "breathing"), ("hrv", "hrv"), ("is_in_bed", "in_bed"),
+                 ("respiratory_rate_average", "breathing"), ("hrv", "hrv"), ("heart_rate_variability", "hrv"), ("is_in_bed", "in_bed"),
                  ("firmness", "firmness"), ("sleepnumber", "sleep_number"), ("sleep_number", "sleep_number"),
                  ("pressure", "pressure")]
 

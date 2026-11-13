@@ -849,14 +849,15 @@ class HouseSkills:
         first = self.person_name(person)
         sensors = self._sleeper(person)
         values = {}
-        for kind in ("duration", "score", "heart_rate"):
+        for kind in ("duration", "score", "heart_rate", "hrv", "breathing"):
             st = self.hass.states.get(sensors.get(kind, ""))
             if st and st.state not in ("unknown", "unavailable", ""):
                 values[kind] = (st.state, st.attributes.get("unit_of_measurement"))
         if not values:
             return f"I don't have sleep data for {first} from the bed."
         return say_sleep(first, values.get("duration"), values.get("score"), values.get("heart_rate"),
-                         speaker_is_sleeper=slots.get("who") == "me")
+                         speaker_is_sleeper=slots.get("who") == "me", hrv=values.get("hrv"),
+                         breathing=values.get("breathing"))
 
     # ------------------------------------------------------------ health
     def _battery_entities(self, include_personal: bool = True) -> list[str]:

@@ -352,8 +352,9 @@ def _hours_minutes(value: float, unit: str | None) -> str:
     return " and ".join(parts)
 
 
-def say_sleep(name: str, duration=None, score=None, heart_rate=None, speaker_is_sleeper: bool = False) -> str:
-    """duration/score/heart_rate: (state string, unit) or None."""
+def say_sleep(name: str, duration=None, score=None, heart_rate=None, speaker_is_sleeper: bool = False,
+              hrv=None, breathing=None) -> str:
+    """duration/score/heart_rate/hrv/breathing: (state string, unit) or None."""
     who = "You" if speaker_is_sleeper else name
     parts = []
     if duration:
@@ -367,6 +368,16 @@ def say_sleep(name: str, duration=None, score=None, heart_rate=None, speaker_is_
     if heart_rate:
         try:
             text += f" Average heart rate {float(heart_rate[0]):g}."
+        except ValueError:
+            pass
+    if hrv:
+        try:
+            text += f" Heart rate variability {float(hrv[0]):g}{' milliseconds' if (hrv[1] or '') == 'ms' else ''}."
+        except ValueError:
+            pass
+    if breathing:
+        try:
+            text += f" Breathing {float(breathing[0]):g} breaths a minute."
         except ValueError:
             pass
     return text

@@ -155,4 +155,6 @@ def test_say_sleep():
     assert say_sleep("Robin", ("452", "min"), ("81", None), ("56", "bpm"), True) == \
         "You slept 7 hours and 32 minutes with a sleep score of 81. Average heart rate 56."
     assert say_sleep("Robin", ("7.5", "h"), None) == "Robin slept 7 hours and 30 minutes."
+    assert say_sleep("Robin", ("7.5", "h"), None, None, hrv=("86", "ms"), breathing=("14", "brpm")) == \
+        "Robin slept 7 hours and 30 minutes. Heart rate variability 86 milliseconds. Breathing 14 breaths a minute."
     assert say_sleep("Robin", None, ("70", None)) == "Robin had a sleep score of 70."
