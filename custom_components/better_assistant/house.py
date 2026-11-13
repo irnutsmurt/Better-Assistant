@@ -738,11 +738,15 @@ class HouseSkills:
 
     async def _h_tv_whats_on(self, slots, user_input) -> str:
         tvs = list(self._section("tv").get("tvs") or [])
+        area = self._sat_area(user_input)
+        here = [t for t in tvs if area and self._entity_area(t) == area]
         if slots.get("tv"):                                 # "the bedroom TV": that one
             tv = slots["tv"]
-        else:                                               # "the TV": the one that's playing, else the nearest
+        elif here:                                          # "the TV": the one in this speaker's room
+            tv = here[0]
+        else:                                               # no TV here: the one that's playing
             playing = [t for t in tvs if any(r["state"] == "playing" for r in self._tv_readings(t))]
-            tv = playing[0] if len(playing) == 1 else self._nearest(playing or tvs, user_input)
+            tv = (playing or tvs or [None])[0]
         if not tv:
             return "I couldn't find a TV."
         return say_tv(self._tv_spoken(tv).lower().replace(" tv", " TV"), self._tv_readings(tv))
