@@ -5,6 +5,7 @@ The page talks to Better Assistant over two websocket commands, so it doesn't de
   better_assistant/voice_training/action     -> start / skip / stop (start uses the signed-in user)"""
 from __future__ import annotations
 
+import hashlib
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -81,8 +82,11 @@ async def async_setup_panel(hass: HomeAssistant) -> None:
         websocket_api.async_register_command(hass, ws_clip_action)
         hass.http.register_view(VoiceClipView())
     if PANEL_PATH not in hass.data.get(frontend.DATA_PANELS, {}):
+        # a new address whenever the script changes, so the app never keeps an old copy
+        digest = await hass.async_add_executor_job(
+            lambda: hashlib.sha256((Path(__file__).parent / "www" / "voice-panel.js").read_bytes()).hexdigest()[:12])
         await panel_custom.async_register_panel(
-            hass, frontend_url_path=PANEL_PATH, webcomponent_name=PANEL_ELEMENT, module_url=PANEL_URL,
+            hass, frontend_url_path=PANEL_PATH, webcomponent_name=PANEL_ELEMENT, module_url=f"{PANEL_URL}?v={digest}",
             sidebar_title="Voice training", sidebar_icon="mdi:account-voice", require_admin=False,
             embed_iframe=False)
 
