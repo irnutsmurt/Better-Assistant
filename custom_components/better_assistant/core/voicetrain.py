@@ -127,6 +127,7 @@ class Session:
     silent: bool = False        # the speaker says nothing (phrases on a phone or the dashboard)
     results: list[str] = field(default_factory=list)   # per phrase: "said" / "skipped" (in order)
     hint: str = ""              # the last "try again" message, for the screen
+    borrowed: tuple[str, str | None] | None = None     # (pipeline id, its own speech-to-text) while training
 
 
 def intro(name: str) -> str:
@@ -242,6 +243,7 @@ class CaptureSlot:
     silent: bool = False        # the speaker says nothing (phrases on a phone or the dashboard)
     results: list[str] = field(default_factory=list)   # per phrase: "said" / "skipped" (in order)
     hint: str = ""              # the last "try again" message, for the screen
+    borrowed: tuple[str, str | None] | None = None     # (pipeline id, its own speech-to-text) while training
     until: float = 0.0
 
 
@@ -250,6 +252,7 @@ class CaptureHub:
     """The one armed slot plus how many clips each training session got saved."""
     slot: CaptureSlot | None = None
     saved: dict[str, int] = field(default_factory=dict)
+    engine: str | None = None   # while training borrows a pipeline: the speech-to-text it normally uses
 
     def arm(self, slot: CaptureSlot, now: float, seconds: float = SLOT_SECONDS) -> None:
         slot.until = now + seconds

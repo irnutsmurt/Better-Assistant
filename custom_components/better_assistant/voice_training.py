@@ -226,6 +226,10 @@ class VoiceTrainer:
     def _end(self, session: Session, status: str = "done") -> None:
         self._publish(session, status)
         session.until = 0.0                            # over: later replies don't publish "training"
+        if session.borrowed:
+            borrowed, session.borrowed = session.borrowed, None
+            self.entry.async_create_background_task(self.hass, self._give_back(borrowed),
+                                                    "better_assistant_voice_give_back")
         for key, s in list(self._sessions.items()):
             if s is session:
                 self._sessions.pop(key, None)
@@ -234,6 +238,59 @@ class VoiceTrainer:
                 self._pending.pop(key, None)
         hub(self.hass).disarm(session.token)
         hub(self.hass).saved.pop(session.token, None)
+
+    async def _borrow(self, session: Session) -> None:
+        """Record on whatever assistant the speaker uses: point that pipeline's speech-to-text at the
+        pass-through for the session (the pass-through hands audio on to the pipeline's own engine)."""
+        from homeassistant.components import assist_pipeline  # noqa: PLC0415
+        from .voice_setup import pipeline_select  # noqa: PLC0415
+        try:
+            select = pipeline_select(self.hass, session.satellite) if session.satellite else None
+            state = self.hass.states.get(select) if select else None
+            name = state.state if state else None
+            found = [pid for pid, n, _e in pipelines(self.hass) if n == name] if name else []
+            pipeline = assist_pipeline.async_get_pipeline(self.hass, found[0] if found else None)
+            ours = our_stt(self.hass, self.entry.entry_id)
+            if pipeline.stt_engine == ours:
+                return
+            hub(self.hass).engine = pipeline.stt_engine
+            session.borrowed = (pipeline.id, pipeline.stt_engine)
+            await assist_pipeline.async_update_pipeline(self.hass, pipeline, stt_engine=ours)
+        except Exception:  # noqa: BLE001 - train anyway; the clip just isn't saved
+            _LOGGER.warning("Voice training: couldn't record on this speaker's assistant", exc_info=True)
+
+    async def _give_back(self, borrowed: tuple[str, str | None]) -> None:
+        from homeassistant.components import assist_pipeline  # noqa: PLC0415
+        pid, engine = borrowed
+        hub(self.hass).engine = None
+        try:
+            pipeline = assist_pipeline.async_get_pipeline(self.hass, pid)
+            await assist_pipeline.async_update_pipeline(self.hass, pipeline, stt_engine=engine)
+        except Exception:  # noqa: BLE001
+            _LOGGER.warning("Voice training: couldn't put back the speech-to-text of %s", pid, exc_info=True)
+
+    async def _listen(self, satellite: str) -> str | None:
+        """Make the speaker play its listening chime and listen, without a wake word. None when it did."""
+        problem = None
+        for attempt in range(4):                       # it may still be finishing the last turn
+            try:
+                await self.hass.services.async_call(
+                    "assist_satellite", "start_conversation",
+                    {"entity_id": satellite, "start_media_id": PREANNOUNCE_URL, "preannounce": False},
+                    blocking=True)
+                return None
+            except Exception as err:  # noqa: BLE001
+                _LOGGER.debug("Voice training: %s couldn't start listening (try %s): %r", satellite, attempt + 1, err)
+                problem = str(err) or type(err).__name__
+                await asyncio.sleep(1.0)
+        _LOGGER.warning("Voice training: %s couldn't start listening: %s", satellite, problem)
+        return problem
+
+    async def _relisten(self, session: Session) -> None:
+        """After a silent turn the speaker stops listening; open it again for the next phrase."""
+        await asyncio.sleep(0.4)
+        if session.until and await self._listen(session.satellite):
+            self._end(session, "stopped")
 
     def default_satellite(self, skills) -> str | None:
         chosen = self.entry.options.get(OPT_VT_SATELLITE)
@@ -264,20 +321,12 @@ class VoiceTrainer:
         session.until = time.time() + PENDING_SECONDS
         self._pending[satellite] = session
         self._publish(session, "training")
-        for attempt in range(3):                       # the speaker may still be finishing a reply
-            try:
-                await self.hass.services.async_call(
-                    "assist_satellite", "start_conversation",
-                    {"entity_id": satellite, "start_media_id": PREANNOUNCE_URL, "preannounce": False},
-                    blocking=True)
-                return None
-            except Exception as err:  # noqa: BLE001
-                _LOGGER.warning("Voice training: %s couldn't start listening (try %s): %r",
-                                satellite, attempt + 1, err)
-                problem = str(err) or type(err).__name__
-                await asyncio.sleep(1.5)
-        self._end(session, "stopped")
-        return f"The speaker couldn't start listening ({problem})."
+        await self._borrow(session)
+        problem = await self._listen(satellite)
+        if problem:
+            self._end(session, "stopped")
+            return f"The speaker couldn't start listening ({problem})."
+        return None
 
     async def async_phone_action(self, action: str, skills) -> None:
         """Stop / Skip pressed on the training notification."""
@@ -305,7 +354,16 @@ class VoiceTrainer:
                 self._end(session, "done" if session.index >= len(PHRASES) else "stopped")
             else:
                 self._arm(session, user_input)
-            return await self._say(session, skills, result.reply), not result.done
+            speech = await self._say(session, skills, result.reply)
+            if not result.done and session.silent and session.satellite:
+                # nothing said, so the speaker won't keep listening by itself: open it again
+                self._sessions.pop(conversation_id, None)
+                session.until = time.time() + PENDING_SECONDS
+                self._pending[session.satellite] = session
+                self.entry.async_create_background_task(self.hass, self._relisten(session),
+                                                        "better_assistant_voice_relisten")
+                return speech, False
+            return speech, not result.done
         if is_stop_training(text):
             return "Voice training isn't running.", False
         start = parse_start(text)
@@ -330,6 +388,7 @@ class VoiceTrainer:
         self._sessions[conversation_id] = session
         self._arm(session, user_input)
         self._publish(session, "training")
+        await self._borrow(session)
         if self.entry.options.get(OPT_VT_PHONE, True):
             session.phone = skills.phone_for(person)
             session.silent = bool(session.phone)

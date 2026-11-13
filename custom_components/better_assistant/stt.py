@@ -45,7 +45,7 @@ class PassThroughSTT(stt.SpeechToTextEntity):
     # ------------------------------------------------------------ the engine underneath
     def _engine(self):
         """The wrapped entity (or legacy provider), or None."""
-        engine_id = underlying_engine(self.hass, dict(self._entry.options))
+        engine_id = hub(self.hass).engine or underlying_engine(self.hass, dict(self._entry.options))
         if not engine_id or engine_id == self.entity_id:
             return None
         return stt.async_get_speech_to_text_engine(self.hass, engine_id)

@@ -2,6 +2,7 @@
 (answer unchanged, a WAV only while recording is wanted), the training conversation through the
 agent's trainer, and the settings page. Skipped when Home Assistant isn't installed."""
 import json
+import asyncio
 import time
 import types
 import wave
@@ -163,6 +164,7 @@ async def house(hass):
     hass.states.async_set("person.rob", "home", {"friendly_name": "Rob Smith", "user_id": "u1"})
     hass.states.async_set("person.sam", "home", {"friendly_name": "Sam"})
     entry = types.SimpleNamespace(entry_id="x", options={"voice_training": True, "voice_training_phone": False}, data={})
+    entry.async_create_background_task = lambda h, coro, name: h.async_create_background_task(coro, name)
     store = BetterAssistantStore(hass, "x")
     await store.async_load()
     entry.runtime_data = BetterAssistantRuntimeData(store=store)
@@ -310,17 +312,22 @@ async def test_start_button_then_skip_and_stop(house):
     # the speaker's first turn claims the session; the speaker says nothing, the screen moves on
     inp = ConversationInput(text=PHRASES[0], context=Context(), conversation_id="c9", device_id="dev1",
                             satellite_id="assist_satellite.kitchen", language="en", agent_id="conversation.x")
-    assert await t.async_handle(PHRASES[0], inp, "c9", house.skills) == ("", True)
+    assert await t.async_handle(PHRASES[0], inp, "c9", house.skills) == ("", False)   # silent: ends the turn
     assert [p["state"] for p in t.view["phrases"]][:3] == ["said", "current", "waiting"]
+    await asyncio.sleep(0.6)                                  # the re-listen runs as a background task
+    assert len(started) == 2                                  # the speaker was told to listen again
 
-    speech, _ = await t.async_handle("something else entirely about the news today", inp, "c9", house.skills)
+    # the next phrase arrives in the new conversation the speaker started
+    inp = ConversationInput(text="x", context=Context(), conversation_id="c10", device_id="dev1",
+                            satellite_id="assist_satellite.kitchen", language="en", agent_id="conversation.x")
+    speech, _ = await t.async_handle("something else entirely about the news today", inp, "c10", house.skills)
     assert speech == "" and t.view["hint"] == "That didn't sound like the phrase. Try again."
 
     await t.async_phone_action("BETTER_ASSISTANT_VT_SKIP", house.skills)
     assert [p["state"] for p in t.view["phrases"]][:3] == ["said", "skipped", "current"]
     assert hub(house.hass).slot.phrase == PHRASES[2] and t.view["hint"] == ""
     await t.async_phone_action("BETTER_ASSISTANT_VT_STOP", house.skills)
-    assert t.view["status"] == "stopped" and t.active("c9") is None and hub(house.hass).slot is None
+    assert t.view["status"] == "stopped" and t.active("c10") is None and hub(house.hass).slot is None
 
 
 async def test_start_from_phone_needs_training_on(house):
