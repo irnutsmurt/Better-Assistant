@@ -2,7 +2,7 @@
   "config": {
     "step": {
       "user": {
-        "title": "Brave Search API",
+        "title": "Better Assistant",
         "description": "Optional: paste a Brave Search API key to let the assistant look things up on the web. Leave it empty to use only the local answers (spelling, maths, units, dates, world clock); you can add a key later with Reconfigure. Checking the key uses 1 search from your Brave credit.",
         "data": {
           "api_key": "API key"
@@ -32,7 +32,7 @@
   "options": {
     "step": {
       "init": {
-        "title": "Brave Search API settings",
+        "title": "Better Assistant settings",
         "menu_options": {
           "web_search": "Web search",
           "behaviour": "Behaviour",

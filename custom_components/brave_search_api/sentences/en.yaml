@@ -1,4 +1,4 @@
-# Sentences the Brave Search API agent handles itself (matched with hassil before guards and search).
+# Sentences the Better Assistant agent handles itself (matched with hassil before guards and search).
 # {text} is free text; {person} and {zone} lists are filled at run time from your person and zone entities.
 language: en
 intents:

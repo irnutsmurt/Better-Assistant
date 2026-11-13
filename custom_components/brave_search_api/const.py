@@ -1,8 +1,8 @@
-"""Constants for the Brave Search API integration."""
+"""Constants for the Better Assistant integration."""
 from __future__ import annotations
 
 DOMAIN = "brave_search_api"
-TITLE = "Brave Search API"
+TITLE = "Better Assistant"
 
 CONF_API_KEY = "api_key"
 

@@ -1,14 +1,14 @@
 {
   "domain": "brave_search_api",
-  "name": "Brave Search API",
+  "name": "Better Assistant",
   "after_dependencies": ["assist_pipeline", "assist_satellite", "intent", "media_player", "notify", "person", "zone"],
   "codeowners": ["@irnutsmurt"],
   "config_flow": true,
   "dependencies": ["conversation", "http"],
-  "documentation": "https://github.com/irnutsmurt/brave-search-api",
+  "documentation": "https://github.com/irnutsmurt/better-assistant",
   "integration_type": "service",
   "iot_class": "cloud_polling",
-  "issue_tracker": "https://github.com/irnutsmurt/brave-search-api/issues",
+  "issue_tracker": "https://github.com/irnutsmurt/better-assistant/issues",
   "requirements": [],
   "version": "0.1.0"
 }

@@ -1,4 +1,4 @@
-"""Brave Search API: a Home Assistant conversation agent that answers questions from the Brave
+"""Better Assistant: a Home Assistant conversation agent that answers questions from the Brave
 Search API (no AI writes the answer), answers simple questions locally, and runs compound commands
 through Home Assistant's own agent. Unofficial community integration."""
 from __future__ import annotations

@@ -1,7 +1,12 @@
-# Brave Search API for Home Assistant
+# Better Assistant for Home Assistant
 
-A conversation agent for Home Assistant's Assist that answers everyday questions out loud, without an
-AI model writing the answer.
+A Google Assistant-style voice assistant for Home Assistant's Assist: timers, alarms, reminders, notes,
+calendar, music, rooms and lights, the bed, cameras, a health report and more, set up automatically from
+the devices you already have. With an optional Brave Search API key it also answers everyday questions
+out loud from the web, without an AI model writing the answer.
+
+(Its internal integration ID is `brave_search_api`, which is why entities are named
+`switch.brave_search_api_guest_mode` and so on.)
 
 > **Unofficial community integration.** This project is not made, endorsed or supported by Brave
 > Software. It uses the public [Brave Search API](https://brave.com/search/api/) with your own key.
@@ -38,9 +43,9 @@ Requires **Home Assistant 2025.11 or newer** (the agent uses the conversation dr
 
 
 1. HACS > three-dot menu > **Custom repositories** > add
-   `https://github.com/irnutsmurt/brave-search-api` as type **Integration**.
-2. Install **Brave Search API**, then restart Home Assistant.
-3. **Settings > Devices & services > Add integration > Brave Search API.**
+   `https://github.com/irnutsmurt/better-assistant` as type **Integration**.
+2. Install **Better Assistant**, then restart Home Assistant.
+3. **Settings > Devices & services > Add integration > Better Assistant.**
 
 Manual install: copy `custom_components/brave_search_api` into your `config/custom_components/`
 folder and restart.
@@ -65,7 +70,7 @@ contain a real definition.
 ## Use it in an Assist pipeline
 
 1. **Settings > Voice assistants**, open (or add) a pipeline.
-2. Set **Conversation agent** to **Brave Search API**.
+2. Set **Conversation agent** to **Better Assistant**.
 3. Turn **Prefer handling commands locally** on. This matters: Home Assistant then runs every command
    it recognises itself, and only unrecognised sentences reach this agent.
 4. Pick your speech-to-text and text-to-speech engines as usual.
@@ -85,7 +90,7 @@ whatever your pipeline uses, and the free local add-ons work fine:
 
 ## Settings page
 
-**Settings > Devices & services > Brave Search API > Configure** opens a menu:
+**Settings > Devices & services > Better Assistant > Configure** opens a menu:
 
 | Section | What's there |
 |---|---|

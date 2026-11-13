@@ -147,7 +147,7 @@ class BraveSearchApiOptionsFlow(OptionsFlow):
         has_key = bool(self.config_entry.data.get(CONF_API_KEY))
         return self.async_show_form(step_id="web_search", data_schema=schema, description_placeholders={
             "key_state": "set" if has_key else "not set (web search is off until you add one: "
-                                               "Settings > Devices & services > Brave Search API > Reconfigure)"})
+                                               "Settings > Devices & services > Better Assistant > Reconfigure)"})
 
     async def async_step_behaviour(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is not None:
