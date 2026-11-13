@@ -72,16 +72,48 @@ contain a real definition.
    it recognises itself, and only unrecognised sentences reach this agent.
 4. Pick your speech-to-text and text-to-speech engines as usual.
 
-### Without Nabu Casa
+Or let **Voice setup** (below) do all of this for you.
 
-Nothing here needs a Home Assistant Cloud subscription. Speech-to-text and text-to-speech are
-whatever your pipeline uses, and the free local add-ons work fine:
+## Voice setup (optional)
 
-- **Speech-to-text: Whisper** (Settings > Add-ons > Whisper). Use the `base-int8` or `base.en` model
-  or larger. `tiny` is fast but mishears short questions, and a misheard question becomes a strange
-  web search. Add an initial prompt such as *"Questions and commands for a smart home."* to help it.
-- **Text-to-speech: Piper** (Settings > Add-ons > Piper). Alarms, reminders and announcements speak
-  through each speaker's own pipeline, so they use Piper too.
+After the API key step, Better Assistant offers **Set it up for me** (or **Skip**). You can run it
+later from **Configure > Set up voice**. It looks at what you already have and keeps it: any
+speech-to-text or text-to-speech engine (Home Assistant Cloud, Wyoming Whisper/Piper or another
+integration), existing Wyoming entries and installed add-ons are reused, not replaced. Then it:
+
+1. **Speech engines.** On Home Assistant OS or Supervised (installs with an add-on store) it shows
+   what it will download (roughly 0.5 GB for the Whisper add-on plus its model, 0.3 GB for Piper
+   plus one English voice), then installs and starts **Whisper** and **Piper** and sets Whisper's
+   model, language (`en`) and, where the add-on has the option, the initial prompt *"Questions and
+   commands for a smart home."* The model is picked for the hardware: `tiny-int8` on a Raspberry Pi 3
+   or anything under 3 GB of memory, `base-int8` on a Pi 4/5 with 4 GB or more, `base.en` on an x86
+   machine, `small-int8` on x86 with 8+ cores and 8 GB. On Docker or Core installs (no add-on store)
+   it shows the `docker run` commands for `rhasspy/wyoming-whisper` (port 10300) and
+   `rhasspy/wyoming-piper` (port 10200) and asks where they run.
+2. **Wyoming.** Confirms the "Discovered" Wyoming cards for the add-ons, or adds Wyoming by host
+   and port.
+3. **Voice assistant.** Creates (or updates) a pipeline named **Better Assistant** with this
+   integration as the conversation agent, those speech engines, language English and **Prefer
+   handling commands locally** on. A checkbox makes it the preferred assistant.
+4. **Speakers.** Ticked voice speakers (Assist satellites such as Voice PE or ESPHome; never Cast or
+   Google speakers) have their **Assistant** setting switched to it.
+
+Nothing here can break the integration: if a step fails you get a summary of what was done and
+what is left to do by hand. A first-time setup creates the pipeline a moment after you finish and
+confirms it in a notification.
+
+Voice needs a **speech-to-text engine**. Whisper is the free local one; Nabu Casa's Home Assistant
+Cloud and other speech-to-text integrations work too, and without any you can still type in the
+Assist chat. Speech-to-Phrase only understands a fixed list of home commands, so it can't hear the
+open questions this agent answers.
+
+Nothing here needs a Home Assistant Cloud subscription. Tips if you set things up yourself:
+
+- **Whisper model:** use `base-int8` or `base.en` or larger. `tiny` is fast but mishears short
+  questions, and a misheard question becomes a strange web search. An initial prompt such as
+  *"Questions and commands for a smart home."* helps.
+- **Piper** speaks everything, including alarms, reminders and announcements, which use each
+  speaker's own pipeline.
 - **Speed:** on a Raspberry Pi 4/5, `base` Whisper takes a second or two per sentence; on an
   x86 mini PC it is near instant. Cloud speech is quicker and more accurate on slow hardware.
 
@@ -96,6 +128,7 @@ whatever your pipeline uses, and the free local add-ons work fine:
 | Alarms | Default alarm speaker (empty = the one you asked from, a voice speaker, or all), snooze length (1-30 minutes, default 5), Snoozing on/off, snooze limit per alarm (empty = no limit, 1-10; 0 turns snoozing off) |
 | Voice speakers, Reminders & notes | Devices found automatically |
 | Music, Calendar, Rooms & lights, Thermostat, Cameras & outside, TV, Bed, Health report, Guest mode, Night mode, Broadcast | An on/off switch, the devices found automatically, and that feature's own settings |
+| Set up voice | The voice setup above, run again |
 | Re-detect devices | Scan again |
 
 ### Automatic device detection
