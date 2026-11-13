@@ -78,6 +78,7 @@ def too_short(text: str) -> bool:
 
 
 # ------------------------------------------------------------------ the training conversation
+NOTHING_HEARD = "(nothing heard)"   # what speech-to-text passes on mid-training instead of no text
 MAX_REASKS = 2               # asked again this many times, then the phrase is skipped
 _NUM = {"one": "1", "two": "2", "three": "3", "four": "4", "five": "5", "six": "6", "seven": "7",
         "eight": "8", "nine": "9", "ten": "10", "eleven": "11", "twelve": "12"}
@@ -91,6 +92,13 @@ def prompt(index: int) -> str:
 def _words(text: str) -> list[str]:
     text = re.sub(r"(\d+):00\b", r"\1", (text or "").lower())        # "7:00" -> "7"
     return [_NUM.get(w, w) for w in _clean(text).replace("'", "").split()]
+
+
+def is_echo(last_said: str, heard: str) -> bool:
+    """Heard only words from what we just said, and not the whole phrase: the speaker started
+    listening before it finished talking and caught the end of its own reply."""
+    got = _words(heard)
+    return bool(got) and set(got) <= set(_words(last_said))
 
 
 def matches_phrase(phrase: str, heard: str) -> bool:
@@ -111,6 +119,7 @@ class Session:
     reasks: int = 0             # times the current phrase was asked again
     saved: int = 0              # recordings the speech-to-text side actually wrote
     token: str = ""             # ties recordings to this session
+    last_said: str = ""         # the last reply, to spot the speaker hearing itself
     until: float = 0.0          # forgotten after this (time.time())
 
 
@@ -144,7 +153,10 @@ def step(session: Session, heard: str) -> Step:
     if not matches_phrase(PHRASES[session.index], heard):
         if session.reasks < MAX_REASKS:
             session.reasks += 1
-            lead = "I didn't catch that." if too_short(heard) else "That didn't sound like the phrase."
+            if is_echo(session.last_said, heard):
+                return Step("Go ahead.", False, True)          # short, so there's little to hear again
+            lead = "I didn't catch that." if too_short(heard) or heard == NOTHING_HEARD \
+                else "That didn't sound like the phrase."
             return Step(f"{lead} Try again: {PHRASES[session.index]}.", False, True)
         lead = "Let's skip that one."
     else:

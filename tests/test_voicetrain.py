@@ -175,3 +175,17 @@ def test_pipeline_plan_switch_and_restore():
     assert changes == {"p1": "stt.cloud", "p2": "stt.whisper"} and kept == {}
     changes, kept = pipeline_plan([], {"gone": "stt.cloud"}, {}, ours, True)
     assert changes == {} and kept == {}
+
+
+def test_echo_of_own_reply_gets_a_short_go_ahead():
+    from core.voicetrain import NOTHING_HEARD
+    s = Session(person="person.rob", name="Rob", index=1,
+                last_said=f"That didn't sound like the phrase. Try again: {PHRASES[1]}.")
+    r = step(s, "Living room lamps.")                 # the speaker heard the end of its own reply
+    assert r.reply == "Go ahead." and r.arm and s.index == 1
+    s.last_said = r.reply
+    r = step(s, NOTHING_HEARD)                        # sound but no words: asked again, not ended
+    assert r.reply == f"I didn't catch that. Try again: {PHRASES[1]}." and not r.done
+    s.last_said = r.reply
+    r = step(s, PHRASES[1])
+    assert r.reply == f"{PHRASES[2]}." and s.index == 2

@@ -19,7 +19,7 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import BetterAssistantConfigEntry
 from .const import OPT_VT_ENABLED, OPT_VT_RECORD_TEST
-from .core.voicetrain import TEST, TRAIN, CaptureSlot, is_stop, matches_phrase, max_bytes, too_short
+from .core.voicetrain import NOTHING_HEARD, TEST, TRAIN, CaptureSlot, is_stop, matches_phrase, max_bytes, too_short
 from .sensor import device_info
 from .voice_setup import pipeline_select
 from .voice_training import guess_person, hub, underlying_engine, voice_root, write_clip
@@ -127,6 +127,10 @@ class PassThroughSTT(stt.SpeechToTextEntity):
             result = await engine.async_process_audio_stream(metadata, tee())
         if slot and result.result == stt.SpeechResultState.SUCCESS:
             self._save(slot, metadata, b"".join(chunks), result.text or "")
+        if slot and slot.label == TRAIN and result.result == stt.SpeechResultState.SUCCESS \
+                and not (result.text or "").strip():
+            # "no text" would end the conversation; mid-training it should be asked again instead
+            return stt.SpeechResult(NOTHING_HEARD, stt.SpeechResultState.SUCCESS)
         return result
 
     def _save(self, slot: CaptureSlot, metadata: stt.SpeechMetadata, pcm: bytes, transcript: str) -> None:

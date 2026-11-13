@@ -185,6 +185,7 @@ class VoiceTrainer:
         if session:
             session.saved = hub(self.hass).saved_for(session.token)
             result = step(session, text)
+            session.last_said = result.reply
             if result.done:
                 self._sessions.pop(conversation_id, None)
                 hub(self.hass).disarm(session.token)
@@ -215,4 +216,5 @@ class VoiceTrainer:
         session = Session(person=person, name=skills.person_name(person), token=uuid4().hex)
         self._sessions[conversation_id] = session
         self._arm(session, user_input)
-        return intro(session.name), True
+        session.last_said = intro(session.name)
+        return session.last_said, True
