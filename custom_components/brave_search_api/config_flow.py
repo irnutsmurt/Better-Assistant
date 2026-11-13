@@ -39,6 +39,7 @@ from .const import (
     OPT_COMPOUND,
     OPT_COUNTRY,
     OPT_FEATURES,
+    OPT_SECURITY,
     OPT_MAX_PARTS,
     OPT_MONTHLY_CAP,
     OPT_OVERRIDES,
@@ -129,7 +130,7 @@ class BraveSearchApiOptionsFlow(OptionsFlow):
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         return self.async_show_menu(step_id="init", menu_options=[
-            "web_search", "behaviour", "alarms", *DEVICE_SECTIONS, *PLACEHOLDER_SECTIONS, "redetect"])
+            "web_search", "behaviour", "alarms", "security", *DEVICE_SECTIONS, *PLACEHOLDER_SECTIONS, "redetect"])
 
     async def async_step_web_search(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is not None:
@@ -158,6 +159,28 @@ class BraveSearchApiOptionsFlow(OptionsFlow):
                 NumberSelectorConfig(min=2, max=4, step=1, mode=NumberSelectorMode.SLIDER)),
         })
         return self.async_show_form(step_id="behaviour", data_schema=schema)
+
+    async def async_step_security(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        """Voice passphrase. The passphrase is never shown back: leave the field empty to keep it."""
+        current = dict(self.config_entry.options.get(OPT_SECURITY) or {})
+        if user_input is not None:
+            new = (user_input.get("passphrase") or "").strip()
+            secret = "" if user_input.get("clear_passphrase") else (new or current.get("passphrase", ""))
+            return self._save({OPT_SECURITY: {
+                "passphrase": secret,
+                "require_doors": bool(user_input.get("require_doors", True)),
+                "require_guest": bool(user_input.get("require_guest", True)),
+                "owner": user_input.get("owner") or None}})
+        schema = vol.Schema({
+            vol.Optional("passphrase"): TextSelector(TextSelectorConfig(type=TextSelectorType.PASSWORD)),
+            vol.Required("clear_passphrase", default=False): BooleanSelector(),
+            vol.Required("require_doors", default=current.get("require_doors", True)): BooleanSelector(),
+            vol.Required("require_guest", default=current.get("require_guest", True)): BooleanSelector(),
+            vol.Optional("owner", description={"suggested_value": current.get("owner")}):
+                EntitySelector(EntitySelectorConfig(domain="person")),
+        })
+        return self.async_show_form(step_id="security", data_schema=schema, description_placeholders={
+            "passphrase_state": "set" if current.get("passphrase") else "not set"})
 
     def _speaker_options(self) -> list[SelectOptionDict]:
         """'All voice speakers' plus every voice satellite (assist_satellite only)."""

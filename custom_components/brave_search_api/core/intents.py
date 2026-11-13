@@ -24,7 +24,7 @@ INTENT_FEATURE = {"Music": "music", "Calendar": "calendar", "Room": "rooms_light
 # passed (a placeholder when empty) so hassil never sees a missing list.
 DYNAMIC_LISTS = ("person", "area", "music_target", "calendar", "light_target", "place", "camera", "tv",
                  "tv_source", "tv_app", "bed_preset", "climate_mode", "climate_preset", "battery_thing",
-                 "help_topic")
+                 "help_topic", "door")
 _EMPTY = "\u0000"
 
 

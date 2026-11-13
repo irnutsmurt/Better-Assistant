@@ -46,6 +46,8 @@ from .core.intents import TIMER_INTENTS, Match
 from .core.timeparse import fmt_time, parse, say_when
 from .discovery import effective_section
 from .house import GUEST_REPLY, HouseSkills
+from .security import SecuritySkills
+from .core.security import split_oneshot
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -54,7 +56,7 @@ HOW_TO_ADD_ZONE = ("I don't know a place called {place}. Add it as a zone in Set
                    "zones, Zones, then ask me again.")
 
 
-class Skills(HouseSkills):
+class Skills(HouseSkills, SecuritySkills):
     """Per config entry. Created in async_setup_entry, stopped on unload."""
 
     def __init__(self, hass: HomeAssistant, entry) -> None:
@@ -71,6 +73,7 @@ class Skills(HouseSkills):
         self._snooze_count: dict[str, int] = {}              # alarm key -> snoozes taken while ringing
         self._ring_targets: dict[str, Any] = {}              # alarm key -> targets it is ringing on
         self._ring_meta: dict[str, dict] = {}
+        self.followup = False                                # ask the speaker to keep listening
 
     # ------------------------------------------------------------ lifecycle
     async def async_start(self) -> None:
@@ -82,6 +85,7 @@ class Skills(HouseSkills):
             self._schedule_alarm(key)
         self._track_people()
         self.start_night_schedule()
+        self.apply_door_hiding()
 
     @callback
     def async_stop(self) -> None:
@@ -207,8 +211,15 @@ class Skills(HouseSkills):
 
     # ------------------------------------------------------------ dispatch
     def recognize(self, text: str) -> Match | None:
-        return sentences.recognize(text, sorted({n for n in self.people()}, key=len, reverse=True),
-                                   lists=self.slot_lists(), disabled=self.disabled_features())
+        people = sorted({n for n in self.people()}, key=len, reverse=True)
+        lists = self.slot_lists()
+        command, phrase = split_oneshot(text)
+        if phrase is not None:                             # "open the garage door, passphrase ..."
+            match = sentences.recognize(command, people, lists=lists, disabled=self.disabled_features())
+            if match and match.intent in ("DoorOpen", "GuestOff"):
+                match.slots["passphrase"] = phrase
+                return match
+        return sentences.recognize(text, people, lists=lists, disabled=self.disabled_features())
 
     async def async_handle(self, match: Match, text: str, user_input: conversation.ConversationInput) -> str:
         if match.intent in TIMER_INTENTS:

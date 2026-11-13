@@ -379,6 +379,19 @@ intents:
       - sentences:
           - "(turn off|disable|stop|end|deactivate|switch off) guest mode"
           - "guest mode off"
+          - "the guests (left|have left|are gone|went home)"
+  DoorOpen:
+    data:
+      - sentences:
+          - "(open|unlock) [the] {door}"
+  DoorClose:
+    data:
+      - sentences:
+          - "(close|lock|shut) [the] {door}"
+  DoorStatus:
+    data:
+      - sentences:
+          - "is [the] {door} (open|closed|locked|unlocked|shut)"
   GuestQuery:
     data:
       - sentences:
@@ -449,6 +462,8 @@ lists:
   battery_thing:
     values: []
   help_topic:
+    values: []
+  door:
     values: []
   cal_range:
     values:

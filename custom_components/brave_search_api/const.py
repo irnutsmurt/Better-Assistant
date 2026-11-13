@@ -72,6 +72,7 @@ PLACEHOLDER_SECTIONS: list[str] = []
 # Features with an on/off switch on their settings page (all on by default).
 FEATURE_SECTIONS = ["music", "calendar", "rooms_lights", "thermostat", "cameras_outside", "tv", "bed",
                     "health", "guest_mode", "night_mode", "broadcast"]
+OPT_SECURITY = "security"            # options[OPT_SECURITY] = {passphrase, require_doors, require_guest, owner}
 OPT_FEATURES = "features"            # options[OPT_FEATURES][section] = bool
 OPT_SETTINGS = "settings"            # options[OPT_SETTINGS][section][key] = value
 

@@ -152,6 +152,28 @@ garage door") is never taken over.
 | Broadcast | "tell everyone that dinner's ready", "announce the car is here" | Every other voice speaker, plus any media players you add in settings. |
 | Help | "what can you do", "what can you do with music" | Only lists the features that are switched on. |
 
+## Security: an optional voice passphrase
+
+Under **Configure > Security** you can set a passphrase. It's stored with the integration, never
+shown again, never logged and never spoken. Case, spaces and punctuation don't matter.
+
+- **Locks, garage doors and gates** (the ones listed under Guest mode): opening or unlocking them by
+  voice needs the passphrase. Say it in one go ("open the garage door, passphrase purple monkey"), or on
+  a voice speaker just say "open the garage door" and answer the question. Closing, locking and asking
+  "is the garage door open" need nothing. While this is on, those doors are hidden from Home
+  Assistant's own voice commands (which would otherwise open them without asking); their earlier
+  Assist setting is put back exactly when you turn it off.
+- **Guest mode**: ending it by voice ("turn off guest mode", "the guests left") needs the passphrase
+  too. The Guest mode switch in Home Assistant always works without one.
+- Three wrong tries pause voice unlocking for 30 seconds, then 1 minute, then 2 minutes, adding a
+  minute for each further miss. A right answer, or 6 hours without a miss, starts the count again.
+  Pick a person under Security to get a phone notification on every right and wrong try.
+- The one-shot form is kept out of "what did you hear". Home Assistant itself may still keep the
+  spoken text in its voice pipeline debug view, so prefer the ask-and-answer form on a speaker.
+
+> **Without a passphrase, anyone who can talk to a voice speaker can open these doors and end guest
+> mode.** Set one if your speakers can be heard from outside or by guests.
+
 **Tip: "play X".** With "prefer handling commands locally" on, Home Assistant's own media search may
 grab a plain "play X" before this agent sees it. If that happens, say "play music by X", "play the
 album X" or "play my X playlist", which the built-in search doesn't take, or switch off Home

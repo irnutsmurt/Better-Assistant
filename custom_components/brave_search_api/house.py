@@ -192,6 +192,7 @@ class HouseSkills:
         lists["climate_mode"], lists["climate_preset"] = modes, presets
         lists["battery_thing"] = {battery_name(self._friendly(e)): e for e in self._battery_entities()}
         lists["help_topic"] = dict(HELP_TOPICS)
+        lists["door"] = self.door_names()
         return lists
 
     # ------------------------------------------------------------ shared
@@ -898,35 +899,62 @@ class HouseSkills:
         return "I couldn't find your phone's battery."
 
     # ------------------------------------------------------------ guest mode
+    # Entities hidden from Assist, shared by guest mode ("guest") and the voice passphrase
+    # ("voice_lock"). Each keeps the exact earlier setting until no reason is left, then it is put back.
+    def _hidden(self) -> dict:
+        hidden = self.store.data.setdefault("hidden", {})
+        modes = self._modes()
+        for eid, record in (modes.pop("guest_saved", None) or {}).items():     # older versions
+            if not isinstance(record, dict):
+                record = {"explicit": True, "value": bool(record)}
+            hidden.setdefault(eid, {"record": record, "reasons": []})["reasons"].append("guest")
+        return hidden
+
+    @callback
+    def hide_from_assist(self, entity_ids: list[str], reason: str) -> None:
+        hidden = self._hidden()
+        for eid in entity_ids:
+            if eid not in hidden:
+                settings = async_get_entity_settings(self.hass, eid).get("conversation", {})
+                hidden[eid] = {"record": exposure_record(dict(settings), async_get_should_expose_default(self.hass, eid)),
+                               "reasons": []}
+                async_expose_entity(self.hass, "conversation", eid, False)
+            if reason not in hidden[eid]["reasons"]:
+                hidden[eid]["reasons"].append(reason)
+        self.store.changed()
+
+    @callback
+    def unhide_from_assist(self, reason: str, keep: set[str] | frozenset[str] = frozenset()) -> None:
+        """Drop `reason` from every hidden entity except `keep`; restore those with no reason left."""
+        hidden = self._hidden()
+        ents = er.async_get(self.hass)
+        for eid in list(hidden):
+            if eid in keep or reason not in hidden[eid]["reasons"]:
+                continue
+            hidden[eid]["reasons"].remove(reason)
+            if hidden[eid]["reasons"]:
+                continue
+            action, value = restore_action(hidden.pop(eid)["record"])
+            entry = ents.async_get(eid)
+            if action == "clear" and entry is not None:           # back on the default: drop our setting
+                opts = {k: v for k, v in (entry.options.get("conversation") or {}).items() if k != "should_expose"}
+                ents.async_update_entity_options(eid, "conversation", opts)
+            else:
+                async_expose_entity(self.hass, "conversation", eid, bool(value))
+        self.store.changed()
+
+    def protected_doors(self) -> list[str]:
+        return list(self._section("guest_mode").get("protected") or [])
+
     async def set_guest(self, on: bool) -> None:
+        """Turn guest mode on or off with no passphrase (the switch entity and checked voice requests)."""
         modes = self._modes()
         if modes.get("guest") == on:
             return
-        protected = list(self._section("guest_mode").get("protected") or [])
         if on:
-            # Remember exactly what was there (an explicit setting, or the default), saved with the
-            # integration so a restart during guest mode still puts it back.
-            saved = {}
-            for eid in protected:
-                settings = async_get_entity_settings(self.hass, eid).get("conversation", {})
-                default = async_get_should_expose_default(self.hass, eid)
-                saved[eid] = exposure_record(dict(settings), default)
-                async_expose_entity(self.hass, "conversation", eid, False)   # hidden from Assist
-            modes["guest_saved"] = saved
+            self.hide_from_assist(self.protected_doors(), "guest")
         else:
-            ents = er.async_get(self.hass)
-            for eid, record in (modes.get("guest_saved") or {}).items():
-                if not isinstance(record, dict):                  # saved by an older version
-                    record = {"explicit": True, "value": bool(record)}
-                action, value = restore_action(record)
-                entry = ents.async_get(eid)
-                if action == "clear" and entry is not None:       # back on the default: drop our setting
-                    opts = {k: v for k, v in (entry.options.get("conversation") or {}).items()
-                            if k != "should_expose"}
-                    ents.async_update_entity_options(eid, "conversation", opts)
-                else:
-                    async_expose_entity(self.hass, "conversation", eid, bool(value))
-            modes["guest_saved"] = {}
+            self.unhide_from_assist("guest")
         modes["guest"] = on
         self.store.changed()
 
@@ -934,9 +962,6 @@ class HouseSkills:
         await self.set_guest(True)
         return "Guest mode is on. Calendars, notes, reminders and sleep data are private until you turn it off."
 
-    async def _h_guest_off(self, slots, user_input) -> str:
-        await self.set_guest(False)
-        return "Guest mode is off."
 
     async def _h_guest_query(self, slots, user_input) -> str:
         return f"Guest mode is {'on' if self.guest_on() else 'off'}."

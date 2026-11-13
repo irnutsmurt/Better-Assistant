@@ -37,6 +37,7 @@
           "web_search": "Web search",
           "behaviour": "Behaviour",
           "alarms": "Alarms",
+          "security": "Security",
           "voice_speakers": "Voice speakers",
           "music": "Music",
           "calendar": "Calendar",
@@ -343,6 +344,21 @@
           "protected": "Locks and doors Assist can't open in guest mode",
           "broadcast_players": "Also speak broadcasts on these media players",
           "broadcast_tts": "Text-to-speech engine for those players"
+        }
+      },
+      "security": {
+        "title": "Security",
+        "description": "Passphrase: {passphrase_state}. With a passphrase, opening locks, garage doors and gates (the ones listed under Guest mode) and ending guest mode by voice need it: \"open the garage door, passphrase <words>\", or just \"open the garage door\" on a voice speaker and answer the question. Those doors are hidden from Home Assistant's own voice commands while this is on. Without a passphrase, anyone who can talk to a speaker can open them.",
+        "data": {
+          "passphrase": "New passphrase (leave empty to keep the current one)",
+          "clear_passphrase": "Remove the passphrase",
+          "require_doors": "Require passphrase to open locks and doors by voice",
+          "require_guest": "Require passphrase to end guest mode by voice",
+          "owner": "Tell this person's phone about passphrase use"
+        },
+        "data_description": {
+          "passphrase": "Never shown, logged or spoken. Case, spaces and punctuation don't matter.",
+          "owner": "A notification on every correct and wrong passphrase."
         }
       }
     }

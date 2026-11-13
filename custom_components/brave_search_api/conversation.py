@@ -36,6 +36,7 @@ from .core import search
 from .core.extras import fun_answer, is_what_did_you_hear, time_in_place
 from .core.guards import is_question, looks_like_command, plan_compound
 from .core.router import local_answer
+from .core.security import split_oneshot
 from .core.timeparse import world_clock
 from .sensor import device_info
 
@@ -152,10 +153,13 @@ class BraveSearchAgent(conversation.ConversationEntity):
     async def _respond(self, text: str, user_input: conversation.ConversationInput) -> tuple[str, bool]:
         """(speech, is_error)."""
         heard = self._entry.runtime_data.heard
+        skills = self._entry.runtime_data.skills
+        if skills and skills.has_pending(user_input):        # the answer to "What's the passphrase?"
+            return await skills.answer_pending(text, user_input), False     # never kept in history
         if is_what_did_you_hear(text):
             return (f'I heard: "{heard[-1]}".' if heard else "I haven't heard anything else yet."), False
-        heard.append(text)
-        skills = self._entry.runtime_data.skills
+        command, phrase = split_oneshot(text)
+        heard.append(f"{command}, passphrase (not repeated)" if phrase is not None else text)
         match = skills.recognize(text) if skills else None
         if match:                                            # the integration's own sentences
             return await skills.async_handle(match, text, user_input), False
@@ -176,11 +180,18 @@ class BraveSearchAgent(conversation.ConversationEntity):
                                     chat_log: conversation.ChatLog) -> conversation.ConversationResult:
         text = re.sub(r"\s+", " ", user_input.text or "").strip()
         response = intent.IntentResponse(language=user_input.language)
-        speech, is_error = await self._respond(text, user_input) if text else (DIDNT_CATCH, True)
+        skills = self._entry.runtime_data.skills
+        if skills:
+            skills.followup = False
+        if not text and skills and skills.has_pending(user_input):
+            speech, is_error = await skills.answer_pending("", user_input), False
+        else:
+            speech, is_error = await self._respond(text, user_input) if text else (DIDNT_CATCH, True)
         if is_error:
             response.async_set_error(intent.IntentResponseErrorCode.NO_INTENT_MATCH, speech)
         else:
             response.async_set_speech(speech)
         chat_log.async_add_assistant_content_without_tools(
             conversation.AssistantContent(agent_id=self.entity_id, content=speech))
-        return conversation.ConversationResult(response=response, conversation_id=chat_log.conversation_id)
+        return conversation.ConversationResult(response=response, conversation_id=chat_log.conversation_id,
+                                               continue_conversation=bool(skills and skills.followup))
