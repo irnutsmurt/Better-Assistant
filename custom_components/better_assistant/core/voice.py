@@ -36,9 +36,12 @@ def whisper_model(arch: str, ram_bytes: int, cpus: int) -> str:
 
 def whisper_options(current: dict, model: str, language: str = "en") -> dict:
     """Options to change on the Whisper add-on: only keys it already has, so a renamed option in a
-    later add-on version is left alone instead of being rejected."""
+    later add-on version is left alone instead of being rejected. `initial_prompt` is optional in the
+    add-on's schema, so it is absent until set: send it whenever this looks like that add-on."""
+    current = current or {}
     wanted = {"model": model, "language": language, "initial_prompt": INITIAL_PROMPT}
-    return {k: v for k, v in wanted.items() if k in (current or {}) and current.get(k) != v}
+    known = set(current) | ({"initial_prompt"} if "model" in current else set())
+    return {k: v for k, v in wanted.items() if k in known and current.get(k) != v}
 
 
 def pick_engine(entities: list[tuple[str, str]]) -> str | None:

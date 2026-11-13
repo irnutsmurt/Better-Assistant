@@ -31,6 +31,7 @@ from .core.voice import (
 _LOGGER = logging.getLogger(__name__)
 WAIT_SECONDS = 240           # first Whisper start downloads its model; give it a few minutes
 POLL = 5.0
+SUPERVISOR_TRIES = 36          # x POLL: up to 3 minutes while Supervisor finishes starting
 
 ADDONS = {WHISPER_SLUG: ("Whisper", "stt"), PIPER_SLUG: ("Piper", "tts")}
 
@@ -136,23 +137,40 @@ class VoiceSetup:
             entity = await self._async_wyoming_for_addon(slug)
             self._found(domain, entity, name)
 
+    async def _retry(self, call, *args):
+        """Supervisor refuses work for a while after a restart ("not ready, try again later")."""
+        for attempt in range(SUPERVISOR_TRIES):
+            try:
+                return await call(*args)
+            except Exception as err:  # noqa: BLE001 - AddonError and friends
+                if "not ready" not in str(err).lower() or attempt == SUPERVISOR_TRIES - 1:
+                    raise
+                _LOGGER.debug("Supervisor busy, retrying: %s", err)
+                await self._sleep(POLL)
+
     async def _async_addon(self, slug: str, model: str) -> None:
         from homeassistant.components.hassio.addon_manager import AddonState  # noqa: PLC0415
         name = ADDONS[slug][0]
         mgr = addon_manager(self.hass, slug)
         info = await mgr.async_get_addon_info()
         if info.state is AddonState.NOT_INSTALLED:
-            await mgr.async_install_addon()
+            await self._retry(mgr.async_install_addon)
             self.report.done.append(f"Installed the {name} add-on")
             info = await mgr.async_get_addon_info()
         if slug == WHISPER_SLUG and (changes := whisper_options(info.options, model)):
-            await mgr.async_set_addon_options({**info.options, **changes})
+            try:
+                await self._retry(mgr.async_set_addon_options, {**info.options, **changes})
+            except Exception:  # noqa: BLE001 - an add-on version without initial_prompt: drop it
+                if "initial_prompt" not in changes:
+                    raise
+                changes.pop("initial_prompt")
+                await self._retry(mgr.async_set_addon_options, {**info.options, **changes})
             self.report.done.append("Set Whisper to " + ", ".join(f"{k} {v!r}" for k, v in changes.items()))
             if info.state is AddonState.RUNNING:             # new options apply on restart
-                await mgr.async_restart_addon()
+                await self._retry(mgr.async_restart_addon)
                 self.report.done.append("Restarted the Whisper add-on")
         if info.state is not AddonState.RUNNING:
-            await mgr.async_start_addon()
+            await self._retry(mgr.async_start_addon)
             self.report.done.append(f"Started the {name} add-on")
 
     async def _async_wyoming_for_addon(self, slug: str) -> str | None:

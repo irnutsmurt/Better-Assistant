@@ -40,11 +40,14 @@ def test_low_ram_x86_gets_tiny():
 
 def test_whisper_options_only_sets_keys_the_addon_has():
     current = {"model": "tiny-int8", "language": "en", "beam_size": 1}
-    assert whisper_options(current, "base-int8") == {"model": "base-int8"}
+    # initial_prompt is optional in the add-on schema, so it is missing until set: still sent
+    assert whisper_options(current, "base-int8") == {"model": "base-int8", "initial_prompt": INITIAL_PROMPT}
     with_prompt = {**current, "initial_prompt": ""}
     assert whisper_options(with_prompt, "base-int8") == {"model": "base-int8", "initial_prompt": INITIAL_PROMPT}
     assert whisper_options({}, "base-int8") == {}
-    assert whisper_options({"model": "base-int8", "language": "en"}, "base-int8") == {}
+    assert whisper_options({"model": "base-int8", "language": "en", "initial_prompt": INITIAL_PROMPT},
+                           "base-int8") == {}
+    assert whisper_options({"language": "en"}, "base-int8") == {}           # not the Whisper add-on
 
 
 def test_pick_engine_prefers_wyoming_then_cloud():

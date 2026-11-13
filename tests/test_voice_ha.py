@@ -63,6 +63,8 @@ class FakeManager:
 
     async def async_start_addon(self):
         self.calls.append("start")
+        if self.fail == "busy" and self.calls.count("start") < 3:      # seen on a freshly booted HA OS
+            raise RuntimeError("Supervisor is not ready to perform this operation, please try again later")
         self.state = AddonState.RUNNING
 
     async def async_restart_addon(self):
@@ -163,6 +165,15 @@ async def test_failed_install_is_reported_not_raised(hass, supervisor):
     await vs.async_install(Plan(stt=None, tts=None, supervisor=True), "base-int8")
     assert vs.stt is None and vs.tts == "tts.piper"
     assert any("Whisper" in m and "store unavailable" in m for m in vs.report.manual)
+
+
+async def test_busy_supervisor_is_retried(hass, supervisor):
+    mgr = supervisor.managers["core_whisper"]
+    mgr.fail = "busy"
+    vs = VoiceSetup(hass, sleep=nosleep, wait=10)
+    await vs.async_install(Plan(stt=None, tts="tts.x", supervisor=True), "base-int8")
+    assert mgr.calls.count("start") == 3 and mgr.state is AddonState.RUNNING
+    assert not any("Whisper add-on" in m for m in vs.report.manual)
 
 
 async def test_wyoming_that_never_appears_is_reported(hass, supervisor, monkeypatch):
