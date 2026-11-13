@@ -135,3 +135,16 @@ def test_help_only_lists_enabled_features():
     assert "play music" in text and "TV" not in text
     assert say_help(["music"], "the tv").startswith("That's turned off")
     assert say_help(["music"], "music").startswith("I can play music")
+
+
+def test_guest_exposure_restores_exactly():
+    from core.devices import exposure_record, restore_action
+    explicit_on = exposure_record({"should_expose": True}, False)
+    explicit_off = exposure_record({"should_expose": False}, True)
+    default_on = exposure_record({}, True)
+    default_off = exposure_record({"other": 1}, False)
+    assert restore_action(explicit_on) == ("set", True)
+    assert restore_action(explicit_off) == ("set", False)
+    assert restore_action(default_on) == ("clear", True)          # back to the default, not an explicit True
+    assert restore_action(default_off) == ("clear", False)
+    assert default_on == {"explicit": False, "default": True}     # plain data, saved with the integration

@@ -9,7 +9,11 @@ import re
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.components import conversation
-from homeassistant.components.homeassistant.exposed_entities import async_expose_entity, async_should_expose
+from homeassistant.components.homeassistant.exposed_entities import (
+    DATA_EXPOSED_ENTITIES,
+    async_expose_entity,
+    async_get_entity_settings,
+)
 from homeassistant.core import callback
 from homeassistant.helpers import area_registry as ar, device_registry as dr, entity_registry as er, intent
 from homeassistant.helpers.event import async_call_later, async_track_time_change
@@ -23,9 +27,11 @@ from .core.devices import (
     app_words,
     battery_name,
     climate_mode_words,
+    exposure_record,
     in_window,
     is_heating_answer,
     preset_words,
+    restore_action,
     round_to_step,
     say_batteries,
     say_climate,
@@ -48,7 +54,15 @@ _LOGGER = logging.getLogger(__name__)
 GUEST_BLOCKED = {"CalendarList", "CalendarNext", "CalendarAdd", "NoteAdd", "NoteFind", "NoteRead", "NoteClear",
                  "ReminderList", "ReminderCancel", "ReminderCancelAll", "BedQuery", "BedSleep"}
 GUEST_REPLY = "Sorry, that isn't available while guest mode is on."
-DOMAINS_IN_ROOM_ON = ("light", "switch")
+DOMAINS_IN_ROOM_ON = ("light", "switch")          # plus fans when the setting is on
+
+
+def async_get_should_expose_default(hass, entity_id: str) -> bool:
+    """Whether Assist would expose this entity by default, without storing anything."""
+    try:
+        return bool(hass.data[DATA_EXPOSED_ENTITIES].async_get_should_expose("conversation", entity_id))
+    except (KeyError, AttributeError):
+        return False
 
 
 class HouseSkills:
@@ -386,6 +400,8 @@ class HouseSkills:
     async def _room(self, area_id: str, on: bool) -> str:
         room = self._rooms().get(area_id) or {}
         lights = [e for e in room.get("lights", []) if e.split(".", 1)[0] in DOMAINS_IN_ROOM_ON]
+        if self.setting("rooms_lights", "include_fans"):
+            lights += room.get("fans", [])
         name = self._area_name(area_id) or "room"
         if on:
             if not lights:
@@ -888,14 +904,28 @@ class HouseSkills:
             return
         protected = list(self._section("guest_mode").get("protected") or [])
         if on:
+            # Remember exactly what was there (an explicit setting, or the default), saved with the
+            # integration so a restart during guest mode still puts it back.
             saved = {}
-            for eid in protected:                              # Assist can't open these while guests stay
-                saved[eid] = async_should_expose(self.hass, "conversation", eid)
-                async_expose_entity(self.hass, "conversation", eid, False)
+            for eid in protected:
+                settings = async_get_entity_settings(self.hass, eid).get("conversation", {})
+                default = async_get_should_expose_default(self.hass, eid)
+                saved[eid] = exposure_record(dict(settings), default)
+                async_expose_entity(self.hass, "conversation", eid, False)   # hidden from Assist
             modes["guest_saved"] = saved
         else:
-            for eid, was in (modes.get("guest_saved") or {}).items():
-                async_expose_entity(self.hass, "conversation", eid, bool(was))
+            ents = er.async_get(self.hass)
+            for eid, record in (modes.get("guest_saved") or {}).items():
+                if not isinstance(record, dict):                  # saved by an older version
+                    record = {"explicit": True, "value": bool(record)}
+                action, value = restore_action(record)
+                entry = ents.async_get(eid)
+                if action == "clear" and entry is not None:       # back on the default: drop our setting
+                    opts = {k: v for k, v in (entry.options.get("conversation") or {}).items()
+                            if k != "should_expose"}
+                    ents.async_update_entity_options(eid, "conversation", opts)
+                else:
+                    async_expose_entity(self.hass, "conversation", eid, bool(value))
             modes["guest_saved"] = {}
         modes["guest"] = on
         self.store.changed()

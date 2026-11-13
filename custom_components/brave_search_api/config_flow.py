@@ -223,6 +223,8 @@ class BraveSearchApiOptionsFlow(OptionsFlow):
             value = stored.get(key, default)
             if kind == "time":
                 fields[vol.Required(key, default=value)] = TimeSelector()
+            elif kind == "bool":
+                fields[vol.Required(key, default=bool(value))] = BooleanSelector()
             else:
                 extra = {"unit_of_measurement": cfg["unit"]} if cfg.get("unit") else {}
                 fields[vol.Required(key, default=value)] = NumberSelector(NumberSelectorConfig(

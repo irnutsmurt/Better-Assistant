@@ -81,7 +81,8 @@ EXTRA_FIELDS: dict[str, dict[str, tuple[str, object, dict]]] = {
     "night_mode": {"night_start": ("time", "22:00:00", {}), "night_end": ("time", "07:00:00", {}),
                    "night_volume": ("number", 0.2, {"min": 0.0, "max": 1.0, "step": 0.05}),
                    "night_led": ("number", 10, {"min": 0, "max": 100, "unit": "%"})},
-    "rooms_lights": {"dim_step": ("number", 20, {"min": 5, "max": 50, "unit": "%"}),
+    "rooms_lights": {"include_fans": ("bool", True, {}),
+                     "dim_step": ("number", 20, {"min": 5, "max": 50, "unit": "%"}),
                      "kelvin_step": ("number", 500, {"min": 100, "max": 2000, "unit": "K"})},
     "thermostat": {"degree_step": ("number", 2, {"min": 1, "max": 5})},
 }

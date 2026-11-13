@@ -22,6 +22,9 @@ ACTIONABLE = {"light", "switch", "media_player", "climate", "lock", "cover", "fa
 OUTSIDE_CLASSES = {"motion", "occupancy", "presence"}
 LIGHTISH = re.compile(r"\b(light|lights|lamp|lamps|sconce|chandelier|lantern|bulb)\b", re.I)
 RADIO_HW = re.compile(r"router|coordinator|dongle|repeater|extender", re.I)
+# Plugs that power network gear are never part of a room.
+NETWORK_GEAR = re.compile(r"\b(router|modem|mesh|access point|wi-?fi|network|nas|server|firewall|gateway|"
+                          r"internet|ont|switch(?:es)? rack|rack|ups|poe)\b", re.I)
 TV_MODEL = re.compile(r"chromecast|google tv|android tv|\btv\b", re.I)
 CAST_GROUP_MODEL = re.compile(r"cast group", re.I)
 PERSONAL_MODEL = re.compile(r"phone|watch|pixel|galaxy|ipad|tablet", re.I)
@@ -172,13 +175,24 @@ def classify(snap: Snapshot, outdoor_areas: list[str] | None = None) -> dict[str
     lights = _lights(h, satellite_devices)
     out["lights"] = lights
     rooms: dict[str, dict[str, list[str]]] = {}
+
+    def room(area_id):
+        return rooms.setdefault(area_id, {"lights": [], "fans": [], "media_players": []})
+
     for l in lights:
         if l["area_id"]:
-            rooms.setdefault(l["area_id"], {"lights": [], "media_players": []})["lights"].append(l["entity_id"])
+            room(l["area_id"])["lights"].append(l["entity_id"])
+    for e in h.of("fan"):
+        dev = h.device(e)
+        if e.entity_category or e.device_id in satellite_devices or \
+                NETWORK_GEAR.search(f"{e.name} {dev.name if dev else ''}"):
+            continue
+        if h.area(e):
+            room(h.area(e))["fans"].append(e.entity_id)
     for e in h.of("media_player"):
         a = h.area(e)
         if a and e.device_id not in satellite_devices and not _is_cast_group(h, e):
-            rooms.setdefault(a, {"lights": [], "media_players": []})["media_players"].append(e.entity_id)
+            room(a)["media_players"].append(e.entity_id)
     out["rooms"] = rooms
 
     out["batteries"] = [
@@ -254,7 +268,11 @@ def _lights(h: _House, satellite_devices: set[str]) -> list[dict[str, Any]]:
             continue                                       # Zigbee router / coordinator status LEDs
         if e.device_id in satellite_devices:
             continue                                       # voice satellite LED rings
-        if e.domain == "switch" and not LIGHTISH.search(f"{e.name} {dev.name if dev else ''}"):
-            continue
+        names = f"{e.name} {dev.name if dev else ''}"
+        if e.domain == "switch":
+            if NETWORK_GEAR.search(names):
+                continue                                   # never the router plug
+            if not LIGHTISH.search(names) and e.device_class != "outlet":
+                continue                                   # light-like switches and plugs only
         out.append({"entity_id": e.entity_id, "area_id": h.area(e)})
     return out

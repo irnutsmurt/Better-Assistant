@@ -110,6 +110,7 @@ def test_lights_exclude_router_led_ring_and_config(house):
 def test_rooms(house):
     rooms = classify(house)["rooms"]
     assert rooms["bedroom"]["lights"] == ["switch.corner_lamp", "light.ceiling"]
+    assert rooms["bedroom"]["fans"] == []
     assert "media_player.voice_box" not in rooms["living"]["media_players"]          # satellite's own player
     assert "media_player.everywhere" not in sum((r["media_players"] for r in rooms.values()), [])
     assert "yard" not in rooms
@@ -145,3 +146,20 @@ def test_outdoor_areas_guess_and_override(house):
     d = classify(house, outdoor_areas=["bedroom"])                 # user says the bedroom counts
     assert d["outdoor_areas"] == ["bedroom"]
     assert [s["entity_id"] for s in d["outside_sensors"]] == ["binary_sensor.bedroom_motion"]
+
+
+def test_rooms_take_plugs_and_fans_but_never_network_gear(house):
+    house.entities += [
+        Entity("switch.tv_plug", platform="zha", device_id="plug1", name="TV plug", device_class="outlet"),
+        Entity("switch.router_plug", platform="zha", device_id="plug1", name="Router plug", device_class="outlet"),
+        Entity("fan.bedroom_fan", platform="zha", device_id="plug1", name="Bedroom fan"),
+        Entity("fan.living_fan", platform="tuya", area_id="living", name="Ceiling fan"),
+        Entity("fan.fan_child_lock", platform="zha", device_id="plug1", name="Child lock", entity_category="config"),
+        Entity("fan.rack_fan", platform="zha", area_id="bedroom", name="Network rack fan"),
+    ]
+    d = classify(house)
+    lights = {l["entity_id"] for l in d["lights"]}
+    assert "switch.tv_plug" in lights
+    assert "switch.router_plug" not in lights and "switch.coffee_maker" not in lights
+    assert d["rooms"]["bedroom"]["fans"] == ["fan.bedroom_fan"]           # device area; not the config or rack fan
+    assert d["rooms"]["living"]["fans"] == ["fan.living_fan"]             # entity area

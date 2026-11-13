@@ -325,3 +325,18 @@ EXAMPLES = {
     "health": "\"is anything wrong\" or \"which batteries are low\"", "guest_mode": "\"turn on guest mode\"",
     "night_mode": "\"turn on night mode\"", "broadcast": "\"tell everyone that dinner is ready\"",
 }
+
+
+# ------------------------------------------------------------------ guest mode exposure
+def exposure_record(conversation_settings: dict, default: bool) -> dict:
+    """What to put back later: an explicit Assist setting, or 'it was on the default'."""
+    if "should_expose" in (conversation_settings or {}):
+        return {"explicit": True, "value": bool(conversation_settings["should_expose"])}
+    return {"explicit": False, "default": bool(default)}
+
+
+def restore_action(record: dict) -> tuple[str, bool | None]:
+    """('set', value) to write the old explicit setting back, or ('clear', default) to remove ours."""
+    if record.get("explicit"):
+        return "set", bool(record.get("value"))
+    return "clear", bool(record.get("default", False))

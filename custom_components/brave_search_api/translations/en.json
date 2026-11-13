@@ -226,7 +226,7 @@
       },
       "rooms_lights": {
         "title": "Rooms & lights",
-        "description": "\"Turn off the living room\", \"dim the kitchen by 30 percent\", \"turn off the fan in 10 minutes\".",
+        "description": "\"Turn off the living room\" (lights, light-like switches, plugs and fans; turning off also stops media players), \"dim the kitchen by 30 percent\", \"turn off the fan in 10 minutes\".",
         "data": {
           "lights": "Lights (including light switches)",
           "enabled": "Turn this feature on",
@@ -242,7 +242,8 @@
           "bed_right_person": "Person on the right side",
           "protected": "Locks and doors Assist can't open in guest mode",
           "broadcast_players": "Also speak broadcasts on these media players",
-          "broadcast_tts": "Text-to-speech engine for those players"
+          "broadcast_tts": "Text-to-speech engine for those players",
+          "include_fans": "Include fans in room on/off"
         }
       },
       "night_mode": {
