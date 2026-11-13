@@ -78,8 +78,28 @@ def too_short(text: str) -> bool:
 
 
 # ------------------------------------------------------------------ the training conversation
+MAX_REASKS = 2               # asked again this many times, then the phrase is skipped
+_NUM = {"one": "1", "two": "2", "three": "3", "four": "4", "five": "5", "six": "6", "seven": "7",
+        "eight": "8", "nine": "9", "ten": "10", "eleven": "11", "twelve": "12"}
+
+
 def prompt(index: int) -> str:
-    return f"Please say: {PHRASES[index]}."
+    """The first phrase is introduced; after that only the phrase itself is said."""
+    return f"Please say: {PHRASES[index]}." if index == 0 else f"{PHRASES[index]}."
+
+
+def _words(text: str) -> list[str]:
+    text = re.sub(r"(\d+):00\b", r"\1", (text or "").lower())        # "7:00" -> "7"
+    return [_NUM.get(w, w) for w in _clean(text).replace("'", "").split()]
+
+
+def matches_phrase(phrase: str, heard: str) -> bool:
+    """Heard is the phrase: most of its words, without a lot of other talk (the TV, someone else)."""
+    want, got = _words(phrase), _words(heard)
+    if not want or not got:
+        return False
+    found = sum(1 for w in set(want) if w in got) / len(set(want))
+    return found >= 0.66 and len(got) <= len(want) * 1.5 + 2
 
 
 @dataclass
@@ -88,7 +108,7 @@ class Session:
     person: str                 # person entity id
     name: str                   # first name, for speech
     index: int = 0              # which phrase we are waiting for
-    reasked: bool = False       # the current phrase was asked twice already
+    reasks: int = 0             # times the current phrase was asked again
     saved: int = 0              # recordings the speech-to-text side actually wrote
     token: str = ""             # ties recordings to this session
     until: float = 0.0          # forgotten after this (time.time())
@@ -121,14 +141,19 @@ def step(session: Session, heard: str) -> Step:
             return Step(f"Okay, I stopped voice training. I kept {session.saved} "
                         f"{'sample' if session.saved == 1 else 'samples'}.", True, False)
         return Step("Okay, I stopped voice training.", True, False)
-    if too_short(heard) and not session.reasked:
-        session.reasked = True
-        return Step(f"I didn't catch that. {prompt(session.index)}", False, True)
-    session.index += 1                      # heard it (or asked twice already): next phrase
-    session.reasked = False
+    if not matches_phrase(PHRASES[session.index], heard):
+        if session.reasks < MAX_REASKS:
+            session.reasks += 1
+            lead = "I didn't catch that." if too_short(heard) else "That didn't sound like the phrase."
+            return Step(f"{lead} Try again: {PHRASES[session.index]}.", False, True)
+        lead = "Let's skip that one."
+    else:
+        lead = ""
+    session.index += 1
+    session.reasks = 0
     if session.index >= len(PHRASES):
         return Step(finish_text(session), True, False)
-    return Step(f"Got it. {prompt(session.index)}", False, True)
+    return Step(f"{lead} {prompt(session.index)}".strip(), False, True)
 
 
 # ------------------------------------------------------------------ the pending capture slot

@@ -19,7 +19,7 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import BetterAssistantConfigEntry
 from .const import OPT_VT_ENABLED, OPT_VT_RECORD_TEST
-from .core.voicetrain import TEST, CaptureSlot, is_stop, max_bytes, too_short
+from .core.voicetrain import TEST, TRAIN, CaptureSlot, is_stop, matches_phrase, max_bytes, too_short
 from .sensor import device_info
 from .voice_setup import pipeline_select
 from .voice_training import guess_person, hub, underlying_engine, voice_root, write_clip
@@ -134,6 +134,8 @@ class PassThroughSTT(stt.SpeechToTextEntity):
         try:
             if not pcm or too_short(transcript) or is_stop(transcript):
                 return
+            if slot.label == TRAIN and slot.phrase and not matches_phrase(slot.phrase, transcript):
+                return                                     # not the phrase: training asks again
             info: dict[str, Any] = {
                 "transcript": transcript, "prompt": slot.phrase, "satellite": slot.satellite,
                 "device_id": slot.device_id, "pipeline": self._pipeline_of(slot.satellite),

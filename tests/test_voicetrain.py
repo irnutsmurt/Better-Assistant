@@ -61,21 +61,36 @@ def test_full_session_eight_phrases():
     for i in range(1, len(PHRASES)):
         s.saved = i
         r = step(s, PHRASES[i - 1])
-        assert (r.reply, r.done, r.arm) == (f"Got it. Please say: {PHRASES[i]}.", False, True)
+        assert (r.reply, r.done, r.arm) == (f"{PHRASES[i]}.", False, True)
         assert s.index == i
     s.saved = 8
     r = step(s, PHRASES[-1])
     assert r.done and not r.arm and r.reply == "Done. I saved 8 samples of Rob's voice."
 
 
-def test_reask_once_then_move_on():
+def test_reask_twice_then_skip():
     s = Session(person="person.rob", name="Rob")
     r = step(s, "uh")
-    assert r.reply == f"I didn't catch that. Please say: {PHRASES[0]}." and s.index == 0 and r.arm
-    r = step(s, "")                                   # asked twice: move on
-    assert r.reply == f"Got it. Please say: {PHRASES[1]}." and s.index == 1
-    r = step(s, "")                                   # new phrase gets its own re-ask
+    assert r.reply == f"I didn't catch that. Try again: {PHRASES[0]}." and s.index == 0 and r.arm
+    r = step(s, "Turn on the living room lamps")       # a different sentence: asked again
+    assert r.reply == f"That didn't sound like the phrase. Try again: {PHRASES[0]}." and s.index == 0
+    r = step(s, "")                                   # asked twice already: skip it
+    assert r.reply == f"Let's skip that one. {PHRASES[1]}." and s.index == 1
+    r = step(s, "")                                   # the new phrase gets its own re-asks
     assert r.reply.startswith("I didn't catch that.") and s.index == 1
+
+
+def test_matches_phrase():
+    from core.voicetrain import matches_phrase
+    assert matches_phrase("Set a timer for ten minutes", "Set a timer for 10 minutes.")
+    assert matches_phrase("Remind me to take out the trash at seven", "Remind me to take out the trash at 7:00.")
+    assert matches_phrase("What's the weather like today", "whats the weather today")
+    # clip 1 from the first real session: the TV / someone else talking
+    assert not matches_phrase("What's the weather like today",
+                              "Thinking next time somethings. I asked for A2 appraisal. Safe stop voice came on the final.")
+    assert not matches_phrase("What's the weather like today", "What's the weather like today and also tell me "
+                              "about the news and the traffic on the way to work")
+    assert not matches_phrase("How did I sleep last night", "")
 
 
 def test_cancel_reports_what_was_kept():

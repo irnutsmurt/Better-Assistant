@@ -193,7 +193,7 @@ async def test_training_runs_eight_phrases(house):
         capture.note_saved(slot.token)
         speech, keep = await turn(house, phrase)
         if i < len(PHRASES) - 1:
-            assert keep and speech == f"Got it. Please say: {PHRASES[i + 1]}."
+            assert keep and speech == f"{PHRASES[i + 1]}."
     assert not keep and speech == "Done. I saved 8 samples of Rob's voice."
     assert house.trainer.active("c1") is None and capture.slot is None
     assert await turn(house, "turn on the lamp") is None    # back to normal commands
@@ -202,13 +202,13 @@ async def test_training_runs_eight_phrases(house):
 async def test_command_words_during_training_are_not_run(house):
     await turn(house, "train my voice", user="u1")          # signed-in user -> Rob
     speech, keep = await turn(house, "Turn on the living room lamps")
-    assert keep and speech.startswith("Got it.")
+    assert keep and speech.startswith("That didn't sound like the phrase. Try again:")
 
 
 async def test_reask_and_cancel(house):
     await turn(house, "learn Sam's voice")
     speech, keep = await turn(house, "")
-    assert keep and speech == f"I didn't catch that. Please say: {PHRASES[0]}."
+    assert keep and speech == f"I didn't catch that. Try again: {PHRASES[0]}."
     speech, keep = await turn(house, "cancel")
     assert not keep and speech == "Okay, I stopped voice training."
     assert hub(house.hass).slot is None
