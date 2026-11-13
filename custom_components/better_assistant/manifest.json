@@ -1,5 +1,5 @@
 {
-  "domain": "brave_search_api",
+  "domain": "better_assistant",
   "name": "Better Assistant",
   "after_dependencies": ["assist_pipeline", "assist_satellite", "intent", "media_player", "notify", "person", "zone"],
   "codeowners": ["@irnutsmurt"],

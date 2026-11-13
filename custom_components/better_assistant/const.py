@@ -1,7 +1,7 @@
 """Constants for the Better Assistant integration."""
 from __future__ import annotations
 
-DOMAIN = "brave_search_api"
+DOMAIN = "better_assistant"
 TITLE = "Better Assistant"
 
 CONF_API_KEY = "api_key"
@@ -92,5 +92,5 @@ EXTRA_FIELDS: dict[str, dict[str, tuple[str, object, dict]]] = {
 # The integration's own to-do lists: key -> name.
 LISTS = {"reminders": "Reminders", "notes": "Notes", "messages": "Messages"}
 
-ALARM_URL = "/brave_search_api/alarm.mp3"
+ALARM_URL = "/better_assistant/alarm.mp3"
 RING_MINUTES = 10

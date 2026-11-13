@@ -179,7 +179,7 @@ def test_health_false_positives_regression(house):
         Entity("switch.pihole_blocking_b", platform="pi_hole", device_id="pihole"),               # still up
         Entity("media_player.den_chromecast", platform="cast", device_id="cast9", available=False),
         Entity("switch.board_relay", platform="mqtt", device_id="board", available=False),
-        Entity("switch.brave_search_api_night_mode", platform="brave_search_api", device_id="ours",
+        Entity("switch.better_assistant_night_mode", platform="better_assistant", device_id="ours",
                available=False, restored=True),
         Entity("switch.old_thing", platform="zha", available=False, restored=True),
         Entity("light.hidden_lamp", platform="zha", available=False, hidden=True),

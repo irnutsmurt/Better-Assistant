@@ -722,7 +722,7 @@ class Skills(HouseSkills, SecuritySkills):
                                                                      else key.split("+"))
         if key in self._ringing:
             return
-        self._ringing[key] = self.hass.async_create_background_task(self._ring(key), f"brave alarm {key}")
+        self._ringing[key] = self.hass.async_create_background_task(self._ring(key), f"better_assistant alarm {key}")
 
     @callback
     def _stop_ringing(self, key: str) -> None:
@@ -755,7 +755,7 @@ class Skills(HouseSkills, SecuritySkills):
                 await self.notify(meta.get("person"), "Alarm", "Your alarm is going off.")
                 await self._call("persistent_notification", "create", {
                     "title": "Alarm", "message": f"Alarm at {dt_util.now().strftime('%H:%M')}.",
-                    "notification_id": "brave_search_api_alarm"})
+                    "notification_id": "better_assistant_alarm"})
             url = self._tone_url()
             players = {sat: self.media_player_for(sat) for sat in sats}
             silent = [sat for sat, player in players.items() if not player or not url]

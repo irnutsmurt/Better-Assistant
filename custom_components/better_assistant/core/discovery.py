@@ -226,7 +226,7 @@ def classify(snap: Snapshot, outdoor_areas: list[str] | None = None) -> dict[str
     return out
 
 
-OWN_PLATFORM = "brave_search_api"
+OWN_PLATFORM = "better_assistant"
 
 
 def _unavailable(h: _House) -> tuple[dict[str, list[str]], dict[str, str]]:

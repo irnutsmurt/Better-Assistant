@@ -5,9 +5,6 @@ calendar, music, rooms and lights, the bed, cameras, a health report and more, s
 the devices you already have. With an optional Brave Search API key it also answers everyday questions
 out loud from the web, without an AI model writing the answer.
 
-(Its internal integration ID is `brave_search_api`, which is why entities are named
-`switch.brave_search_api_guest_mode` and so on.)
-
 > **Unofficial community integration.** This project is not made, endorsed or supported by Brave
 > Software. It uses the public [Brave Search API](https://brave.com/search/api/) with your own key.
 
@@ -47,7 +44,7 @@ Requires **Home Assistant 2025.11 or newer** (the agent uses the conversation dr
 2. Install **Better Assistant**, then restart Home Assistant.
 3. **Settings > Devices & services > Add integration > Better Assistant.**
 
-Manual install: copy `custom_components/brave_search_api` into your `config/custom_components/`
+Manual install: copy `custom_components/better_assistant` into your `config/custom_components/`
 folder and restart.
 
 ## Getting an API key (optional)
@@ -140,11 +137,11 @@ When a day or date is given ("tomorrow at 3"), 1-6 o'clock means PM for reminder
 
 Home Assistant has no supported way for an integration to add sentences to its built-in intents;
 custom sentences are only read from `config/custom_sentences/`. So the agent matches these timer
-wordings itself (from `custom_components/brave_search_api/sentences/timers_en.yaml`) and passes them
+wordings itself (from `custom_components/better_assistant/sentences/timers_en.yaml`) and passes them
 to the built-in timer intents. That covers voice pipelines that use this agent.
 
 If you also want Home Assistant's own agent to understand them (for example in a pipeline that
-doesn't use this integration), copy `custom_sentences/en/brave_search_api_timers.yaml` from this
+doesn't use this integration), copy `custom_sentences/en/better_assistant_timers.yaml` from this
 repository into `config/custom_sentences/en/` and restart Home Assistant (or reload Conversation).
 
 ## Around the house
@@ -224,7 +221,7 @@ custom integrations, so it isn't used.)
 
 ## Development
 
-The logic lives in `custom_components/brave_search_api/core/` as plain Python with no Home Assistant
+The logic lives in `custom_components/better_assistant/core/` as plain Python with no Home Assistant
 imports, so it can be tested on its own:
 
 ```bash

@@ -8,15 +8,15 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from . import BraveConfigEntry
+from . import BetterAssistantConfigEntry
 from .const import DEFAULTS, DOMAIN, OPT_MONTHLY_CAP, TITLE
 
 
-def device_info(entry: BraveConfigEntry) -> DeviceInfo:
+def device_info(entry: BetterAssistantConfigEntry) -> DeviceInfo:
     return DeviceInfo(identifiers={(DOMAIN, entry.entry_id)}, name=TITLE, entry_type=DeviceEntryType.SERVICE)
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: BraveConfigEntry,
+async def async_setup_entry(hass: HomeAssistant, entry: BetterAssistantConfigEntry,
                             async_add_entities: AddConfigEntryEntitiesCallback) -> None:
     async_add_entities([SearchesThisMonthSensor(entry)])
 
@@ -28,7 +28,7 @@ class SearchesThisMonthSensor(SensorEntity):
     _attr_icon = "mdi:magnify"
     _attr_should_poll = False
 
-    def __init__(self, entry: BraveConfigEntry) -> None:
+    def __init__(self, entry: BetterAssistantConfigEntry) -> None:
         self._entry = entry
         self._store = entry.runtime_data.store
         self._attr_unique_id = f"{entry.entry_id}_searches_this_month"

@@ -6,17 +6,17 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.util import dt as dt_util
 
-from . import BraveConfigEntry
+from . import BetterAssistantConfigEntry
 from .const import LISTS
 from .sensor import device_info
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: BraveConfigEntry,
+async def async_setup_entry(hass: HomeAssistant, entry: BetterAssistantConfigEntry,
                             async_add_entities: AddConfigEntryEntitiesCallback) -> None:
-    async_add_entities([BraveTodoList(entry, key, name) for key, name in LISTS.items()])
+    async_add_entities([BetterAssistantTodoList(entry, key, name) for key, name in LISTS.items()])
 
 
-class BraveTodoList(TodoListEntity):
+class BetterAssistantTodoList(TodoListEntity):
     _attr_has_entity_name = True
     _attr_should_poll = False
     _attr_supported_features = (
@@ -24,7 +24,7 @@ class BraveTodoList(TodoListEntity):
         | TodoListEntityFeature.DELETE_TODO_ITEM | TodoListEntityFeature.SET_DUE_DATETIME_ON_ITEM
         | TodoListEntityFeature.SET_DESCRIPTION_ON_ITEM)
 
-    def __init__(self, entry: BraveConfigEntry, key: str, name: str) -> None:
+    def __init__(self, entry: BetterAssistantConfigEntry, key: str, name: str) -> None:
         self._key = key
         self._store = entry.runtime_data.store
         self._attr_name = name

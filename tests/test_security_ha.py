@@ -17,10 +17,10 @@ from homeassistant.components.homeassistant.exposed_entities import (  # noqa: E
 from homeassistant.core import Context, HomeAssistant  # noqa: E402
 from homeassistant.helpers import entity_registry as er  # noqa: E402
 
-from custom_components.brave_search_api import BraveRuntimeData  # noqa: E402
-from custom_components.brave_search_api.core.security import normalize  # noqa: E402
-from custom_components.brave_search_api.skills import Skills  # noqa: E402
-from custom_components.brave_search_api.store import BraveStore  # noqa: E402
+from custom_components.better_assistant import BetterAssistantRuntimeData  # noqa: E402
+from custom_components.better_assistant.core.security import normalize  # noqa: E402
+from custom_components.better_assistant.skills import Skills  # noqa: E402
+from custom_components.better_assistant.store import BetterAssistantStore  # noqa: E402
 
 SECRET = "purple monkey dishwasher"
 GARAGE, LOCK = "cover.garage_door", "lock.front_door"
@@ -51,12 +51,12 @@ async def house(tmp_path):
                             ("notify", "mobile_app_owner")):
         hass.services.async_register(domain, service, record)
     entry = types.SimpleNamespace(entry_id="x", options={}, data={})
-    store = BraveStore(hass, "x")
+    store = BetterAssistantStore(hass, "x")
     await store.async_load()
     store.data["detected"] = {"protected": [LOCK, GARAGE], "satellites": [{"entity_id": "assist_satellite.hall"}],
                               "phones": [{"service": "notify.mobile_app_owner", "person": "person.owner",
                                           "device_id": "d1"}]}
-    entry.runtime_data = BraveRuntimeData(store=store)
+    entry.runtime_data = BetterAssistantRuntimeData(store=store)
     skills = Skills(hass, entry)
     await skills.async_start()
     yield types.SimpleNamespace(hass=hass, skills=skills, entry=entry, calls=calls)

@@ -12,8 +12,8 @@ from homeassistant.const import EVENT_HOMEASSISTANT_STARTED  # noqa: E402
 from homeassistant.core import CoreState, HomeAssistant  # noqa: E402
 from homeassistant.helpers import entity_registry as er  # noqa: E402
 
-from custom_components.brave_search_api.autodetect import AutoDetect  # noqa: E402
-from custom_components.brave_search_api.store import BraveStore  # noqa: E402
+from custom_components.better_assistant.autodetect import AutoDetect  # noqa: E402
+from custom_components.better_assistant.store import BetterAssistantStore  # noqa: E402
 
 
 @pytest.fixture
@@ -28,7 +28,7 @@ async def hass(tmp_path):
 
 
 async def make(hass, cooldown=0.05):
-    store = BraveStore(hass, "x")
+    store = BetterAssistantStore(hass, "x")
     await store.async_load()
     calls = []
     auto = AutoDetect(hass, types.SimpleNamespace(options={}), store, on_change=lambda: calls.append(1),

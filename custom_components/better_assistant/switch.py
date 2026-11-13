@@ -7,11 +7,11 @@ from homeassistant.components.switch import SwitchEntity
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from . import BraveConfigEntry
+from . import BetterAssistantConfigEntry
 from .sensor import device_info
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: BraveConfigEntry,
+async def async_setup_entry(hass: HomeAssistant, entry: BetterAssistantConfigEntry,
                             async_add_entities: AddConfigEntryEntitiesCallback) -> None:
     skills = entry.runtime_data.skills
     entities = []
@@ -26,7 +26,7 @@ class ModeSwitch(SwitchEntity):
     _attr_has_entity_name = True
     _attr_should_poll = False
 
-    def __init__(self, entry: BraveConfigEntry, mode: str, key: str, icon: str) -> None:
+    def __init__(self, entry: BetterAssistantConfigEntry, mode: str, key: str, icon: str) -> None:
         self._entry = entry
         self._mode = mode
         self._attr_translation_key = key

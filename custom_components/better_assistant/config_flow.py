@@ -80,13 +80,13 @@ async def _check_key(flow: ConfigFlow, key: str) -> str | None:
     return None
 
 
-class BraveSearchApiConfigFlow(ConfigFlow, domain=DOMAIN):
+class BetterAssistantConfigFlow(ConfigFlow, domain=DOMAIN):
     VERSION = 1
 
     @staticmethod
     @callback
     def async_get_options_flow(config_entry: ConfigEntry) -> OptionsFlow:
-        return BraveSearchApiOptionsFlow()
+        return BetterAssistantOptionsFlow()
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         await self.async_set_unique_id(DOMAIN)
@@ -119,7 +119,7 @@ def _entity_selector(domain: str | list[str], multiple: bool):
     return EntitySelector(EntitySelectorConfig(domain=domain, multiple=multiple))
 
 
-class BraveSearchApiOptionsFlow(OptionsFlow):
+class BetterAssistantOptionsFlow(OptionsFlow):
     """Menu of sections. Device sections are pre-filled from automatic detection; what the user
     submits is stored as an override, so re-detecting never wipes their choices."""
 
@@ -270,11 +270,11 @@ class BraveSearchApiOptionsFlow(OptionsFlow):
 
 
 def _make_section_step(section: str):
-    async def step(self: BraveSearchApiOptionsFlow, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+    async def step(self: BetterAssistantOptionsFlow, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         return await self._device_section(section, user_input)
     step.__name__ = f"async_step_{section}"
     return step
 
 
 for _section in DEVICE_SECTIONS:
-    setattr(BraveSearchApiOptionsFlow, f"async_step_{_section}", _make_section_step(_section))
+    setattr(BetterAssistantOptionsFlow, f"async_step_{_section}", _make_section_step(_section))

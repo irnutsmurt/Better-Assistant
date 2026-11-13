@@ -19,7 +19,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.util import dt as dt_util
 
-from . import BraveConfigEntry
+from . import BetterAssistantConfigEntry
 from .const import (
     CONF_API_KEY,
     DEFAULTS,
@@ -51,17 +51,17 @@ FAILURES = {
 }
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: BraveConfigEntry,
+async def async_setup_entry(hass: HomeAssistant, entry: BetterAssistantConfigEntry,
                             async_add_entities: AddConfigEntryEntitiesCallback) -> None:
-    async_add_entities([BraveSearchAgent(entry)])
+    async_add_entities([BetterAssistantAgent(entry)])
 
 
-class BraveSearchAgent(conversation.ConversationEntity):
+class BetterAssistantAgent(conversation.ConversationEntity):
     _attr_has_entity_name = True
     _attr_name = None
     _attr_supported_features = conversation.ConversationEntityFeature(0)
 
-    def __init__(self, entry: BraveConfigEntry) -> None:
+    def __init__(self, entry: BetterAssistantConfigEntry) -> None:
         self._entry = entry
         self._attr_unique_id = entry.entry_id
         self._attr_device_info = device_info(entry)

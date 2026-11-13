@@ -12,7 +12,7 @@ from homeassistant.util import dt as dt_util
 from .const import DOMAIN, LISTS, STORAGE_VERSION
 
 
-class BraveStore:
+class BetterAssistantStore:
     """Wraps homeassistant.helpers.storage.Store (saved under .storage, not in /config)."""
 
     def __init__(self, hass: HomeAssistant, entry_id: str) -> None:
