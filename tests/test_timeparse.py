@@ -86,3 +86,14 @@ def test_world_clock_offsets():
     assert world_clock("india", here).endswith("11.5 hours ahead of us.")
     assert world_clock("dallas", here) == "It's 8 PM in Dallas, the same time as here."
     assert world_clock("atlantis", here) is None
+
+
+@pytest.mark.parametrize("when,expected", [
+    (dt.datetime(2026, 11, 12, 11, 30), "today at 11:30 AM"),
+    (dt.datetime(2026, 11, 12, 21, 0), "tonight at 9 PM"),
+    (dt.datetime(2026, 11, 13, 5, 0), "tomorrow at 5 AM"),
+    (dt.datetime(2026, 11, 16, 7, 15), "Monday at 7:15 AM"),
+    (dt.datetime(2026, 11, 28, 18, 30), "Saturday, November 28 at 6:30 PM"),
+])
+def test_confirmations_always_give_clock_time(when, expected):
+    assert say_when(when, NOW) == expected

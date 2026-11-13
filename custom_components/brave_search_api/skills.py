@@ -12,8 +12,8 @@ from collections.abc import Callable
 from typing import Any
 
 from homeassistant.components import conversation
-from homeassistant.const import STATE_HOME
-from homeassistant.core import Event, EventStateChangedData, HomeAssistant, callback
+from homeassistant.const import EVENT_CALL_SERVICE, STATE_HOME
+from homeassistant.core import Context, Event, EventStateChangedData, HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er, intent
 from homeassistant.helpers.event import async_track_point_in_time, async_track_state_change_event
 from homeassistant.helpers.network import NoURLAvailableError, get_url
@@ -38,6 +38,7 @@ from .discovery import effective_section
 
 _LOGGER = logging.getLogger(__name__)
 
+STOP_SERVICES = {"media_stop", "media_pause", "turn_off", "volume_mute", "clear_playlist"}
 HOW_TO_ADD_ZONE = ("I don't know a place called {place}. Add it as a zone in Settings, Areas, labels and "
                    "zones, Zones, then ask me again.")
 
@@ -54,6 +55,7 @@ class Skills:
         self._ringing: dict[str, asyncio.Task] = {}            # satellite -> ring loop
         self._stopwatches: dict[str, Stopwatch] = {}
         self._person_unsub: Callable[[], None] | None = None
+        self._own_contexts: set[str] = set()
 
     # ------------------------------------------------------------ lifecycle
     async def async_start(self) -> None:
@@ -90,9 +92,14 @@ class Skills:
     def people(self) -> dict[str, str]:
         """Spoken name (lower-case) -> person entity id."""
         out = {}
+        ents = er.async_get(self.hass)
         for state in self.hass.states.async_all("person"):
             out[state.name.lower()] = state.entity_id
             out[state.name.split()[0].lower()] = state.entity_id
+            reg = ents.async_get(state.entity_id)
+            for alias in (reg.aliases if reg else ()):
+                if isinstance(alias, str) and alias.strip():
+                    out[alias.strip().lower()] = state.entity_id
         return out
 
     def person_name(self, entity_id: str | None) -> str:
@@ -155,9 +162,9 @@ class Skills:
         return None
 
     # ------------------------------------------------------------ delivery
-    async def _call(self, domain: str, service: str, data: dict[str, Any]) -> None:
+    async def _call(self, domain: str, service: str, data: dict[str, Any], context: Context | None = None) -> None:
         try:
-            await self.hass.services.async_call(domain, service, data, blocking=True)
+            await self.hass.services.async_call(domain, service, data, blocking=True, context=context)
         except Exception:  # noqa: BLE001 - a missing speaker or phone must not stop the rest
             _LOGGER.warning("Could not call %s.%s", domain, service, exc_info=True)
 
@@ -196,6 +203,10 @@ class Skills:
         speech = (response.speech or {}).get("plain", {}).get("speech")
         return speech or "Done."
 
+    async def _h_unknown_person(self, slots: dict, user_input) -> str:
+        name = (slots.get("name") or "").strip(" ,.")
+        return f"There's no one named {name[:1].upper() + name[1:]} in this home."
+
     # ------------------------------------------------------------ reminders
     async def _h_reminder_add(self, slots: dict, user_input, person: str | None = None) -> str:
         now = dt_util.now()
@@ -214,8 +225,6 @@ class Skills:
             when = say_when(req.at, now.replace(tzinfo=None))
             if req.repeat != "once":
                 when = say_alarm(req.at, req.repeat, now.replace(tzinfo=None))
-            elif (secs := (at - now).total_seconds()) < 3600:
-                when = "in " + say_duration(max(secs, 1))
             due = at.isoformat()
         else:
             if req.place is None:
@@ -241,7 +250,7 @@ class Skills:
         self.store.changed()
         self._schedule_reminder(uid)
         self._track_people()
-        who = f"I'll remind {self.person_name(person)}" if for_other else "OK, I'll remind you"
+        who = f"Okay, I'll remind {self.person_name(person)}" if for_other else "Okay, I'll remind you"
         return f"{who} to {flip_pronouns(req.task) if not for_other else req.task} {when}."
 
     async def _h_reminder_add_for(self, slots: dict, user_input) -> str:
@@ -487,24 +496,68 @@ class Skills:
             task.cancel()
         player = self.media_player_for(sat)
         if player:
-            self.hass.async_create_task(self._call("media_player", "media_stop", {"entity_id": player}))
+            ctx = Context()
+            self._own_contexts.add(ctx.id)
+            self.hass.async_create_task(self._call("media_player", "media_stop", {"entity_id": player}, ctx))
 
     async def _ring(self, sat: str) -> None:
         player = self.media_player_for(sat)
         try:
             base = get_url(self.hass, allow_external=False)
         except NoURLAvailableError:
-            base = get_url(self.hass)
+            try:
+                base = get_url(self.hass)
+            except NoURLAvailableError:
+                base = None
         try:
-            if not player:
+            if not player or not base:
                 await self.announce([sat], "Wake up! This is your alarm.")
                 return
-            end = dt_util.now() + dt.timedelta(minutes=RING_MINUTES)
-            while dt_util.now() < end:
-                await self._call("media_player", "play_media", {
-                    "entity_id": player, "media_content_id": base + ALARM_URL,
-                    "media_content_type": "music", "announce": True})
-                await asyncio.sleep(4)
+            stopped = asyncio.Event()
+            ours = self._own_contexts                         # our own replays and stops
+
+            @callback
+            def _service(event: Event) -> None:
+                data = event.data
+                if data.get("domain") != "media_player" or data.get("service") not in STOP_SERVICES:
+                    return
+                if event.context.id in ours:
+                    return
+                ids = (data.get("service_data") or {}).get("entity_id")
+                ids = [ids] if isinstance(ids, str) else list(ids or [])
+                if not ids or player in ids:                  # stopped by someone else (e.g. "stop")
+                    stopped.set()
+
+            @callback
+            def _state(event: Event[EventStateChangedData]) -> None:
+                new = event.data["new_state"]
+                if new and new.state in ("paused", "off") and new.context.id not in ours:
+                    stopped.set()                             # the tone never pauses or turns off itself
+
+            unsubs = [self.hass.bus.async_listen(EVENT_CALL_SERVICE, _service),
+                      async_track_state_change_event(self.hass, [player], _state)]
+            try:
+                end = dt_util.now() + dt.timedelta(minutes=RING_MINUTES)
+                while dt_util.now() < end and not stopped.is_set():
+                    ctx = Context()
+                    ours.add(ctx.id)
+                    if len(ours) > 500:
+                        ours.clear()
+                        ours.add(ctx.id)
+                    await self._call("media_player", "play_media", {
+                        "entity_id": player, "media_content_id": base + ALARM_URL,
+                        "media_content_type": "music", "announce": True}, ctx)
+                    try:
+                        await asyncio.wait_for(stopped.wait(), 4)
+                    except TimeoutError:
+                        pass
+            finally:
+                for unsub in unsubs:
+                    unsub()
+            if stopped.is_set():
+                _LOGGER.debug("Alarm on %s stopped from outside", sat)
+                if (cancel := self._timers.pop(f"snooze:{sat}", None)):
+                    cancel()
         finally:
             if self._ringing.get(sat) is asyncio.current_task():
                 self._ringing.pop(sat, None)
