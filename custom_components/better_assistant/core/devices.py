@@ -205,8 +205,13 @@ def say_health(unavailable: dict[str, list[str]], device_names: dict[str, str], 
                vacuum_errors: list[str], updates: int) -> str:
     parts = []
     if unavailable:
-        names = [device_names.get(k, k) for k in unavailable]
-        parts.append(f"{len(names)} device{'s are' if len(names) != 1 else ' is'} offline: " + _join(names[:6]) +
+        all_names = [device_names.get(k, k) for k in unavailable]
+        counts: dict[str, int] = {}
+        for n in all_names:                                   # two devices with one name: "2 Den Chromecast"
+            counts[n] = counts.get(n, 0) + 1
+        names = [f"{c} {n}" if c > 1 else n for n, c in counts.items()]
+        total = len(all_names)
+        parts.append(f"{total} device{'s are' if total != 1 else ' is'} offline: " + _join(names[:6]) +
                      (f", and {len(names) - 6} more" if len(names) > 6 else ""))
     if low:
         parts.append("Low batteries: " + _join([f"{n} at {p} percent" for n, p in low[:6]]))

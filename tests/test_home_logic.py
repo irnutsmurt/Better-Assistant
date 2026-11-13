@@ -115,6 +115,9 @@ def test_batteries_and_health():
     assert report == ("1 device is offline: Porch bulb. Low batteries: lock at 10 percent. The robot has an error. "
                       "2 updates are waiting.")
     assert say_health({}, {}, [], [], 0).startswith("Everything looks fine")
+    dup = say_health({"a": [], "b": [], "c": []}, {"a": "Den Chromecast", "b": "Den Chromecast", "c": "Board"},
+                     [], [], 0)
+    assert dup.startswith("3 devices are offline: 2 Den Chromecast and Board")
 
 
 def test_outside():
