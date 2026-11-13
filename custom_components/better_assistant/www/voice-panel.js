@@ -99,7 +99,7 @@ class BetterAssistantVoicePanel extends HTMLElement {
       return `
         <div class="progress">Phrase ${Math.min(done + 1, v.total)} of ${v.total}</div>
         <div class="bar"><div style="width:${(done / v.total) * 100}%"></div></div>
-        <div class="say">Say this to the speaker</div>
+        <div class="say">After the ding, say</div>
         <div class="now">${this._esc(cur ? cur.text : "")}</div>
         <div class="hint">${this._esc(v.hint || "")}</div>
         <div class="buttons"><button ${busy} data-a="skip">Skip</button><button ${busy} data-a="stop">Stop</button></div>
@@ -115,8 +115,8 @@ class BetterAssistantVoicePanel extends HTMLElement {
     }
     return `
       <p class="big">Teach Better Assistant your voice</p>
-      <p class="lead">Press Start, then read each phrase on this screen out loud to your voice speaker.
-        It takes about a minute. The speaker stays quiet while you train.</p>
+      <p class="lead">We're going to have you repeat some phrases on the screen. When you hear the ding,
+        start saying the highlighted phrase to your voice speaker. There are 8, and it takes about a minute.</p>
       ${start}${err}`;
   }
 
