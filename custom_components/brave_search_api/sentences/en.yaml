@@ -12,6 +12,11 @@ intents:
     data:
       - sentences:
           - "remind {person} {text}"
+  UnknownPerson:
+    data:
+      - sentences:
+          - "remind {name} (to|that|about) {text}"
+          - "leave (a|an) (note|message) for {name} (that|saying) {text}"
   ReminderList:
     data:
       - sentences:
@@ -113,6 +118,8 @@ intents:
           - "what('s| is) [on] the stopwatch"
 lists:
   text:
+    wildcard: true
+  name:
     wildcard: true
   person:
     values: []

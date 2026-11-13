@@ -80,5 +80,24 @@ def test_falls_through(text):
     assert m(text)[0] is None
 
 
-def test_unknown_person_is_not_for_someone_else():
-    assert m("remind bob to feed the cat")[0] is None
+@pytest.mark.parametrize("text,name", [
+    ("remind bob to feed the cat", "bob"),
+    ("Remind Bob that the bins go out tonight", "Bob"),
+    ("leave a message for Bob that dinner is ready", "Bob"),
+    ("leave a note for bob saying hi", "bob"),
+])
+def test_unknown_person(text, name):
+    assert m(text) == ("UnknownPerson", {"name": name, "text": m(text)[1]["text"]})
+    assert m(text)[1]["name"] == name
+
+
+def test_known_people_and_me_still_win():
+    assert m("remind SAM to feed the cat")[0] == "ReminderAddFor"
+    assert m("remind me to feed the cat")[0] == "ReminderAdd"
+    assert m("leave a message for alex that hi")[0] == "MessageLeave"
+    assert m("leave a note that the dog is fed")[0] == "MessageLeave"
+
+
+def test_aliases_are_matched_like_names():
+    r = recognize("remind grandpa to take his pills at 8", ["sam", "grandpa"])
+    assert r.intent == "ReminderAddFor" and r.slots["person"] == "grandpa"

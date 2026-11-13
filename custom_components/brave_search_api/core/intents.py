@@ -51,4 +51,8 @@ def recognize(text: str, people: list[str] | tuple[str, ...] = (), language: str
             slots[k] = v.strip(" ,.")
         elif isinstance(v, float) and v.is_integer():
             slots[k] = int(v)
+    if result.intent.name == "MessageLeave" and "person" not in slots:
+        m = re.match(r"^for (\S+(?: \S+)?) (?:that|saying) (.+)$", slots.get("text", ""), re.I)
+        if m:                                             # "leave a message for <someone unknown> that ..."
+            return Match("UnknownPerson", {"name": m.group(1), "text": m.group(2)})
     return Match(result.intent.name, slots)
