@@ -174,6 +174,10 @@ class HouseSkills:
                 (self._section("tv").get("tvs") or []):
             for n in self._names_for(eid):
                 tvs[n] = eid
+            area = self._area_name(self._entity_area(eid))
+            if area:                                        # "the bedroom TV", whatever the TV is called
+                for word in ("tv", "television"):
+                    tvs.setdefault(f"{area.lower()} {word}", eid)
         lists["tv"] = tvs
         sources, apps = {}, {}
         for tv in self._section("tv").get("tvs") or []:
@@ -720,10 +724,7 @@ class HouseSkills:
         area = self._area_name(self._entity_area(tv))
         return f"{area} TV" if area else self._friendly(tv)
 
-    async def _h_tv_whats_on(self, slots, user_input) -> str:
-        tv = self._tv_for(slots, user_input)
-        if not tv:
-            return "I couldn't find a TV."
+    def _tv_readings(self, tv: str) -> list[dict]:
         readings = []
         for e in self._tv_siblings(tv):
             st = self.hass.states.get(e)
@@ -733,7 +734,18 @@ class HouseSkills:
             readings.append({"state": st.state, "title": a.get("media_title"), "series": a.get("media_series_title"),
                              "artist": a.get("media_artist") or a.get("media_channel"),
                              "app": a.get("app_name") or a.get("app_id"), "source": a.get("source")})
-        return say_tv(self._tv_spoken(tv).lower().replace(" tv", " TV"), readings)
+        return readings
+
+    async def _h_tv_whats_on(self, slots, user_input) -> str:
+        tvs = list(self._section("tv").get("tvs") or [])
+        if slots.get("tv"):                                 # "the bedroom TV": that one
+            tv = slots["tv"]
+        else:                                               # "the TV": the one that's playing, else the nearest
+            playing = [t for t in tvs if any(r["state"] == "playing" for r in self._tv_readings(t))]
+            tv = playing[0] if len(playing) == 1 else self._nearest(playing or tvs, user_input)
+        if not tv:
+            return "I couldn't find a TV."
+        return say_tv(self._tv_spoken(tv).lower().replace(" tv", " TV"), self._tv_readings(tv))
 
     async def _h_tv_app(self, slots, user_input) -> str:
         app = slots.get("app")

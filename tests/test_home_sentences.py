@@ -12,7 +12,7 @@ LISTS = {
     "light_target": {"kitchen": "area:kitchen", "kitchen lights": "area:kitchen", "desk lamp": "light.desk_lamp"},
     "place": {"driveway": "driveway", "backyard": "backyard"},
     "camera": {"driveway": "camera.driveway", "front door": "camera.front_door"},
-    "tv": {"living room tv": "media_player.living_tv"},
+    "tv": {"living room tv": "media_player.living_tv", "bedroom tv": "media_player.bedroom_tv"},
     "tv_source": {"hdmi 2": "HDMI 2", "playstation": "HDMI 2", "game": "HDMI 2"},
     "tv_app": {"netflix": "com.netflix.ninja", "youtube": "com.google.android.youtube.tv"},
     "bed_preset": {"flat": "Flat", "read": "Read"},
@@ -75,7 +75,8 @@ def m(text, disabled=frozenset()):
     # TV
     ("switch the tv to hdmi 2", "TvSource", {"source": "HDMI 2"}), ("switch to the playstation", "TvSource", {"source": "HDMI 2"}),
     ("what's on the living room tv right now", "TvWhatsOn", {"tv": "media_player.living_tv"}),
-    ("what's playing on the tv", "TvWhatsOn", {}), ("is the tv on", "TvWhatsOn", {}),
+    ("what's playing on the tv", "TvWhatsOn", {}),
+    ("what's playing on the bedroom tv", "TvWhatsOn", {"tv": "media_player.bedroom_tv"}), ("is the tv on", "TvWhatsOn", {}),
     ("what lights are on in the house right now", "RoomWhichLights", {}),
     ("what lights are on the house right now", "RoomWhichLights", {}),    # Whisper dropped "in"
     ("which lights are still on", "RoomWhichLights", {}), ("did I leave any lights on", "RoomWhichLights", {}),
