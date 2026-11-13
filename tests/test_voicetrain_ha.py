@@ -17,7 +17,7 @@ from homeassistant.core import Context, HomeAssistant  # noqa: E402
 
 from custom_components.better_assistant import BetterAssistantRuntimeData, voice_training  # noqa: E402
 from custom_components.better_assistant.config_flow import BetterAssistantOptionsFlow  # noqa: E402
-from custom_components.better_assistant.core.voicetrain import PHRASES, CaptureSlot  # noqa: E402
+from custom_components.better_assistant.core.voicetrain import PHRASES, TURNED_OFF, CaptureSlot  # noqa: E402
 from custom_components.better_assistant.skills import Skills  # noqa: E402
 from custom_components.better_assistant.store import BetterAssistantStore  # noqa: E402
 from custom_components.better_assistant.stt import PassThroughSTT  # noqa: E402
@@ -245,7 +245,8 @@ async def test_options_flow(hass, monkeypatch):
     form = await flow.async_step_voice_training()
     assert form["description_placeholders"]["counts"] == "rob: 1 training"
     keys = [str(k) for k in form["data_schema"].schema]
-    assert keys == ["voice_training", "voice_record_test", "voice_training_phone", "voice_stt_engine", "pipelines",
+    assert keys == ["voice_training", "voice_record_test", "voice_training_phone", "voice_training_satellite",
+                    "voice_stt_engine", "pipelines",
                     "delete_recordings"]
     defaults = {str(k): k.default() for k in form["data_schema"].schema if callable(getattr(k, "default", None))}
     assert defaults["voice_training"] is False and defaults["voice_record_test"] is False
@@ -253,6 +254,7 @@ async def test_options_flow(hass, monkeypatch):
                                                    "pipelines": ["p1"], "delete_recordings": True})
     assert result["type"] == "create_entry"
     assert result["data"] == {"web_search": False, "voice_training": True, "voice_record_test": False, "voice_training_phone": True,
+                                 "voice_training_satellite": None,
                               "voice_stt_engine": None, "voice_stt_originals": {"p1": "stt.cloud"}}
     assert switched == [(True, ["p1"])] and not voice_root(hass).exists()
 
@@ -285,3 +287,42 @@ async def test_phone_mode_without_a_phone_reads_aloud(house):
     assert keep and speech.startswith("I couldn't find your phone, so I'll read the phrases out.")
     speech, keep = await turn(house, PHRASES[0])
     assert speech == f"{PHRASES[1]}."
+
+
+async def test_start_from_phone_then_skip_and_stop(house, monkeypatch):
+    house.entry.options["voice_training_phone"] = True
+    sent, started = [], []
+
+    async def fake_notify(call):
+        sent.append(call.data)
+
+    async def fake_start(call):
+        started.append(call.data)
+    house.hass.services.async_register("notify", "mobile_app_robs_phone", fake_notify)
+    house.hass.services.async_register("assist_satellite", "start_conversation", fake_start)
+    house.hass.states.async_set("assist_satellite.kitchen", "idle")
+    monkeypatch.setattr(house.skills, "phone_for", lambda p: "notify.mobile_app_robs_phone" if p == "person.rob" else None)
+
+    assert await house.trainer.async_start_from_phone(house.skills, "nobody") is not None
+    assert await house.trainer.async_start_from_phone(house.skills, "u1") is None
+    assert started[-1]["entity_id"] == "assist_satellite.kitchen" and not started[-1]["preannounce"]
+    assert "1 of 8" in sent[-1]["message"] and {a["title"] for a in sent[-1]["data"]["actions"]} == {"Skip", "Stop"}
+    slot = hub(house.hass).take(time.time())
+    assert slot.person == "person.rob" and slot.phrase == PHRASES[0] and slot.satellite == "assist_satellite.kitchen"
+
+    # the speaker's first turn claims the session; the speaker says nothing
+    inp = ConversationInput(text=PHRASES[0], context=Context(), conversation_id="c9", device_id="dev1",
+                            satellite_id="assist_satellite.kitchen", language="en", agent_id="conversation.x")
+    speech, keep = await house.trainer.async_handle(PHRASES[0], inp, "c9", house.skills)
+    assert (speech, keep) == ("", True) and "2 of 8" in sent[-1]["message"]
+
+    await house.trainer.async_phone_action("BETTER_ASSISTANT_VT_SKIP", house.skills)
+    assert "3 of 8" in sent[-1]["message"] and hub(house.hass).slot.phrase == PHRASES[2]
+    await house.trainer.async_phone_action("BETTER_ASSISTANT_VT_STOP", house.skills)
+    assert sent[-1]["message"].startswith("Okay, I stopped voice training.")
+    assert house.trainer.active("c9") is None and hub(house.hass).slot is None
+
+
+async def test_start_from_phone_needs_training_on(house):
+    house.entry.options["voice_training"] = False
+    assert await house.trainer.async_start_from_phone(house.skills, "u1") == TURNED_OFF

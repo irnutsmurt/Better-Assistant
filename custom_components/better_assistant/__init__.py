@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from .skills import Skills
     from .voice_training import VoiceTrainer
 
-PLATFORMS = [Platform.CONVERSATION, Platform.SENSOR, Platform.STT, Platform.SWITCH, Platform.TODO]
+PLATFORMS = [Platform.BUTTON, Platform.CONVERSATION, Platform.SENSOR, Platform.STT, Platform.SWITCH, Platform.TODO]
 
 
 @dataclass
@@ -51,7 +51,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: BetterAssistantConfigEnt
     entry.runtime_data.skills = skills
     from .voice_training import VoiceTrainer  # noqa: PLC0415
 
-    entry.runtime_data.trainer = VoiceTrainer(hass, entry)
+    trainer = VoiceTrainer(hass, entry)
+    entry.runtime_data.trainer = trainer
+
+    async def _phone_action(event) -> None:                 # Skip / Stop on the training notification
+        await trainer.async_phone_action(str(event.data.get("action") or ""), skills)
+    entry.async_on_unload(hass.bus.async_listen("mobile_app_notification_action", _phone_action))
     entry.async_on_unload(skills.async_stop)
     # Detection: now if Home Assistant is already running, else once it has started; again after
     # registry changes. Anything built from detection (hidden doors, lists) is refreshed after each run.

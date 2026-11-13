@@ -249,11 +249,19 @@ engine (Home Assistant Cloud, Whisper, ...; pick one or leave it to choose) and 
 unchanged; it only keeps a copy of the audio while a recording is wanted. Unticking a voice assistant,
 or turning voice training off, switches it back to the engine it had before.
 
-**Training:** on a voice speaker say "train my voice", "learn my voice" or "train Rob's voice". The
-assistant asks for 8 short phrases ("Please say: Turn on the living room lamps."); repeat each one.
-What you say during training is never run as a command. A mumble is asked again once. Say "stop
-voice training" or "cancel" to stop. It only works from a voice speaker, not typed chat. If it can't
-tell who you are, it asks you to say "train <name>'s voice".
+**Training:** two ways to start.
+
+- **From your phone:** press the **Start voice training** button (on the Better Assistant device, or
+  add it to a dashboard). The speaker plays its listening chime and listens without the wake word.
+- **By voice:** say "train my voice", "learn my voice" or "train Rob's voice" to a speaker.
+
+With **Show the phrases on my phone** on (the default), the 8 phrases appear one by one in a
+notification from the Home Assistant app, with **Skip** and **Stop** buttons, and the speaker stays
+silent; you say each phrase to the speaker. Without a linked phone, the speaker reads them out.
+A recording that doesn't sound like the phrase (the TV, someone else) isn't saved and is asked again
+twice, then skipped. What you say during training is never run as a command. Say "stop voice
+training" to stop. Recording only works through a speaker (the same microphone voice match will
+use), not typed chat. The speaker for the phone button is set under Voice training.
 
 **Everyday clips (optional):** "Also record everyday requests" saves every request heard on a speaker
 as a "test" clip, labelled with the only person in the house, or "unknown".

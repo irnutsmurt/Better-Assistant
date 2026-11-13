@@ -56,6 +56,7 @@ from .const import (
     OPT_VT_ORIGINALS,
     OPT_VT_PHONE,
     OPT_VT_RECORD_TEST,
+    OPT_VT_SATELLITE,
     OPT_VT_STT,
     OPT_WEB_SEARCH,
     PLACEHOLDER_SECTIONS,
@@ -295,6 +296,7 @@ class BetterAssistantOptionsFlow(VoiceSetupMixin, OptionsFlow):
             values = {OPT_VT_ENABLED: bool(user_input.get(OPT_VT_ENABLED)),
                       OPT_VT_RECORD_TEST: bool(user_input.get(OPT_VT_RECORD_TEST)),
                       OPT_VT_PHONE: bool(user_input.get(OPT_VT_PHONE, True)),
+                      OPT_VT_SATELLITE: user_input.get(OPT_VT_SATELLITE) or None,
                       OPT_VT_STT: user_input.get(OPT_VT_STT) or None}
             originals = await vt.async_switch_pipelines(
                 self.hass, self.config_entry.entry_id, {**self.config_entry.options, **values},
@@ -308,6 +310,8 @@ class BetterAssistantOptionsFlow(VoiceSetupMixin, OptionsFlow):
             vol.Required(OPT_VT_RECORD_TEST, default=bool(self._opt(OPT_VT_RECORD_TEST))): BooleanSelector(),
             vol.Required(OPT_VT_PHONE, default=bool(self.config_entry.options.get(OPT_VT_PHONE, True))):
                 BooleanSelector(),
+            vol.Optional(OPT_VT_SATELLITE, description={"suggested_value": self._opt(OPT_VT_SATELLITE)}):
+                EntitySelector(EntitySelectorConfig(domain="assist_satellite")),
             vol.Optional(OPT_VT_STT, description={"suggested_value": vt.underlying_engine(
                 self.hass, dict(self.config_entry.options))}):
                 EntitySelector(EntitySelectorConfig(domain="stt", exclude_entities=[ours])),

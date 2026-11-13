@@ -122,6 +122,8 @@ class Session:
     last_said: str = ""         # the last reply, to spot the speaker hearing itself
     until: float = 0.0          # forgotten after this (time.time())
     phone: str | None = None    # notify service showing the phrases; the speaker stays silent
+    satellite: str | None = None
+    device_id: str | None = None
 
 
 def intro(name: str) -> str:
@@ -132,6 +134,22 @@ def intro(name: str) -> str:
 PHONE_TAG = "better_assistant_voice_training"   # one notification, replaced phrase by phrase
 PHONE_TITLE = "Voice training"
 PHONE_START = "Check your phone."
+ACTION_STOP = "BETTER_ASSISTANT_VT_STOP"      # notification buttons
+ACTION_SKIP = "BETTER_ASSISTANT_VT_SKIP"
+PENDING_SECONDS = 60.0                        # a start from the phone waits this long for the speaker
+
+
+def skip(session: Session) -> Step:
+    """The Skip button on the phone: on to the next phrase."""
+    session.index += 1
+    session.reasks = 0
+    if session.index >= len(PHRASES):
+        return Step(finish_text(session), True, False)
+    return Step(prompt(session.index), False, True)
+
+
+def stop(session: Session) -> Step:
+    return step(session, "stop")
 NO_PHONE = "I couldn't find your phone, so I'll read the phrases out. "
 
 

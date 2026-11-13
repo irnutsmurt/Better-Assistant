@@ -18,8 +18,14 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
 from homeassistant.util import dt as dt_util
 
-from .const import DOMAIN, OPT_VT_ENABLED, OPT_VT_ORIGINALS, OPT_VT_PHONE, OPT_VT_RECORD_TEST, OPT_VT_STT
+from .const import (DOMAIN, OPT_VT_ENABLED, OPT_VT_ORIGINALS, OPT_VT_PHONE, OPT_VT_RECORD_TEST,
+                    OPT_VT_SATELLITE, OPT_VT_STT)
 from .core.voicetrain import (
+    ACTION_SKIP,
+    ACTION_STOP,
+    PENDING_SECONDS,
+    skip,
+    stop,
     NO_PHONE,
     PHONE_START,
     PHONE_TAG,
@@ -155,6 +161,10 @@ async def async_switch_pipelines(hass: HomeAssistant, entry_id: str, options: di
     return kept
 
 
+# the speaker's own "listening" chime, played to open the mic without a wake word
+PREANNOUNCE_URL = "/api/assist_satellite/static/preannounce.mp3"
+
+
 # ------------------------------------------------------------------ the training conversation
 class VoiceTrainer:
     """Per config entry. Sessions are kept per conversation id (a speaker's follow-up turns share it)."""
@@ -162,6 +172,7 @@ class VoiceTrainer:
     def __init__(self, hass: HomeAssistant, entry) -> None:
         self.hass, self.entry = hass, entry
         self._sessions: dict[str, Session] = {}
+        self._pending: dict[str, Session] = {}         # satellite -> a session started from the phone
 
     def _enabled(self) -> bool:
         return bool(self.entry.options.get(OPT_VT_ENABLED))
@@ -178,22 +189,100 @@ class VoiceTrainer:
             return None
         return session
 
-    def _arm(self, session: Session, user_input) -> None:
+    def _arm(self, session: Session, user_input=None) -> None:
+        if user_input is not None:
+            session.satellite = getattr(user_input, "satellite_id", None) or session.satellite
+            session.device_id = user_input.device_id or session.device_id
         session.until = time.time() + SESSION_SECONDS
         hub(self.hass).arm(CaptureSlot(person=session.person, label=TRAIN, phrase=PHRASES[session.index],
-                                       token=session.token, satellite=getattr(user_input, "satellite_id", None),
-                                       device_id=user_input.device_id), time.time())
+                                       token=session.token, satellite=session.satellite,
+                                       device_id=session.device_id), time.time())
+
+    def _claim(self, conversation_id: str, user_input) -> Session | None:
+        """The first turn from a speaker that the phone started training on."""
+        sat = getattr(user_input, "satellite_id", None)
+        session = self._pending.pop(sat, None) if sat else None
+        if session and session.until >= time.time():
+            self._sessions[conversation_id] = session
+            return session
+        return None
+
+    def _end(self, session: Session) -> None:
+        for key, s in list(self._sessions.items()):
+            if s is session:
+                self._sessions.pop(key, None)
+        for key, s in list(self._pending.items()):
+            if s is session:
+                self._pending.pop(key, None)
+        hub(self.hass).disarm(session.token)
+        hub(self.hass).saved.pop(session.token, None)
+
+    def default_satellite(self, skills) -> str | None:
+        chosen = self.entry.options.get(OPT_VT_SATELLITE)
+        if chosen and self.hass.states.get(chosen):
+            return chosen
+        sats = [s for s in skills.satellites() if self.hass.states.get(s)] or \
+            [s.entity_id for s in self.hass.states.async_all("assist_satellite")]
+        return sats[0] if sats else None
+
+    async def async_start_from_phone(self, skills, user_id: str | None, satellite: str | None = None) -> str | None:
+        """The Start voice training button: the phone shows the phrases and the speaker listens without
+        a wake word. None when started, else why not (for a notification)."""
+        if not self._enabled():
+            return TURNED_OFF
+        person = next((st.entity_id for st in self.hass.states.async_all("person")
+                       if user_id and st.attributes.get("user_id") == user_id), None)
+        if not person:
+            return "I couldn't tell who pressed the button. Link your user to a person in Settings > People."
+        phone = skills.phone_for(person)
+        if not phone:
+            return "I couldn't find a phone with the Home Assistant app for you."
+        satellite = satellite or self.default_satellite(skills)
+        if not satellite:
+            return "There's no voice speaker to train on."
+        for s in list(self._sessions.values()) + list(self._pending.values()):
+            if s.person == person:
+                self._end(s)
+        session = Session(person=person, name=skills.person_name(person), token=uuid4().hex, phone=phone,
+                          satellite=satellite)
+        self._arm(session)
+        session.until = time.time() + PENDING_SECONDS
+        self._pending[satellite] = session
+        await self._say(session, skills, intro(session.name))
+        try:
+            await self.hass.services.async_call(
+                "assist_satellite", "start_conversation",
+                {"entity_id": satellite, "start_media_id": PREANNOUNCE_URL, "preannounce": False},
+                blocking=True)
+        except Exception as err:  # noqa: BLE001
+            self._end(session)
+            return f"The speaker couldn't start listening ({err})."
+        return None
+
+    async def async_phone_action(self, action: str, skills) -> None:
+        """Stop / Skip pressed on the training notification."""
+        if action not in (ACTION_STOP, ACTION_SKIP):
+            return
+        sessions = [s for s in list(self._sessions.values()) + list(self._pending.values()) if s.phone]
+        if not sessions:
+            return
+        session = sessions[-1]
+        session.saved = hub(self.hass).saved_for(session.token)
+        result = stop(session) if action == ACTION_STOP else skip(session)
+        if result.done:
+            self._end(session)
+        else:
+            self._arm(session)
+        await self._say(session, skills, result.reply)
 
     async def async_handle(self, text: str, user_input, conversation_id: str, skills) -> tuple[str, bool] | None:
         """(speech, keep listening) when this turn belongs to voice training, else None."""
-        session = self.active(conversation_id)
+        session = self.active(conversation_id) or self._claim(conversation_id, user_input)
         if session:
             session.saved = hub(self.hass).saved_for(session.token)
             result = step(session, text)
             if result.done:
-                self._sessions.pop(conversation_id, None)
-                hub(self.hass).disarm(session.token)
-                hub(self.hass).saved.pop(session.token, None)
+                self._end(session)
             else:
                 self._arm(session, user_input)
             return await self._say(session, skills, result.reply), not result.done
@@ -238,6 +327,8 @@ class VoiceTrainer:
             session.last_said = reply
             return reply
         await skills.notify(session.person, PHONE_TITLE, phone_text(session, reply),
-                            {"tag": PHONE_TAG, "push": {"interruption-level": "time-sensitive"}})
+                            {"tag": PHONE_TAG, "push": {"interruption-level": "time-sensitive"},
+                             "actions": [] if session.index >= len(PHRASES) else
+                             [{"action": ACTION_SKIP, "title": "Skip"}, {"action": ACTION_STOP, "title": "Stop"}]})
         session.last_said = ""
         return ""

@@ -452,14 +452,16 @@
           "voice_stt_engine": "Speech-to-text engine to pass audio to",
           "pipelines": "Voice assistants that use Better Assistant speech-to-text",
           "delete_recordings": "Delete all recordings",
-          "voice_training_phone": "Show the phrases on my phone (the speaker stays silent)"
+          "voice_training_phone": "Show the phrases on my phone (the speaker stays silent)",
+          "voice_training_satellite": "Speaker for the Start voice training button"
         },
         "data_description": {
           "voice_record_test": "Every request heard on a speaker is saved as a \"test\" clip, labelled with the only person in the house or \"unknown\".",
           "voice_stt_engine": "Empty: Home Assistant Cloud if you have it, else Whisper (Wyoming), else the first one found.",
           "pipelines": "Ticked ones switch their speech-to-text to Better Assistant speech-to-text; unticking (or turning voice training off) switches them back.",
           "delete_recordings": "Removes every clip and its notes from the folder above.",
-          "voice_training_phone": "Uses the Home Assistant app on the phone linked to the person being trained. Without one, the speaker reads the phrases out."
+          "voice_training_phone": "Uses the Home Assistant app on the phone linked to the person being trained. Without one, the speaker reads the phrases out.",
+          "voice_training_satellite": "The phone's Start voice training button makes this speaker listen without the wake word. Empty: the first voice speaker."
         }
       }
     },
@@ -496,6 +498,11 @@
     "stt": {
       "speech_to_text": {
         "name": "Speech-to-text"
+      }
+    },
+    "button": {
+      "start_voice_training": {
+        "name": "Start voice training"
       }
     }
   }
