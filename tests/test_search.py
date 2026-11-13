@@ -125,3 +125,12 @@ async def test_answer_cap_and_auth():
     assert (await search.answer(FakeSession(status=401), "k", "how tall is everest", slots(1)))["reason"] == "auth"
     assert (await search.answer(FakeSession(status=500), "k", "how tall is everest", slots(1)))["reason"] == "error"
     assert (await search.answer(FakeSession(data=payload()), "k", "how tall is everest", slots(1)))["reason"] == "empty"
+
+
+async def test_brave_422_bad_token_is_invalid_auth():
+    bad = {"error": {"code": "SUBSCRIPTION_TOKEN_INVALID", "meta": {"component": "authentication"}, "status": 422}}
+    assert (await search.answer(FakeSession(status=422, data=bad), "k", "how tall is everest", slots(1)))["reason"] == "auth"
+    with pytest.raises(search.InvalidAuth):
+        await search.validate_key(FakeSession(status=422, data=bad), "k")
+    other = {"error": {"code": "VALIDATION", "meta": {"component": "query"}}}
+    assert (await search.answer(FakeSession(status=422, data=other), "k", "how tall is everest", slots(1)))["reason"] == "error"

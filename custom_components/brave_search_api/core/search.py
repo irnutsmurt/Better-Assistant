@@ -168,6 +168,15 @@ async def fetch_context(session: aiohttp.ClientSession, key: str, q: str, countr
         async with session.get(URL, params=params, headers=headers, timeout=TIMEOUT) as resp:
             if resp.status in (401, 403):
                 raise InvalidAuth
+            if resp.status == 422:                        # Brave reports a bad key as 422
+                try:
+                    err = ((await resp.json(content_type=None)) or {}).get("error") or {}
+                except ValueError:
+                    err = {}
+                if "TOKEN" in str(err.get("code", "")).upper() or \
+                        (err.get("meta") or {}).get("component") == "authentication":
+                    raise InvalidAuth
+                raise CannotConnect("HTTP 422")
             if resp.status != 200:
                 raise CannotConnect(f"HTTP {resp.status}")
             return await resp.json(content_type=None)

@@ -34,11 +34,12 @@ from .core.features import (
     sentence,
 )
 from .core.intents import TIMER_INTENTS, Match
-from .core.timeparse import parse, say_when
+from .core.timeparse import fmt_time, parse, say_when
 from .discovery import effective_section
 
 _LOGGER = logging.getLogger(__name__)
 
+APP_ALARM = "app"                  # alarms asked for from the app or a typed chat (no voice speaker)
 STOP_SERVICES = {"media_stop", "media_pause", "turn_off", "volume_mute", "clear_playlist"}
 HOW_TO_ADD_ZONE = ("I don't know a place called {place}. Add it as a zone in Settings, Areas, labels and "
                    "zones, Zones, then ask me again.")
@@ -57,6 +58,7 @@ class Skills:
         self._stopwatches: dict[str, Stopwatch] = {}
         self._person_unsub: Callable[[], None] | None = None
         self._own_contexts: set[str] = set()
+        self._snoozed_until: dict[str, dt.datetime] = {}
 
     # ------------------------------------------------------------ lifecycle
     async def async_start(self) -> None:
@@ -202,6 +204,8 @@ class Skills:
 
     async def _builtin_timer(self, match: Match, text: str, user_input: conversation.ConversationInput) -> str:
         """Extra wordings for Home Assistant's own timers: hand the slots to the built-in intent."""
+        if not user_input.device_id:
+            return "Timers run on a voice speaker. Please ask from the speaker you want the timer on."
         slots = {k: {"value": v} for k, v in match.slots.items()}
         try:
             response = await intent.async_handle(
@@ -394,20 +398,19 @@ class Skills:
                 cancel()
 
     # ------------------------------------------------------------ alarms
-    def _alarm_target(self, user_input) -> str | None:
-        return self.satellite_for(user_input)
+    def _alarm_target(self, user_input) -> str:
+        """The asking voice speaker, or APP_ALARM when asked from the app / a typed chat."""
+        return self.satellite_for(user_input) or APP_ALARM
 
     async def _h_alarm_set(self, slots: dict, user_input) -> str:
         sat = self._alarm_target(user_input)
-        if not sat:
-            return "Alarms ring on a voice speaker. Please ask from the speaker you want it on."
         now = dt_util.now()
         at, repeat = parse(slots.get("text", ""), now.replace(tzinfo=None), alarm=True)
         if not at:
             return "Sorry, I didn't catch the time for the alarm."
         at = at.replace(tzinfo=now.tzinfo, second=0, microsecond=0)
         self.store.data["alarms"][sat] = {"hour": at.hour, "minute": at.minute, "repeat": repeat,
-                                          "next": at.isoformat()}
+                                          "next": at.isoformat(), "person": self.speaker_person(user_input)}
         self.store.changed()
         self._schedule_alarm(sat)
         return f"Your alarm is set for {say_alarm(at.replace(tzinfo=None), repeat, now.replace(tzinfo=None))}."
@@ -415,6 +418,9 @@ class Skills:
     async def _h_alarm_query(self, slots: dict, user_input) -> str:
         sat = self._alarm_target(user_input)
         alarm = self.store.data["alarms"].get(sat or "")
+        if f"snooze:{sat}" in self._timers and sat in self._snoozed_until:
+            until = self._snoozed_until[sat]
+            return f"Your alarm is snoozed until {fmt_time(dt_util.as_local(until))}."
         if not alarm:
             return "You don't have an alarm set."
         at = dt_util.parse_datetime(alarm["next"])
@@ -425,13 +431,13 @@ class Skills:
         sat = self._alarm_target(user_input)
         if sat in self._ringing:
             return await self._h_alarm_stop(slots, user_input)
-        if not sat or sat not in self.store.data["alarms"]:
+        if sat not in self.store.data["alarms"]:
             return "You don't have an alarm set."
         self.store.data["alarms"].pop(sat)
         self.store.changed()
         if (cancel := self._timers.pop(f"alarm:{sat}", None)):
             cancel()
-        return "OK, your alarm is cancelled."
+        return "Okay, your alarm is cancelled."
 
     def snooze_default(self) -> int:
         return int(self.entry.options.get(OPT_SNOOZE, DEFAULTS[OPT_SNOOZE]))
@@ -447,7 +453,7 @@ class Skills:
 
     async def _h_alarm_snooze(self, slots: dict, user_input) -> str:
         sat = self._alarm_target(user_input)
-        if not sat or sat not in self._ringing:
+        if sat not in self._ringing:
             return "There's no alarm going off right now."
         minutes = int(slots.get("minutes") or self.snooze_default())
         self._stop_ringing(sat)
@@ -458,16 +464,17 @@ class Skills:
             self._start_ringing(sat)
 
         self._timers[f"snooze:{sat}"] = async_track_point_in_time(self.hass, _again, when)
+        self._snoozed_until[sat] = when
         return f"Okay, snoozing for {minutes} minute{'s' if minutes != 1 else ''}."
 
     async def _h_alarm_stop(self, slots: dict, user_input) -> str:
         sat = self._alarm_target(user_input)
-        if sat and (cancel := self._timers.pop(f"snooze:{sat}", None)):
+        if (cancel := self._timers.pop(f"snooze:{sat}", None)):
             cancel()
             if sat not in self._ringing:
                 return "OK, I've turned off the snoozed alarm."
-        if not sat or sat not in self._ringing:
-            return "There's no alarm ringing."
+        if sat not in self._ringing:
+            return "There's no alarm going off right now."
         self._stop_ringing(sat)
         return "Alarm off. Good morning!" if dt_util.now().hour < 12 else "Alarm off."
 
@@ -524,7 +531,24 @@ class Skills:
             self._own_contexts.add(ctx.id)
             self.hass.async_create_task(self._call("media_player", "media_stop", {"entity_id": player}, ctx))
 
+    async def _ring_app(self) -> None:
+        """An alarm set from the app: announce on every voice speaker, phone and a notification."""
+        alarm = self.store.data["alarms"].get(APP_ALARM) or {}
+        if self.satellites():
+            await self.announce(self.satellites(), "Wake up! This is your alarm.")
+        await self.notify(alarm.get("person"), "Alarm", "Your alarm is going off.")
+        await self._call("persistent_notification", "create", {
+            "title": "Alarm", "message": f"Alarm at {dt_util.now().strftime('%H:%M')}.",
+            "notification_id": "brave_search_api_alarm"})
+
     async def _ring(self, sat: str) -> None:
+        if sat == APP_ALARM:
+            try:
+                await self._ring_app()
+                await asyncio.sleep(RING_MINUTES * 60)       # counts as ringing: snooze / stop work
+            finally:
+                self._ringing.pop(sat, None)
+            return
         player = self.media_player_for(sat)
         try:
             base = get_url(self.hass, allow_external=False)
