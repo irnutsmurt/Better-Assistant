@@ -181,7 +181,7 @@ def test_echo_of_own_reply_gets_a_short_go_ahead():
     from core.voicetrain import NOTHING_HEARD
     s = Session(person="person.rob", name="Rob", index=1,
                 last_said=f"That didn't sound like the phrase. Try again: {PHRASES[1]}.")
-    r = step(s, "Living room lamps.")                 # the speaker heard the end of its own reply
+    r = step(s, "Deep shade of blue.")                 # the speaker heard the end of its own reply
     assert r.reply == "Go ahead." and r.arm and s.index == 1
     s.last_said = r.reply
     r = step(s, NOTHING_HEARD)                        # sound but no words: asked again, not ended

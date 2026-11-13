@@ -16,15 +16,18 @@ import struct
 from dataclasses import dataclass, field
 from datetime import datetime
 
+# Everyday sentences, never commands: Home Assistant runs sentence-trigger automations before any agent,
+# so a phrase like "what's on my calendar tomorrow" could be answered by someone's automation instead
+# of reaching the trainer. A voiceprint only needs natural speech, with a good spread of sounds.
 PHRASES = [
-    "What's the weather like today",
-    "Turn on the living room lamps",
-    "Set a timer for ten minutes",
-    "What's on my calendar tomorrow",
-    "Remind me to take out the trash at seven",
-    "How did I sleep last night",
-    "What time is it in Tokyo",
-    "Add milk to the shopping list",
+    "The kitchen smells like fresh coffee this morning",
+    "My favorite color has always been a deep shade of blue",
+    "We planted tomatoes and peppers along the garden fence",
+    "The neighbor's dog barks whenever the mail truck drives by",
+    "There were seven apples left in the basket on the table",
+    "Our family drove to the beach for a long summer weekend",
+    "The old wooden bridge creaks a little when people cross it",
+    "She found her keys hiding under a pile of yesterday's laundry",
 ]
 
 SLOT_SECONDS = 30.0          # a training prompt waits this long for its recording

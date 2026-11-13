@@ -94,7 +94,7 @@ def wavs(hass):
 
 
 AUDIO = [b"\x01\x00" * 800, b"\x02\x00" * 800]
-OK = stt.SpeechResult("Turn on the living room lamps", stt.SpeechResultState.SUCCESS)
+OK = stt.SpeechResult("My favorite color has always been a deep shade of blue", stt.SpeechResultState.SUCCESS)
 
 
 async def test_mirrors_the_engine_and_records_nothing_when_off(hass, engine):
