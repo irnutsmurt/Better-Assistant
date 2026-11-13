@@ -20,12 +20,15 @@
   "config_flow": true,
   "dependencies": [
     "conversation",
-    "http"
+    "frontend",
+    "http",
+    "panel_custom",
+    "websocket_api"
   ],
   "documentation": "https://github.com/irnutsmurt/Better-Assistant",
   "integration_type": "service",
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/irnutsmurt/Better-Assistant/issues",
   "requirements": [],
-  "version": "0.2.0b7"
+  "version": "0.2.0b8"
 }

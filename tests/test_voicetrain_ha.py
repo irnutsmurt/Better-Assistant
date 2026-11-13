@@ -326,3 +326,34 @@ async def test_start_button_then_skip_and_stop(house):
 async def test_start_from_phone_needs_training_on(house):
     house.entry.options["voice_training"] = False
     assert await house.trainer.async_start_from_phone(house.skills, "u1") == TURNED_OFF
+
+
+async def test_voice_page_commands(house, monkeypatch):
+    from custom_components.better_assistant import voice_panel
+    monkeypatch.setattr(voice_panel, "_trainer_and_skills", lambda hass: (house.trainer, house.skills))
+    started = []
+
+    async def fake_start(call):
+        started.append(call.data)
+    house.hass.services.async_register("assist_satellite", "start_conversation", fake_start)
+    house.hass.states.async_set("assist_satellite.kitchen", "idle")
+
+    class Conn:
+        def __init__(self):
+            self.sent, self.results, self.subscriptions = [], [], {}
+            self.user = types.SimpleNamespace(id="u1")
+        def send_message(self, m): self.sent.append(m)
+        def send_result(self, i, r=None): self.results.append((i, r))
+        def send_error(self, i, code, text): self.results.append((i, code))
+
+    conn = Conn()
+    voice_panel.ws_subscribe(house.hass, conn, {"id": 1, "type": "better_assistant/voice_training/subscribe"})
+    assert conn.sent[-1]["event"]["status"] == "idle" and 1 in conn.subscriptions
+    voice_panel.ws_action(house.hass, conn, {"id": 2, "type": "x", "action": "start"})   # runs as a task
+    await house.hass.async_block_till_done()
+    assert started and conn.sent[-1]["event"]["status"] == "training"
+    assert conn.sent[-1]["event"]["phrases"][0]["state"] == "current"
+    voice_panel.ws_action(house.hass, conn, {"id": 3, "type": "x", "action": "stop"})
+    await house.hass.async_block_till_done()
+    assert conn.sent[-1]["event"]["status"] == "stopped"
+    conn.subscriptions[1]()                                    # unsubscribe

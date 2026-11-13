@@ -251,8 +251,9 @@ or turning voice training off, switches it back to the engine it had before.
 
 **Training:** two ways to start.
 
-- **From your phone:** press the **Start voice training** button (on the Better Assistant device, or
-  add it to a dashboard). The speaker plays its listening chime and listens without the wake word.
+- **From the Voice training page:** with voice training on, a **Voice training** page appears in the
+  sidebar. Press **Start**, then read each phrase on the screen out loud to your speaker; done ones
+  are crossed out as you go. The speaker plays its listening chime and stays quiet otherwise.
 - **By voice:** say "train my voice", "learn my voice" or "train Rob's voice" to a speaker.
 
 With **Show the phrases on my phone** on (the default), the 8 phrases appear one by one in a

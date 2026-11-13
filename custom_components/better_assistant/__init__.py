@@ -16,7 +16,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.components.http import StaticPathConfig
 
 from .const import (ALARM_URL, DOMAIN, HISTORY_SIZE, OPT_SNOOZE, OPT_SNOOZE_ENABLED, OPT_SNOOZE_LIMIT,
-                    OPT_VOICE_PENDING)
+                    OPT_VOICE_PENDING, OPT_VT_ENABLED)
 from .autodetect import AutoDetect
 from .store import BetterAssistantStore
 
@@ -65,6 +65,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: BetterAssistantConfigEnt
     entry.async_on_unload(auto.async_stop)
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    if entry.options.get(OPT_VT_ENABLED):                   # the Voice training page in the sidebar
+        from .voice_panel import async_remove_panel, async_setup_panel  # noqa: PLC0415
+
+        await async_setup_panel(hass)
+        entry.async_on_unload(lambda: async_remove_panel(hass))
     if entry.options.get(OPT_VOICE_PENDING):
         entry.async_create_background_task(hass, _async_voice_pending(hass, entry), f"{DOMAIN}_voice_setup")
     return True
