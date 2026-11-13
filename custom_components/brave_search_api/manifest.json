@@ -1,10 +1,10 @@
 {
   "domain": "brave_search_api",
   "name": "Brave Search API",
-  "after_dependencies": ["assist_pipeline", "intent"],
+  "after_dependencies": ["assist_pipeline", "assist_satellite", "intent", "media_player", "notify", "person", "zone"],
   "codeowners": ["@irnutsmurt"],
   "config_flow": true,
-  "dependencies": ["conversation"],
+  "dependencies": ["conversation", "http"],
   "documentation": "https://github.com/irnutsmurt/brave-search-api",
   "integration_type": "service",
   "iot_class": "cloud_polling",

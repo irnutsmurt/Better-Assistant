@@ -1,6 +1,7 @@
 """Conversation agent. Pipeline for each sentence that reaches it:
 
-  "what did you hear" -> compound commands -> local answers -> question / command guards -> web search
+  "what did you hear" -> own sentences (reminders, alarms, notes, messages, stopwatch, timer
+  wordings; matched with hassil) -> compound commands -> local answers -> question / command guards -> web search
 
 Use it as the agent of an Assist pipeline with "prefer handling commands locally" on, so Home
 Assistant's own commands run first and only the leftovers come here."""
@@ -154,6 +155,10 @@ class BraveSearchAgent(conversation.ConversationEntity):
         if is_what_did_you_hear(text):
             return (f'I heard: "{heard[-1]}".' if heard else "I haven't heard anything else yet."), False
         heard.append(text)
+        skills = self._entry.runtime_data.skills
+        match = skills.recognize(text) if skills else None
+        if match:                                            # the integration's own sentences
+            return await skills.async_handle(match, text, user_input), False
         if self._opt(OPT_COMPOUND):
             done = await self._compound(text, user_input)
             if done:
