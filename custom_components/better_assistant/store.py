@@ -29,6 +29,7 @@ class BetterAssistantStore:
             self.data["lists"].setdefault(key, [])
         self.data.setdefault("reminders", {})       # todo uid -> reminder details
         self.data.setdefault("alarms", {})          # alarm key -> alarm
+        self.data.setdefault("vt_borrowed", {})    # pipeline id -> [speech-to-text, prefer local] during training
         self.data.setdefault("modes", {"guest": False, "night": False, "night_saved": {}, "guest_saved": {}})
 
     @staticmethod

@@ -252,11 +252,18 @@ class VoiceTrainer:
             found = [pid for pid, n, _e in pipelines(self.hass) if n == name] if name else []
             pipeline = assist_pipeline.async_get_pipeline(self.hass, found[0] if found else None)
             ours = our_stt(self.hass, self.entry.entry_id)
-            if pipeline.stt_engine == ours and not pipeline.prefer_local_intents:
+            store = self.entry.runtime_data.store
+            saved = store.data["vt_borrowed"].get(pipeline.id)
+            # a session cut short by a restart left it switched: its real settings are the saved ones
+            engine, prefer_local = (saved[0], bool(saved[1])) if saved else \
+                (pipeline.stt_engine, pipeline.prefer_local_intents)
+            if engine == ours and not prefer_local:
                 return
-            if pipeline.stt_engine != ours:
-                hub(self.hass).engine = pipeline.stt_engine
-            session.borrowed = (pipeline.id, pipeline.stt_engine, pipeline.prefer_local_intents)
+            if engine != ours:
+                hub(self.hass).engine = engine
+            session.borrowed = (pipeline.id, engine, prefer_local)
+            store.data["vt_borrowed"][pipeline.id] = [engine, prefer_local]
+            await store.async_flush()                  # put back after a restart, too
             # Home Assistant's own commands go first when local intents are preferred, so "set a timer
             # for ten minutes" would set a timer instead of reaching the trainer
             await assist_pipeline.async_update_pipeline(self.hass, pipeline, stt_engine=ours,
@@ -272,6 +279,9 @@ class VoiceTrainer:
             pipeline = assist_pipeline.async_get_pipeline(self.hass, pid)
             await assist_pipeline.async_update_pipeline(self.hass, pipeline, stt_engine=engine,
                                                         prefer_local_intents=prefer_local)
+            store = self.entry.runtime_data.store
+            store.data["vt_borrowed"].pop(pid, None)
+            store.changed()
         except Exception:  # noqa: BLE001
             _LOGGER.warning("Voice training: couldn't put back the speech-to-text of %s", pid, exc_info=True)
 
@@ -309,6 +319,11 @@ class VoiceTrainer:
             await asyncio.sleep(0.5)
         if session.until and await self._listen(session.satellite):
             self._end(session, "stopped")
+
+    async def async_give_back_leftovers(self) -> None:
+        """At startup: put back any assistant a session switched before Home Assistant restarted."""
+        for pid, (engine, prefer_local) in list(self.entry.runtime_data.store.data["vt_borrowed"].items()):
+            await self._give_back((pid, engine, bool(prefer_local)))
 
     def default_satellite(self, skills) -> str | None:
         chosen = self.entry.options.get(OPT_VT_SATELLITE)

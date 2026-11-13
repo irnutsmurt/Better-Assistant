@@ -386,10 +386,21 @@ async def test_borrow_turns_off_local_commands_and_gives_back(house, monkeypatch
     monkeypatch.setattr(voice_training, "our_stt", lambda hass, entry_id: "stt.better_assistant_speech_to_text")
     s = Session(person="person.rob", name="Rob", token="t", satellite=None)
     await house.trainer._borrow(s)
+    assert house.entry.runtime_data.store.data["vt_borrowed"] == {"p1": ["stt.faster_whisper", True]}
     assert updates[-1] == {"stt_engine": "stt.better_assistant_speech_to_text", "prefer_local_intents": False}
     assert hub(house.hass).engine == "stt.faster_whisper"
     house.trainer._end(s)
     await asyncio.sleep(0.05)
     await house.hass.async_block_till_done()
     assert updates[-1] == {"stt_engine": "stt.faster_whisper", "prefer_local_intents": True}
-    assert hub(house.hass).engine is None
+    assert hub(house.hass).engine is None and house.entry.runtime_data.store.data["vt_borrowed"] == {}
+
+    # a restart in the middle: the pipeline is still switched, the saved settings are the real ones
+    pipe.stt_engine, pipe.prefer_local_intents = "stt.better_assistant_speech_to_text", False
+    house.entry.runtime_data.store.data["vt_borrowed"] = {"p1": ["stt.faster_whisper", True]}
+    s2 = Session(person="person.rob", name="Rob", token="t2")
+    await house.trainer._borrow(s2)
+    assert s2.borrowed == ("p1", "stt.faster_whisper", True) and hub(house.hass).engine == "stt.faster_whisper"
+    await house.trainer.async_give_back_leftovers()
+    assert updates[-1] == {"stt_engine": "stt.faster_whisper", "prefer_local_intents": True}
+    assert house.entry.runtime_data.store.data["vt_borrowed"] == {}
