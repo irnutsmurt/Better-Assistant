@@ -70,6 +70,19 @@ contain a real definition.
    it recognises itself, and only unrecognised sentences reach this agent.
 4. Pick your speech-to-text and text-to-speech engines as usual.
 
+### Without Nabu Casa
+
+Nothing here needs a Home Assistant Cloud subscription. Speech-to-text and text-to-speech are
+whatever your pipeline uses, and the free local add-ons work fine:
+
+- **Speech-to-text: Whisper** (Settings > Add-ons > Whisper). Use the `base-int8` or `base.en` model
+  or larger. `tiny` is fast but mishears short questions, and a misheard question becomes a strange
+  web search. Add an initial prompt such as *"Questions and commands for a smart home."* to help it.
+- **Text-to-speech: Piper** (Settings > Add-ons > Piper). Alarms, reminders and announcements speak
+  through each speaker's own pipeline, so they use Piper too.
+- **Speed:** on a Raspberry Pi 4/5, `base` Whisper takes a second or two per sentence; on an
+  x86 mini PC it is near instant. Cloud speech is quicker and more accurate on slow hardware.
+
 ## Settings page
 
 **Settings > Devices & services > Brave Search API > Configure** opens a menu:
