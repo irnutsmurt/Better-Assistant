@@ -13,18 +13,20 @@ understands itself (lights, timers, "what time is it") runs locally as usual. An
 comes to this agent, which:
 
 1. **Answers "what did you hear?"** with the last sentence it received.
-2. **Runs compound commands** such as "turn off the desk lamp and the porch light then play the
+2. **Handles its own household skills** (details below): reminders, alarms, notes, household
+   messages, a stopwatch, and extra wordings for Home Assistant's built-in timers.
+3. **Runs compound commands** such as "turn off the desk lamp and the porch light then play the
    news". It splits the sentence, carries the verb onto bare device names, checks that *every* part is
    a real Home Assistant command (dry run), and only then runs each part through Home Assistant's own
    agent. If any part isn't a command, nothing runs.
-3. **Answers locally, with no search:** spelling ("how do you spell necessary"), arithmetic ("what's
+4. **Answers locally, with no search:** spelling ("how do you spell necessary"), arithmetic ("what's
    15 percent of 80"), unit conversions ("how many tablespoons in a cup", "350 Fahrenheit in Celsius"),
    holiday and date questions ("how many days until Thanksgiving"), world clock ("what time is it in
    Tokyo"), coin flips, dice and "pick a number between 1 and 50".
-4. **Guards against misheard commands:** only question-shaped sentences are searched ("Sorry, I
+5. **Guards against misheard commands:** only question-shaped sentences are searched ("Sorry, I
    didn't catch that." otherwise), and sentences that start like a command or name one of your
    exposed devices or areas are never sent to the web.
-5. **Looks it up on the web** with the Brave Search API "LLM Context" endpoint. The API returns
+6. **Looks it up on the web** with the Brave Search API "LLM Context" endpoint. The API returns
    passages from real web pages; the integration reads out the single sentence that best matches your
    question and names the site: *"From mayoclinic dot org, ..."*. Medicine, health, pets, food safety,
    gardening, films, people and dictionary questions are steered towards trusted sites for that topic.
@@ -97,6 +99,35 @@ Detection runs once after Home Assistant starts. Just press Submit to accept a s
 something, only your changes are stored, separately, so **Re-detect devices** refreshes everything
 else without undoing your edits.
 
+## Household skills
+
+These sentences are recognised by the agent itself (with hassil, like Home Assistant's own
+commands), before any guard or search. Who is speaking comes from the signed-in user; on a voice
+speaker with several people in the house, say the person's name ("remind Sam to ...").
+
+| Skill | Say | What happens |
+|---|---|---|
+| Reminders | "remind me to call the dentist tomorrow at 3", "remind me at 5 to ...", "remind me to buy milk when I get home / when I leave", "... when I get to work / leave work", "remind Sam to feed the cat at 6 / when she gets home", "what are my reminders", "cancel my reminders", "cancel the reminder to call the dentist" | Kept in the integration's own **Reminders** to-do list. When due, announced on the voice speaker and sent to the person's phone, then ticked off. Places are your Home Assistant zones; if a place has no zone you're told how to add one. A reminder for someone else waits until they're home. |
+| Alarms | "set an alarm for 7", "wake me up at 6:30", "set an alarm for every weekday at 6:45", "what time is my alarm", "cancel my alarm", "snooze", "stop the alarm" | One alarm per voice speaker. Rings with a bundled tone on that speaker's own media player for up to 10 minutes. Snooze is 9 minutes. Daily, weekday and weekend repeats. |
+| Timers | "set a pizza timer for 20 minutes", "set a 20 minute pizza timer", "add a minute to the timer", "give the pizza timer 5 more minutes", "take a minute off the timer" | Extra wordings handed to Home Assistant's **built-in** timers. Plain "set a timer for 10 minutes" still goes straight to the built-in. |
+| Notes | "take a note that the wifi password is on the fridge", "remember that ...", "remember I put the passports in the top drawer", "where did I put the passports", "read my notes", "clear my notes" | **Notes** to-do list. Read back with "my" turned into "your". |
+| Messages | "leave a message for Sam that dinner is in the oven", "leave a note that ...", "any messages?" | **Messages** to-do list. Messages are read to the person they're for (or anyone) and then ticked off. |
+| Stopwatch | "start the stopwatch", "how long has the stopwatch been running", "stop the stopwatch" | One per voice speaker, in memory. |
+
+Times without AM/PM mean the next time that clock time comes round ("7" said at 6:28 PM is 7 PM).
+When a day or date is given ("tomorrow at 3"), 1-6 o'clock means PM for reminders and AM for alarms.
+
+### Timer wordings and Home Assistant's own matcher
+
+Home Assistant has no supported way for an integration to add sentences to its built-in intents;
+custom sentences are only read from `config/custom_sentences/`. So the agent matches these timer
+wordings itself (from `custom_components/brave_search_api/sentences/timers_en.yaml`) and passes them
+to the built-in timer intents. That covers voice pipelines that use this agent.
+
+If you also want Home Assistant's own agent to understand them (for example in a pipeline that
+doesn't use this integration), copy `custom_sentences/en/brave_search_api_timers.yaml` from this
+repository into `config/custom_sentences/en/` and restart Home Assistant (or reload Conversation).
+
 ## "What did you hear?"
 
 The agent remembers the last 5 sentences **it** received (in memory only, cleared on restart) and
@@ -109,6 +140,8 @@ custom integrations, so it isn't used.)
 
 - Only the **question text** is sent to the Brave Search API, and only when it gets past the guards
   and isn't answered locally. With no key, nothing is sent at all.
+- Reminders, notes and messages stay in Home Assistant. Phone notifications go through your own
+  Home Assistant companion app.
 - Nothing else leaves your home: no device names, states, locations, voices or audio. Device
   detection reads your local registries only.
 - The search count is kept in Home Assistant's own storage (`.storage`), not in a file you have to
@@ -118,18 +151,15 @@ custom integrations, so it isn't used.)
 
 Later versions will use the detected devices for:
 
-- Reminders, alarms and timers with natural phrasing ("remind me tomorrow at 3", "every weekday at 6:45")
 - Recipes, read step by step
 - Music on any speaker ("play jazz in the kitchen", "play it here")
 - Calendar: what's on, and adding events
-- Notes and messages between people in the house
 - Whole-room on/off ("turn off the living room")
 - Cameras and outside: "who's outside?", show a camera on a TV
 - Health report: low batteries and unavailable devices
 - Guest mode and night mode
 - Thermostat, TV (apps and inputs) and bed controls
 - Broadcasts to every speaker
-- Location reminders ("remind me when I get home")
 
 ## Development
 
