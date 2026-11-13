@@ -1,4 +1,4 @@
-<p align="center"><img src="brand/icon@2x.png" alt="Better Assistant" width="160"></p>
+<p align="center"><img src="custom_components/better_assistant/brand/icon@2x.png" alt="Better Assistant" width="160"></p>
 
 # Better Assistant for Home Assistant
 
