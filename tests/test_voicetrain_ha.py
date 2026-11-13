@@ -364,3 +364,25 @@ async def test_voice_page_commands(house, monkeypatch):
     await house.hass.async_block_till_done()
     assert conn.sent[-1]["event"]["status"] == "stopped"
     conn.subscriptions[1]()                                    # unsubscribe
+
+
+async def test_borrow_turns_off_local_commands_and_gives_back(house, monkeypatch):
+    from homeassistant.components import assist_pipeline
+    from custom_components.better_assistant.core.voicetrain import Session
+    pipe = types.SimpleNamespace(id="p1", stt_engine="stt.faster_whisper", prefer_local_intents=True)
+    updates = []
+
+    async def fake_update(hass, pipeline, **changes):
+        updates.append(changes)
+    monkeypatch.setattr(assist_pipeline, "async_get_pipeline", lambda hass, pid=None: pipe)
+    monkeypatch.setattr(assist_pipeline, "async_update_pipeline", fake_update)
+    monkeypatch.setattr(voice_training, "our_stt", lambda hass, entry_id: "stt.better_assistant_speech_to_text")
+    s = Session(person="person.rob", name="Rob", token="t", satellite=None)
+    await house.trainer._borrow(s)
+    assert updates[-1] == {"stt_engine": "stt.better_assistant_speech_to_text", "prefer_local_intents": False}
+    assert hub(house.hass).engine == "stt.faster_whisper"
+    house.trainer._end(s)
+    await asyncio.sleep(0.05)
+    await house.hass.async_block_till_done()
+    assert updates[-1] == {"stt_engine": "stt.faster_whisper", "prefer_local_intents": True}
+    assert hub(house.hass).engine is None

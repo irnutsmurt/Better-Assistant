@@ -251,21 +251,26 @@ class VoiceTrainer:
             found = [pid for pid, n, _e in pipelines(self.hass) if n == name] if name else []
             pipeline = assist_pipeline.async_get_pipeline(self.hass, found[0] if found else None)
             ours = our_stt(self.hass, self.entry.entry_id)
-            if pipeline.stt_engine == ours:
+            if pipeline.stt_engine == ours and not pipeline.prefer_local_intents:
                 return
-            hub(self.hass).engine = pipeline.stt_engine
-            session.borrowed = (pipeline.id, pipeline.stt_engine)
-            await assist_pipeline.async_update_pipeline(self.hass, pipeline, stt_engine=ours)
+            if pipeline.stt_engine != ours:
+                hub(self.hass).engine = pipeline.stt_engine
+            session.borrowed = (pipeline.id, pipeline.stt_engine, pipeline.prefer_local_intents)
+            # Home Assistant's own commands go first when local intents are preferred, so "set a timer
+            # for ten minutes" would set a timer instead of reaching the trainer
+            await assist_pipeline.async_update_pipeline(self.hass, pipeline, stt_engine=ours,
+                                                        prefer_local_intents=False)
         except Exception:  # noqa: BLE001 - train anyway; the clip just isn't saved
             _LOGGER.warning("Voice training: couldn't record on this speaker's assistant", exc_info=True)
 
-    async def _give_back(self, borrowed: tuple[str, str | None]) -> None:
+    async def _give_back(self, borrowed: tuple[str, str | None, bool]) -> None:
         from homeassistant.components import assist_pipeline  # noqa: PLC0415
-        pid, engine = borrowed
+        pid, engine, prefer_local = borrowed
         hub(self.hass).engine = None
         try:
             pipeline = assist_pipeline.async_get_pipeline(self.hass, pid)
-            await assist_pipeline.async_update_pipeline(self.hass, pipeline, stt_engine=engine)
+            await assist_pipeline.async_update_pipeline(self.hass, pipeline, stt_engine=engine,
+                                                        prefer_local_intents=prefer_local)
         except Exception:  # noqa: BLE001
             _LOGGER.warning("Voice training: couldn't put back the speech-to-text of %s", pid, exc_info=True)
 

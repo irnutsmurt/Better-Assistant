@@ -127,7 +127,8 @@ class Session:
     silent: bool = False        # the speaker says nothing (phrases on a phone or the dashboard)
     results: list[str] = field(default_factory=list)   # per phrase: "said" / "skipped" (in order)
     hint: str = ""              # the last "try again" message, for the screen
-    borrowed: tuple[str, str | None] | None = None     # (pipeline id, its own speech-to-text) while training
+    borrowed: tuple[str, str | None, bool] | None = None   # (pipeline id, its speech-to-text, prefer local
+                                                            # intents) to put back after training
 
 
 def intro(name: str) -> str:
@@ -243,7 +244,8 @@ class CaptureSlot:
     silent: bool = False        # the speaker says nothing (phrases on a phone or the dashboard)
     results: list[str] = field(default_factory=list)   # per phrase: "said" / "skipped" (in order)
     hint: str = ""              # the last "try again" message, for the screen
-    borrowed: tuple[str, str | None] | None = None     # (pipeline id, its own speech-to-text) while training
+    borrowed: tuple[str, str | None, bool] | None = None   # (pipeline id, its speech-to-text, prefer local
+                                                            # intents) to put back after training
     until: float = 0.0
 
 
