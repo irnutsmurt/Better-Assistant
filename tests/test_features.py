@@ -200,7 +200,7 @@ def test_say_where():
 
 
 def test_resolve_person_ignores_spaces_from_speech():
-    from custom_components.better_assistant.core.features import resolve_person
+    from core.features import resolve_person
     people = [("person.supremehomegod", "supremehomegod", []), ("person.leila", "Leila", [])]
     assert resolve_person("supreme home god", people) == ("person.supremehomegod", None)
     assert resolve_person("Supreme-Home God", people) == ("person.supremehomegod", None)
