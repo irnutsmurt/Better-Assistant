@@ -289,38 +289,38 @@ async def test_phone_mode_without_a_phone_reads_aloud(house):
     assert speech == f"{PHRASES[1]}."
 
 
-async def test_start_from_phone_then_skip_and_stop(house, monkeypatch):
-    house.entry.options["voice_training_phone"] = True
-    sent, started = [], []
-
-    async def fake_notify(call):
-        sent.append(call.data)
+async def test_start_button_then_skip_and_stop(house):
+    started = []
 
     async def fake_start(call):
         started.append(call.data)
-    house.hass.services.async_register("notify", "mobile_app_robs_phone", fake_notify)
     house.hass.services.async_register("assist_satellite", "start_conversation", fake_start)
     house.hass.states.async_set("assist_satellite.kitchen", "idle")
-    monkeypatch.setattr(house.skills, "phone_for", lambda p: "notify.mobile_app_robs_phone" if p == "person.rob" else None)
+    t = house.trainer
+    assert t.view["status"] == "idle"
 
-    assert await house.trainer.async_start_from_phone(house.skills, "nobody") is not None
-    assert await house.trainer.async_start_from_phone(house.skills, "u1") is None
+    assert await t.async_start_from_phone(house.skills, "nobody") is not None
+    assert await t.async_start_from_phone(house.skills, "u1") is None
     assert started[-1]["entity_id"] == "assist_satellite.kitchen" and not started[-1]["preannounce"]
-    assert "1 of 8" in sent[-1]["message"] and {a["title"] for a in sent[-1]["data"]["actions"]} == {"Skip", "Stop"}
+    assert t.view["status"] == "training" and t.view["current"] == 1 and t.view["name"] == "Rob"
+    assert [p["state"] for p in t.view["phrases"]][:2] == ["current", "waiting"]
     slot = hub(house.hass).take(time.time())
     assert slot.person == "person.rob" and slot.phrase == PHRASES[0] and slot.satellite == "assist_satellite.kitchen"
 
-    # the speaker's first turn claims the session; the speaker says nothing
+    # the speaker's first turn claims the session; the speaker says nothing, the screen moves on
     inp = ConversationInput(text=PHRASES[0], context=Context(), conversation_id="c9", device_id="dev1",
                             satellite_id="assist_satellite.kitchen", language="en", agent_id="conversation.x")
-    speech, keep = await house.trainer.async_handle(PHRASES[0], inp, "c9", house.skills)
-    assert (speech, keep) == ("", True) and "2 of 8" in sent[-1]["message"]
+    assert await t.async_handle(PHRASES[0], inp, "c9", house.skills) == ("", True)
+    assert [p["state"] for p in t.view["phrases"]][:3] == ["said", "current", "waiting"]
 
-    await house.trainer.async_phone_action("BETTER_ASSISTANT_VT_SKIP", house.skills)
-    assert "3 of 8" in sent[-1]["message"] and hub(house.hass).slot.phrase == PHRASES[2]
-    await house.trainer.async_phone_action("BETTER_ASSISTANT_VT_STOP", house.skills)
-    assert sent[-1]["message"].startswith("Okay, I stopped voice training.")
-    assert house.trainer.active("c9") is None and hub(house.hass).slot is None
+    speech, _ = await t.async_handle("something else entirely about the news today", inp, "c9", house.skills)
+    assert speech == "" and t.view["hint"] == "That didn't sound like the phrase. Try again."
+
+    await t.async_phone_action("BETTER_ASSISTANT_VT_SKIP", house.skills)
+    assert [p["state"] for p in t.view["phrases"]][:3] == ["said", "skipped", "current"]
+    assert hub(house.hass).slot.phrase == PHRASES[2] and t.view["hint"] == ""
+    await t.async_phone_action("BETTER_ASSISTANT_VT_STOP", house.skills)
+    assert t.view["status"] == "stopped" and t.active("c9") is None and hub(house.hass).slot is None
 
 
 async def test_start_from_phone_needs_training_on(house):

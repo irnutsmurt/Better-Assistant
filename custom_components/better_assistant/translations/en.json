@@ -474,6 +474,15 @@
     "sensor": {
       "searches_this_month": {
         "name": "Brave searches this month"
+      },
+      "voice_training": {
+        "name": "Voice training",
+        "state": {
+          "idle": "Idle",
+          "training": "Training",
+          "done": "Done",
+          "stopped": "Stopped"
+        }
       }
     },
     "todo": {
@@ -503,6 +512,12 @@
     "button": {
       "start_voice_training": {
         "name": "Start voice training"
+      },
+      "skip_phrase": {
+        "name": "Skip phrase"
+      },
+      "stop_voice_training": {
+        "name": "Stop voice training"
       }
     }
   }

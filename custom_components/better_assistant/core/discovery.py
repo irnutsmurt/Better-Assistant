@@ -298,6 +298,9 @@ def _sleepiq(bed: list[Entity], people: list[Person]) -> tuple[dict, dict]:
     return sleepers, sides
 
 
+WATCH = re.compile(r"\bwatch\b|wear ?os|galaxy watch|apple watch", re.I)
+
+
 def _phones(h: _House) -> list[dict[str, Any]]:
     services = set(h.snap.notify_services)
     owner_by_tracker = {t: p.entity_id for p in h.snap.people for t in p.device_trackers}
@@ -312,9 +315,14 @@ def _phones(h: _House) -> list[dict[str, Any]]:
             continue
         person = next((owner_by_tracker[e.entity_id] for e in ents
                        if e.domain == "device_tracker" and e.entity_id in owner_by_tracker), None)
+        tracked = person is not None                       # the person's own tracker, not just the same login
         if person is None and dev.user_id:
             person = person_by_user.get(dev.user_id)       # same signed-in user as a person
-        phones.append({"service": f"notify.{service}", "device_id": dev.id, "person": person})
+        watch = bool(WATCH.search(f"{dev.name} {dev.model}"))
+        phones.append({"service": f"notify.{service}", "device_id": dev.id, "person": person,
+                       "_rank": (watch, not tracked)})
+    # a person's phone before their watch, and the device that tracks them before other logins
+    phones.sort(key=lambda p: p.pop("_rank"))
     return phones
 
 

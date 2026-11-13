@@ -218,3 +218,14 @@ def test_sleepiq_kind_prefers_translation_key(house):
                                  translation_key="sleep_score", unique_id="abc_robin_sleep_score"))
     assert classify(house)["bed"]["sleepers"]["person.robin_example"]["score"] == \
         "sensor.sleepnumber_testbed_robin_score_2"
+
+
+def test_phone_before_watch_with_the_same_login(house):
+    # a watch signed in as the same user, found first: the phone still wins
+    house.devices = {"watch1": Device("watch1", name="Pixel Watch 4", model="Pixel Watch 4", user_id="u1"),
+                          **house.devices}
+    house.entities.append(Entity("sensor.watch_battery", platform="mobile_app", device_id="watch1"))
+    house.notify_services.append("mobile_app_pixel_watch_4")
+    phones = classify(house)["phones"]
+    assert [p["service"] for p in phones] == ["notify.mobile_app_alex_phone", "notify.mobile_app_pixel_watch_4"]
+    assert all(p["person"] == "person.alex" for p in phones)

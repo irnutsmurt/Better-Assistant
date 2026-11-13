@@ -124,6 +124,9 @@ class Session:
     phone: str | None = None    # notify service showing the phrases; the speaker stays silent
     satellite: str | None = None
     device_id: str | None = None
+    silent: bool = False        # the speaker says nothing (phrases on a phone or the dashboard)
+    results: list[str] = field(default_factory=list)   # per phrase: "said" / "skipped" (in order)
+    hint: str = ""              # the last "try again" message, for the screen
 
 
 def intro(name: str) -> str:
@@ -141,11 +144,31 @@ PENDING_SECONDS = 60.0                        # a start from the phone waits thi
 
 def skip(session: Session) -> Step:
     """The Skip button on the phone: on to the next phrase."""
+    session.results.append("skipped")
+    session.hint = ""
     session.index += 1
     session.reasks = 0
     if session.index >= len(PHRASES):
         return Step(finish_text(session), True, False)
     return Step(prompt(session.index), False, True)
+
+
+def view(session: Session | None, status: str) -> dict:
+    """What the Voice training sensor shows: status plus every phrase as said / skipped / current /
+    waiting."""
+    phrases = []
+    for i, text in enumerate(PHRASES):
+        if session and i < len(session.results):
+            state = session.results[i]
+        elif session and status == "training" and i == session.index:
+            state = "current"
+        else:
+            state = "waiting"
+        phrases.append({"text": text, "state": state})
+    return {"status": status, "person": session.person if session else None,
+            "name": session.name if session else None, "current": session.index + 1 if session else 0,
+            "total": len(PHRASES), "saved": session.saved if session else 0,
+            "hint": session.hint if session else "", "phrases": phrases}
 
 
 def stop(session: Session) -> Step:
@@ -192,12 +215,16 @@ def step(session: Session, heard: str) -> Step:
                 return Step("Go ahead.", False, True)          # short, so there's little to hear again
             lead = "I didn't catch that." if too_short(heard) or heard == NOTHING_HEARD \
                 else "That didn't sound like the phrase."
+            session.hint = f"{lead} Try again."
             return Step(f"{lead} Try again: {PHRASES[session.index]}.", False, True)
         lead = "Let's skip that one."
+        session.results.append("skipped")
     else:
         lead = ""
+        session.results.append("said")
     session.index += 1
     session.reasks = 0
+    session.hint = ""
     if session.index >= len(PHRASES):
         return Step(finish_text(session), True, False)
     return Step(f"{lead} {prompt(session.index)}".strip(), False, True)
@@ -212,6 +239,9 @@ class CaptureSlot:
     token: str = ""
     satellite: str | None = None
     device_id: str | None = None
+    silent: bool = False        # the speaker says nothing (phrases on a phone or the dashboard)
+    results: list[str] = field(default_factory=list)   # per phrase: "said" / "skipped" (in order)
+    hint: str = ""              # the last "try again" message, for the screen
     until: float = 0.0
 
 

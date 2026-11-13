@@ -6,6 +6,7 @@ for a later voice-match test. Off by default: nothing is recorded until it is tu
 Recordings never leave the machine: they are plain files under the config folder."""
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import shutil
@@ -21,6 +22,7 @@ from homeassistant.util import dt as dt_util
 from .const import (DOMAIN, OPT_VT_ENABLED, OPT_VT_ORIGINALS, OPT_VT_PHONE, OPT_VT_RECORD_TEST,
                     OPT_VT_SATELLITE, OPT_VT_STT)
 from .core.voicetrain import (
+    view,
     ACTION_SKIP,
     ACTION_STOP,
     PENDING_SECONDS,
@@ -173,6 +175,19 @@ class VoiceTrainer:
         self.hass, self.entry = hass, entry
         self._sessions: dict[str, Session] = {}
         self._pending: dict[str, Session] = {}         # satellite -> a session started from the phone
+        self.view: dict = view(None, "idle")            # what the Voice training sensor shows
+        self._listeners: list = []
+
+    def add_listener(self, listener) -> callable:
+        self._listeners.append(listener)
+        return lambda: self._listeners.remove(listener)
+
+    def _publish(self, session: Session | None, status: str) -> None:
+        if session is not None:
+            session.saved = hub(self.hass).saved_for(session.token) or session.saved
+        self.view = view(session, status)
+        for listener in list(self._listeners):
+            listener()
 
     def _enabled(self) -> bool:
         return bool(self.entry.options.get(OPT_VT_ENABLED))
@@ -207,7 +222,9 @@ class VoiceTrainer:
             return session
         return None
 
-    def _end(self, session: Session) -> None:
+    def _end(self, session: Session, status: str = "done") -> None:
+        self._publish(session, status)
+        session.until = 0.0                            # over: later replies don't publish "training"
         for key, s in list(self._sessions.items()):
             if s is session:
                 self._sessions.pop(key, None)
@@ -234,43 +251,45 @@ class VoiceTrainer:
                        if user_id and st.attributes.get("user_id") == user_id), None)
         if not person:
             return "I couldn't tell who pressed the button. Link your user to a person in Settings > People."
-        phone = skills.phone_for(person)
-        if not phone:
-            return "I couldn't find a phone with the Home Assistant app for you."
         satellite = satellite or self.default_satellite(skills)
         if not satellite:
             return "There's no voice speaker to train on."
         for s in list(self._sessions.values()) + list(self._pending.values()):
             if s.person == person:
                 self._end(s)
-        session = Session(person=person, name=skills.person_name(person), token=uuid4().hex, phone=phone,
+        session = Session(person=person, name=skills.person_name(person), token=uuid4().hex, silent=True,
                           satellite=satellite)
         self._arm(session)
         session.until = time.time() + PENDING_SECONDS
         self._pending[satellite] = session
-        await self._say(session, skills, intro(session.name))
-        try:
-            await self.hass.services.async_call(
-                "assist_satellite", "start_conversation",
-                {"entity_id": satellite, "start_media_id": PREANNOUNCE_URL, "preannounce": False},
-                blocking=True)
-        except Exception as err:  # noqa: BLE001
-            self._end(session)
-            return f"The speaker couldn't start listening ({err})."
-        return None
+        self._publish(session, "training")
+        for attempt in range(3):                       # the speaker may still be finishing a reply
+            try:
+                await self.hass.services.async_call(
+                    "assist_satellite", "start_conversation",
+                    {"entity_id": satellite, "start_media_id": PREANNOUNCE_URL, "preannounce": False},
+                    blocking=True)
+                return None
+            except Exception as err:  # noqa: BLE001
+                _LOGGER.warning("Voice training: %s couldn't start listening (try %s): %r",
+                                satellite, attempt + 1, err)
+                problem = str(err) or type(err).__name__
+                await asyncio.sleep(1.5)
+        self._end(session, "stopped")
+        return f"The speaker couldn't start listening ({problem})."
 
     async def async_phone_action(self, action: str, skills) -> None:
         """Stop / Skip pressed on the training notification."""
         if action not in (ACTION_STOP, ACTION_SKIP):
             return
-        sessions = [s for s in list(self._sessions.values()) + list(self._pending.values()) if s.phone]
+        sessions = list(self._sessions.values()) + list(self._pending.values())
         if not sessions:
             return
         session = sessions[-1]
         session.saved = hub(self.hass).saved_for(session.token)
         result = stop(session) if action == ACTION_STOP else skip(session)
         if result.done:
-            self._end(session)
+            self._end(session, "stopped" if action == ACTION_STOP else "done")
         else:
             self._arm(session)
         await self._say(session, skills, result.reply)
@@ -282,7 +301,7 @@ class VoiceTrainer:
             session.saved = hub(self.hass).saved_for(session.token)
             result = step(session, text)
             if result.done:
-                self._end(session)
+                self._end(session, "done" if session.index >= len(PHRASES) else "stopped")
             else:
                 self._arm(session, user_input)
             return await self._say(session, skills, result.reply), not result.done
@@ -309,8 +328,10 @@ class VoiceTrainer:
         session = Session(person=person, name=skills.person_name(person), token=uuid4().hex)
         self._sessions[conversation_id] = session
         self._arm(session, user_input)
+        self._publish(session, "training")
         if self.entry.options.get(OPT_VT_PHONE, True):
             session.phone = skills.phone_for(person)
+            session.silent = bool(session.phone)
             if session.phone:
                 await self._say(session, skills, intro(session.name))
                 session.last_said = PHONE_START
@@ -323,7 +344,12 @@ class VoiceTrainer:
     async def _say(self, session: Session, skills, reply: str) -> str:
         """Speaker mode: the reply is spoken. Phone mode: it goes to the phone and the speaker says
         nothing, so there is nothing for its microphone to pick up."""
+        if session.index < len(PHRASES) and session.until:
+            self._publish(session, "training")
         if not session.phone:
+            if session.silent:
+                session.last_said = ""
+                return ""
             session.last_said = reply
             return reply
         await skills.notify(session.person, PHONE_TITLE, phone_text(session, reply),
