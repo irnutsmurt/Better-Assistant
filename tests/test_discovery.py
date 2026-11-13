@@ -60,11 +60,14 @@ def test_satellite_and_here_player(house):
     house.entities.append(Entity("media_player.voice_box_ma", platform="music_assistant", device_id="sat1"))
     d = classify(house)
     assert d["satellites"] == [{"entity_id": "assist_satellite.voice_box", "device_id": "sat1",
-                                "area_id": "living", "here_player": "media_player.voice_box_ma"}]
+                                "area_id": "living", "here_player": "media_player.voice_box_ma",
+                                "media_player": "media_player.voice_box", "led": "light.voice_box_led_ring"}]
     assert {"entity_id": "media_player.living_speaker", "area_id": "living"} in d["music_players"]
 
 
-def test_no_here_player_without_shared_device(house):
+def test_here_player_falls_back_to_same_area(house):
+    assert classify(house)["satellites"][0]["here_player"] == "media_player.living_speaker"
+    house.devices["ma1"].area_id = "bedroom"
     assert classify(house)["satellites"][0]["here_player"] is None
 
 
@@ -123,16 +126,17 @@ def test_misc(house):
     assert {b["entity_id"]: b["personal"] for b in d["batteries"]} == {
         "sensor.alex_phone_battery_level": True, "sensor.ceiling_battery": False}
     assert d["unavailable"] == {"bulb1": ["light.ceiling"]}
-    assert d["bed"] == {"firmness": [], "presets": [], "presence": []}
+    assert {k: d["bed"][k] for k in ("firmness", "presets", "presence")} == {"firmness": [], "presets": [], "presence": []}
 
 
 def test_sleepiq_bed(house):
     house.entities += [Entity("number.bed_left_firmness", platform="sleepiq"),
                        Entity("select.bed_foundation_preset", platform="sleepiq"),
                        Entity("binary_sensor.bed_left_is_in_bed", platform="sleepiq")]
-    assert classify(house)["bed"] == {"firmness": ["number.bed_left_firmness"],
-                                      "presets": ["select.bed_foundation_preset"],
-                                      "presence": ["binary_sensor.bed_left_is_in_bed"]}
+    bed = classify(house)["bed"]
+    assert {k: bed[k] for k in ("firmness", "presets", "presence")} == {
+        "firmness": ["number.bed_left_firmness"], "presets": ["select.bed_foundation_preset"],
+        "presence": ["binary_sensor.bed_left_is_in_bed"]}
 
 
 def test_outdoor_areas_guess_and_override(house):

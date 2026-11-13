@@ -130,8 +130,12 @@ def classify(snap: Snapshot, outdoor_areas: list[str] | None = None) -> dict[str
     satellite_devices = set()
     for s in h.of("assist_satellite"):
         here = next((p.entity_id for p in ma_players if s.device_id and p.device_id == s.device_id), None)
+        own = h.by_device.get(s.device_id or "", [])
+        here = here or next((p.entity_id for p in ma_players if h.area(p) and h.area(p) == h.area(s)), None)
         satellites.append({"entity_id": s.entity_id, "device_id": s.device_id, "area_id": h.area(s),
-                           "here_player": here})
+                           "here_player": here,
+                           "media_player": next((e.entity_id for e in own if e.domain == "media_player"), None),
+                           "led": next((e.entity_id for e in own if e.domain == "light"), None)})
         if s.device_id:
             satellite_devices.add(s.device_id)
     out["satellites"] = satellites
@@ -188,9 +192,19 @@ def classify(snap: Snapshot, outdoor_areas: list[str] | None = None) -> dict[str
     out["unavailable"] = unavailable
 
     bed = [e for e in snap.entities if e.platform == "sleepiq"]
-    out["bed"] = {"firmness": [e.entity_id for e in bed if e.domain == "number"],
+    firm = re.compile(r"firmness|sleep.?number", re.I)
+    out["bed"] = {"firmness": [e.entity_id for e in bed if e.domain == "number" and firm.search(e.entity_id + " " + e.name)],
+                  "actuators": [e.entity_id for e in bed if e.domain == "number" and not firm.search(e.entity_id + " " + e.name)],
                   "presets": [e.entity_id for e in bed if e.domain == "select"],
-                  "presence": [e.entity_id for e in bed if e.domain == "binary_sensor"]}
+                  "presence": [e.entity_id for e in bed if e.domain == "binary_sensor"],
+                  "sensors": [e.entity_id for e in bed if e.domain == "sensor"],
+                  "left_person": None, "right_person": None}
+    out["locks"] = [e.entity_id for e in h.of("lock")]
+    out["garage_doors"] = [e.entity_id for e in h.of("cover") if e.device_class in ("garage", "gate")]
+    out["protected"] = out["locks"] + out["garage_doors"]
+    out["tts_engine"] = next((e.entity_id for e in h.of("tts")), None)
+    out["broadcast_players"] = []
+    out["vacuums"] = [e.entity_id for e in h.of("vacuum")]
     return out
 
 
