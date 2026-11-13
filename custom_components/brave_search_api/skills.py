@@ -19,12 +19,13 @@ from homeassistant.helpers.event import async_track_point_in_time, async_track_s
 from homeassistant.helpers.network import NoURLAvailableError, get_url
 from homeassistant.util import dt as dt_util
 
-from .const import ALARM_URL, DEFAULTS, OPT_SNOOZE, OPT_SNOOZE_LIMIT, RING_MINUTES
+from .const import ALARM_URL, DEFAULTS, OPT_SNOOZE, OPT_SNOOZE_ENABLED, OPT_SNOOZE_LIMIT, RING_MINUTES
 from .core import intents as sentences
 from .core.features import (
     Stopwatch,
     best_note,
     describe_snooze,
+    effective_limit,
     flip_pronouns,
     next_alarm,
     note_from,
@@ -449,10 +450,13 @@ class Skills:
         return int(self.entry.options.get(OPT_SNOOZE, DEFAULTS[OPT_SNOOZE]))
 
     def snooze_limit(self) -> int | None:
-        return self.entry.options.get(OPT_SNOOZE_LIMIT, DEFAULTS[OPT_SNOOZE_LIMIT])
+        """0 when snoozing is off, else the per-alarm limit (None = unlimited)."""
+        opts = self.entry.options
+        return effective_limit(opts.get(OPT_SNOOZE_ENABLED, DEFAULTS[OPT_SNOOZE_ENABLED]),
+                               opts.get(OPT_SNOOZE_LIMIT, DEFAULTS[OPT_SNOOZE_LIMIT]))
 
-    def _save_option(self, key: str, value) -> None:
-        self.hass.config_entries.async_update_entry(self.entry, options={**self.entry.options, key: value})
+    def _save_option(self, key: str, value, **more) -> None:
+        self.hass.config_entries.async_update_entry(self.entry, options={**self.entry.options, key: value, **more})
 
     async def _h_alarm_snooze_set(self, slots: dict, user_input) -> str:
         minutes, reply = snooze_length_reply(int(slots.get("minutes") or self.snooze_default()))
@@ -460,13 +464,16 @@ class Skills:
         return reply
 
     async def _h_snooze_limit_set(self, slots: dict, user_input) -> str:
-        limit, reply = snooze_limit_reply(int(slots.get("count", 0)))
-        self._save_option(OPT_SNOOZE_LIMIT, limit)
+        enabled, limit, reply = snooze_limit_reply(int(slots.get("count", 0)))
+        if enabled:
+            self._save_option(OPT_SNOOZE_LIMIT, limit, **{OPT_SNOOZE_ENABLED: True})
+        else:
+            self._save_option(OPT_SNOOZE_ENABLED, False)    # keep the limit for when it's turned back on
         return reply
 
     async def _h_snooze_limit_clear(self, slots: dict, user_input) -> str:
-        limit, reply = snooze_limit_reply(None)
-        self._save_option(OPT_SNOOZE_LIMIT, limit)
+        enabled, limit, reply = snooze_limit_reply(None)
+        self._save_option(OPT_SNOOZE_LIMIT, limit, **{OPT_SNOOZE_ENABLED: enabled})
         return reply
 
     async def _h_snooze_limit_query(self, slots: dict, user_input) -> str:

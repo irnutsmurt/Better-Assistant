@@ -161,3 +161,14 @@ def test_snooze_limit_set(text, count):
 ])
 def test_snooze_limit_other(text, intent):
     assert m(text)[0] == intent
+
+
+@pytest.mark.parametrize("text,intent,slots", [
+    ("turn off the snooze limit", "SnoozeLimitClear", {}),          # unlimited, NOT snoozing off
+    ("turn off the snooze", "SnoozeLimitSet", {"count": 0}),        # snoozing off
+    ("limit snoozes to 0", "SnoozeLimitSet", {"count": 0}),
+    ("turn on snoozing", "SnoozeLimitClear", {}),
+    ("turn on the snooze", "SnoozeLimitClear", {}),
+])
+def test_snooze_on_off_vs_limit(text, intent, slots):
+    assert m(text) == (intent, slots)

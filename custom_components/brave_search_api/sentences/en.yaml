@@ -75,6 +75,7 @@ intents:
       - sentences:
           - "no snoozing"
           - "(turn off|disable) snoozing"
+          - "(turn off|disable) [the] snooze"
           - "don't let me snooze"
         slots:
           count: 0
@@ -84,6 +85,8 @@ intents:
           - "no snooze limit"
           - "unlimited snoozes"
           - "(remove|clear|turn off) [the|my] snooze limit"
+          - "(turn on|enable) snoozing"
+          - "(turn on|enable) [the] snooze"
   SnoozeLimitQuery:
     data:
       - sentences:

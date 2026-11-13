@@ -36,12 +36,14 @@ from .const import (
     OPT_OVERRIDES,
     OPT_QUESTION_GUARD,
     OPT_SNOOZE,
+    OPT_SNOOZE_ENABLED,
     OPT_SNOOZE_LIMIT,
     OPT_SPEAK_SOURCE,
     OPT_WEB_SEARCH,
     PLACEHOLDER_SECTIONS,
     TITLE,
 )
+from .core.features import snooze_from_page
 from .core.search import CannotConnect, InvalidAuth, validate_key
 from .discovery import async_detect, detected_value, effective_section
 
@@ -149,18 +151,17 @@ class BraveSearchApiOptionsFlow(OptionsFlow):
 
     async def async_step_alarms(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is not None:
-            per_alarm = int(user_input.get("snooze_limit", 0))
-            limit = 0 if not user_input.get("allow_snooze", True) else (per_alarm or None)
-            return self._save({OPT_SNOOZE: int(user_input[OPT_SNOOZE]), OPT_SNOOZE_LIMIT: limit})
-        limit = self._opt(OPT_SNOOZE_LIMIT)
+            enabled, limit = snooze_from_page(user_input.get(OPT_SNOOZE_ENABLED, True),
+                                              user_input.get(OPT_SNOOZE_LIMIT))   # 0 = snoozing off
+            return self._save({OPT_SNOOZE: int(user_input[OPT_SNOOZE]), OPT_SNOOZE_ENABLED: enabled,
+                               OPT_SNOOZE_LIMIT: limit})
         schema = vol.Schema({
             vol.Required(OPT_SNOOZE, default=self._opt(OPT_SNOOZE)): NumberSelector(
                 NumberSelectorConfig(min=1, max=30, step=1, unit_of_measurement="min",
                                      mode=NumberSelectorMode.SLIDER)),
-            vol.Required("allow_snooze", default=limit != 0): BooleanSelector(),
-            # 0 here means unlimited; "no snoozing" is the switch above
-            vol.Required("snooze_limit", default=limit or 0): NumberSelector(
-                NumberSelectorConfig(min=0, max=10, step=1, mode=NumberSelectorMode.SLIDER)),
+            vol.Required(OPT_SNOOZE_ENABLED, default=self._opt(OPT_SNOOZE_ENABLED)): BooleanSelector(),
+            vol.Optional(OPT_SNOOZE_LIMIT, description={"suggested_value": self._opt(OPT_SNOOZE_LIMIT)}):
+                NumberSelector(NumberSelectorConfig(min=0, max=10, step=1, mode=NumberSelectorMode.BOX)),
         })
         return self.async_show_form(step_id="alarms", data_schema=schema)
 

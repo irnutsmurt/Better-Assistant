@@ -16,7 +16,8 @@ OPT_COMPOUND = "compound_commands"
 OPT_MAX_PARTS = "max_compound_parts"
 OPT_OVERRIDES = "overrides"
 OPT_SNOOZE = "snooze_minutes"
-OPT_SNOOZE_LIMIT = "snooze_limit"          # None = unlimited, 0 = no snoozing, n = n per alarm
+OPT_SNOOZE_ENABLED = "snooze_enabled"      # False: no snoozing at all
+OPT_SNOOZE_LIMIT = "snooze_limit"          # 1-10 snoozes per alarm, or None for unlimited
 
 DEFAULTS = {
     OPT_WEB_SEARCH: True,
@@ -27,6 +28,7 @@ DEFAULTS = {
     OPT_COMPOUND: True,
     OPT_MAX_PARTS: 4,
     OPT_SNOOZE: 5,
+    OPT_SNOOZE_ENABLED: True,
     OPT_SNOOZE_LIMIT: None,
 }
 

@@ -222,17 +222,23 @@ def snooze_length_reply(requested: int) -> tuple[int, str]:
     return minutes, f"Okay, snooze is now {_mins(minutes)}{note}."
 
 
-def snooze_limit_reply(requested: int | None) -> tuple[int | None, str]:
-    """Voice: a number (0 = no snoozing), or None for 'no snooze limit'."""
+def snooze_limit_reply(requested: int | None) -> tuple[bool, int | None, str]:
+    """Voice -> (snoozing enabled, limit or None for unlimited, reply).
+    A number (0 turns snoozing off), or None for 'no snooze limit' / 'turn on snoozing'."""
     if requested is None:
-        return None, "Okay, there's no snooze limit. You can snooze as often as you like."
+        return True, None, "Okay, there's no snooze limit. You can snooze as often as you like."
     n = max(0, int(requested))
     if n == 0:
-        return 0, "Okay, no snoozing. The alarm will ring until you stop it."
+        return False, None, "Okay, no snoozing. The alarm will ring until you stop it."
     capped = n > MAX_SNOOZE_LIMIT
     n = min(n, MAX_SNOOZE_LIMIT)
     note = f" (the most is {MAX_SNOOZE_LIMIT})" if capped else ""
-    return n, f"Okay, you can snooze {n} time{'s' if n != 1 else ''} per alarm{note}."
+    return True, n, f"Okay, you can snooze {n} time{'s' if n != 1 else ''} per alarm{note}."
+
+
+def effective_limit(enabled: bool, limit: int | None) -> int | None:
+    """For snooze_decision: 0 when snoozing is off, else the limit (None = unlimited)."""
+    return 0 if not enabled else (limit or None)
 
 
 def describe_snooze(limit: int | None, default: int) -> str:
@@ -241,3 +247,11 @@ def describe_snooze(limit: int | None, default: int) -> str:
     if limit == 0:
         return "Snoozing is turned off. The alarm rings until you stop it."
     return f"You can snooze {limit} time{'s' if limit != 1 else ''} per alarm, {_mins(default)} each."
+
+
+def snooze_from_page(enabled: bool, raw_limit) -> tuple[bool, int | None]:
+    """Settings page -> (snoozing enabled, limit). Empty = no limit; 0 turns snoozing off."""
+    limit = None if raw_limit in (None, "") else max(0, min(MAX_SNOOZE_LIMIT, int(raw_limit)))
+    if limit == 0:
+        return False, None
+    return bool(enabled), limit

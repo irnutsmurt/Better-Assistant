@@ -90,7 +90,8 @@ def test_resolve_person():
 
 
 # ---------------------------------------------------------------- snooze rules
-from core.features import describe_snooze, snooze_decision, snooze_length_reply, snooze_limit_reply  # noqa: E402
+from core.features import (describe_snooze, effective_limit, snooze_decision, snooze_from_page,  # noqa: E402
+                           snooze_length_reply, snooze_limit_reply)
 
 
 def test_snooze_unlimited_and_cap():
@@ -108,15 +109,25 @@ def test_snooze_with_limit_counts_down_then_refuses():
 
 def test_no_snoozing_is_not_unlimited():
     assert snooze_decision(None, 5, 0, 0)[0] is None
-    assert snooze_limit_reply(0) == (0, "Okay, no snoozing. The alarm will ring until you stop it.")
-    assert snooze_limit_reply(None)[0] is None
+    assert snooze_limit_reply(0) == (False, None, "Okay, no snoozing. The alarm will ring until you stop it.")
+    assert snooze_limit_reply(None)[:2] == (True, None)
+    assert effective_limit(False, 3) == 0 and effective_limit(True, None) is None and effective_limit(True, 3) == 3
     assert describe_snooze(None, 5) == "There's no snooze limit. Each snooze is 5 minutes."
     assert describe_snooze(0, 5).startswith("Snoozing is turned off")
     assert describe_snooze(3, 5) == "You can snooze 3 times per alarm, 5 minutes each."
 
 
 def test_limit_and_length_caps():
-    assert snooze_limit_reply(15) == (10, "Okay, you can snooze 10 times per alarm (the most is 10).")
-    assert snooze_limit_reply(1) == (1, "Okay, you can snooze 1 time per alarm.")
+    assert snooze_limit_reply(15) == (True, 10, "Okay, you can snooze 10 times per alarm (the most is 10).")
+    assert snooze_limit_reply(1) == (True, 1, "Okay, you can snooze 1 time per alarm.")
+
+
+def test_settings_page_snooze_fields():
+    assert snooze_from_page(True, None) == (True, None)      # empty = no limit
+    assert snooze_from_page(True, "") == (True, None)
+    assert snooze_from_page(True, 3) == (True, 3)
+    assert snooze_from_page(True, 0) == (False, None)        # 0 = snoozing off, limit cleared
+    assert snooze_from_page(False, 4) == (False, 4)
+    assert snooze_from_page(True, 25) == (True, 10)
     assert snooze_length_reply(45) == (30, "Okay, snooze is now 30 minutes (the longest snooze is 30 minutes).")
     assert snooze_length_reply(10) == (10, "Okay, snooze is now 10 minutes.")

@@ -161,13 +161,13 @@
         "title": "Alarms",
         "data": {
           "snooze_minutes": "Snooze length",
-          "allow_snooze": "Allow snoozing",
-          "snooze_limit": "Snoozes per alarm"
+          "snooze_limit": "Snooze limit per alarm",
+          "snooze_enabled": "Snoozing"
         },
         "data_description": {
           "snooze_minutes": "Used for \"snooze\". You can also say \"set the snooze to 10 minutes\".",
-          "snooze_limit": "0 means unlimited. You can also say \"limit snoozes to 3\" or \"no snooze limit\".",
-          "allow_snooze": "Off: the alarm rings until you stop it (\"no snoozing\")."
+          "snooze_limit": "Leave empty for no limit, or 1-10. 0 turns snoozing off. By voice: \"limit snoozes to 3\", \"no snooze limit\", \"no snoozing\".",
+          "snooze_enabled": "Off: the alarm rings until you stop it."
         }
       }
     }
