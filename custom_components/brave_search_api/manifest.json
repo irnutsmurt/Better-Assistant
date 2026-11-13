@@ -1,0 +1,14 @@
+{
+  "domain": "brave_search_api",
+  "name": "Brave Search API",
+  "after_dependencies": ["assist_pipeline", "intent"],
+  "codeowners": ["@irnutsmurt"],
+  "config_flow": true,
+  "dependencies": ["conversation"],
+  "documentation": "https://github.com/irnutsmurt/brave-search-api",
+  "integration_type": "service",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/irnutsmurt/brave-search-api/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}

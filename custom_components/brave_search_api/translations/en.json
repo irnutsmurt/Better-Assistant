@@ -1,0 +1,167 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Brave Search API",
+        "description": "Optional: paste a Brave Search API key to let the assistant look things up on the web. Leave it empty to use only the local answers (spelling, maths, units, dates, world clock); you can add a key later with Reconfigure.",
+        "data": {
+          "api_key": "API key"
+        },
+        "data_description": {
+          "api_key": "From api-dashboard.search.brave.com. Only the question text is ever sent."
+        }
+      },
+      "reconfigure": {
+        "title": "Change API key",
+        "description": "Enter a new key, or leave it empty to turn web search off.",
+        "data": {
+          "api_key": "API key"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "The API key was refused.",
+      "cannot_connect": "Could not reach the Brave Search API.",
+      "unknown": "Unexpected error."
+    },
+    "abort": {
+      "already_configured": "Already set up. Use Configure to change settings.",
+      "reconfigure_successful": "API key updated."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Brave Search API settings",
+        "menu_options": {
+          "web_search": "Web search",
+          "behaviour": "Behaviour",
+          "voice_speakers": "Voice speakers",
+          "music": "Music",
+          "calendar": "Calendar",
+          "reminders_notes": "Reminders & notes",
+          "cameras_outside": "Cameras & outside",
+          "thermostat": "Thermostat",
+          "tv": "TV",
+          "bed": "Bed",
+          "rooms_lights": "Rooms & lights",
+          "night_mode": "Night mode",
+          "guest_mode": "Guest mode",
+          "redetect": "Re-detect devices"
+        }
+      },
+      "web_search": {
+        "title": "Web search",
+        "description": "API key: {key_state}.",
+        "data": {
+          "web_search": "Look things up on the web",
+          "monthly_cap": "Monthly search cap",
+          "country": "Country (2-letter code)",
+          "speak_source": "Say which site the answer came from"
+        },
+        "data_description": {
+          "monthly_cap": "Searches stop for the rest of the month at this number. Shown on the 'Searches this month' sensor."
+        }
+      },
+      "behaviour": {
+        "title": "Behaviour",
+        "data": {
+          "question_guard": "Only search question-shaped sentences",
+          "compound_commands": "Run compound commands (\"turn off the lamp and play the news\")",
+          "max_compound_parts": "Most parts in one compound command"
+        },
+        "data_description": {
+          "question_guard": "A misheard statement gets \"Sorry, I didn't catch that.\" instead of spending a search."
+        }
+      },
+      "voice_speakers": {
+        "title": "Voice speakers",
+        "description": "Coming in a later version. Detected devices are pre-filled; anything you change is kept when you re-detect.",
+        "data": {
+          "satellites": "Voice satellites"
+        }
+      },
+      "music": {
+        "title": "Music",
+        "description": "Coming in a later version. Detected devices are pre-filled; anything you change is kept when you re-detect.",
+        "data": {
+          "music_players": "Music Assistant players",
+          "broadcast_targets": "Broadcast speakers"
+        }
+      },
+      "calendar": {
+        "title": "Calendar",
+        "description": "Coming in a later version. Detected devices are pre-filled; anything you change is kept when you re-detect.",
+        "data": {
+          "calendars": "Calendars to read",
+          "write_calendar": "Calendar for new events"
+        }
+      },
+      "reminders_notes": {
+        "title": "Reminders & notes",
+        "description": "Coming in a later version. Detected devices are pre-filled; anything you change is kept when you re-detect.",
+        "data": {
+          "todo_lists": "To-do lists",
+          "people": "People"
+        }
+      },
+      "cameras_outside": {
+        "title": "Cameras & outside",
+        "description": "Coming in a later version. Detected devices are pre-filled; anything you change is kept when you re-detect.",
+        "data": {
+          "cameras": "Cameras",
+          "camera_cast_targets": "TVs to show cameras on",
+          "outside_sensors": "Outside activity sensors"
+        }
+      },
+      "thermostat": {
+        "title": "Thermostat",
+        "description": "Coming in a later version. Detected devices are pre-filled; anything you change is kept when you re-detect.",
+        "data": {
+          "thermostats": "Thermostats"
+        }
+      },
+      "tv": {
+        "title": "TV",
+        "description": "Coming in a later version. Detected devices are pre-filled; anything you change is kept when you re-detect.",
+        "data": {
+          "tvs": "TVs"
+        }
+      },
+      "bed": {
+        "title": "Bed",
+        "description": "Coming in a later version. Detected devices are pre-filled; anything you change is kept when you re-detect.",
+        "data": {
+          "bed_firmness": "Firmness controls",
+          "bed_presets": "Presets"
+        }
+      },
+      "rooms_lights": {
+        "title": "Rooms & lights",
+        "description": "Coming in a later version. Detected devices are pre-filled; anything you change is kept when you re-detect.",
+        "data": {
+          "lights": "Lights (including light switches)"
+        }
+      },
+      "night_mode": {
+        "title": "Night mode",
+        "description": "Coming in a later version."
+      },
+      "guest_mode": {
+        "title": "Guest mode",
+        "description": "Coming in a later version."
+      },
+      "redetect": {
+        "title": "Re-detect devices",
+        "description": "Scan your devices again and refresh the suggested setup. Choices you changed by hand are kept."
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "searches_this_month": {
+        "name": "Brave searches this month"
+      }
+    }
+  }
+}
