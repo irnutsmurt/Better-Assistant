@@ -208,11 +208,12 @@ class Skills(HouseSkills, SecuritySkills):
                                           {"entity_id": s, "message": message, "preannounce": True})
                                for s in satellites))
 
-    async def notify(self, person: str | None, title: str, message: str) -> None:
+    async def notify(self, person: str | None, title: str, message: str,
+                     data: dict[str, Any] | None = None) -> None:
         service = self.phone_for(person)
         if service:
             domain, name = service.split(".", 1)
-            await self._call(domain, name, {"title": title, "message": message})
+            await self._call(domain, name, {"title": title, "message": message, **({"data": data} if data else {})})
 
     # ------------------------------------------------------------ dispatch
     def recognize(self, text: str) -> Match | None:

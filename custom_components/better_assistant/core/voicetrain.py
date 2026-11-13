@@ -121,11 +121,28 @@ class Session:
     token: str = ""             # ties recordings to this session
     last_said: str = ""         # the last reply, to spot the speaker hearing itself
     until: float = 0.0          # forgotten after this (time.time())
+    phone: str | None = None    # notify service showing the phrases; the speaker stays silent
 
 
 def intro(name: str) -> str:
     return (f"Okay, let's train {name}'s voice. I'll ask for {len(PHRASES)} short phrases; say stop "
             f"voice training at any time. {prompt(0)}")
+
+
+PHONE_TAG = "better_assistant_voice_training"   # one notification, replaced phrase by phrase
+PHONE_TITLE = "Voice training"
+PHONE_START = "Check your phone."
+NO_PHONE = "I couldn't find your phone, so I'll read the phrases out. "
+
+
+def phone_text(session: Session, reply: str) -> str:
+    """What the phone shows for a reply: the phrase to say, with progress."""
+    if session.index >= len(PHRASES):
+        return reply
+    lead = reply.removesuffix(f"{PHRASES[session.index]}.").removesuffix("Please say: ").strip()
+    head = f"{session.index + 1} of {len(PHRASES)}. Say to the speaker:"
+    tail = "(Say \"stop voice training\" to stop.)"
+    return "\n".join(x for x in (lead, head, f"\u201c{PHRASES[session.index]}\u201d", tail) if x)
 
 
 def finish_text(session: Session) -> str:

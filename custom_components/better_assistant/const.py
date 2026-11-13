@@ -23,6 +23,7 @@ OPT_VOICE_PENDING = "voice_pending"        # voice setup chosen during first set
 # Voice training (experimental, off by default): nothing is recorded unless OPT_VT_ENABLED.
 OPT_VT_ENABLED = "voice_training"          # training conversation + recording allowed
 OPT_VT_RECORD_TEST = "voice_record_test"   # also record everyday requests (label "test")
+OPT_VT_PHONE = "voice_training_phone"      # show the phrases on the person's phone; the speaker stays silent
 OPT_VT_STT = "voice_stt_engine"            # engine the pass-through wraps (None = pick one)
 OPT_VT_ORIGINALS = "voice_stt_originals"   # pipeline id -> its speech-to-text before we switched it
 

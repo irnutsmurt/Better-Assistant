@@ -18,8 +18,13 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
 from homeassistant.util import dt as dt_util
 
-from .const import DOMAIN, OPT_VT_ENABLED, OPT_VT_ORIGINALS, OPT_VT_RECORD_TEST, OPT_VT_STT
+from .const import DOMAIN, OPT_VT_ENABLED, OPT_VT_ORIGINALS, OPT_VT_PHONE, OPT_VT_RECORD_TEST, OPT_VT_STT
 from .core.voicetrain import (
+    NO_PHONE,
+    PHONE_START,
+    PHONE_TAG,
+    PHONE_TITLE,
+    phone_text,
     PHRASES,
     SESSION_SECONDS,
     TEST,
@@ -185,14 +190,13 @@ class VoiceTrainer:
         if session:
             session.saved = hub(self.hass).saved_for(session.token)
             result = step(session, text)
-            session.last_said = result.reply
             if result.done:
                 self._sessions.pop(conversation_id, None)
                 hub(self.hass).disarm(session.token)
                 hub(self.hass).saved.pop(session.token, None)
             else:
                 self._arm(session, user_input)
-            return result.reply, not result.done
+            return await self._say(session, skills, result.reply), not result.done
         if is_stop_training(text):
             return "Voice training isn't running.", False
         start = parse_start(text)
@@ -216,5 +220,24 @@ class VoiceTrainer:
         session = Session(person=person, name=skills.person_name(person), token=uuid4().hex)
         self._sessions[conversation_id] = session
         self._arm(session, user_input)
+        if self.entry.options.get(OPT_VT_PHONE, True):
+            session.phone = skills.phone_for(person)
+            if session.phone:
+                await self._say(session, skills, intro(session.name))
+                session.last_said = PHONE_START
+                return PHONE_START, True
+            session.last_said = NO_PHONE + intro(session.name)
+            return session.last_said, True
         session.last_said = intro(session.name)
         return session.last_said, True
+
+    async def _say(self, session: Session, skills, reply: str) -> str:
+        """Speaker mode: the reply is spoken. Phone mode: it goes to the phone and the speaker says
+        nothing, so there is nothing for its microphone to pick up."""
+        if not session.phone:
+            session.last_said = reply
+            return reply
+        await skills.notify(session.person, PHONE_TITLE, phone_text(session, reply),
+                            {"tag": PHONE_TAG, "push": {"interruption-level": "time-sensitive"}})
+        session.last_said = ""
+        return ""

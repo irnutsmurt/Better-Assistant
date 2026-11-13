@@ -162,7 +162,7 @@ async def test_capture_failure_never_breaks_stt(hass, engine, monkeypatch):
 async def house(hass):
     hass.states.async_set("person.rob", "home", {"friendly_name": "Rob Smith", "user_id": "u1"})
     hass.states.async_set("person.sam", "home", {"friendly_name": "Sam"})
-    entry = types.SimpleNamespace(entry_id="x", options={"voice_training": True}, data={})
+    entry = types.SimpleNamespace(entry_id="x", options={"voice_training": True, "voice_training_phone": False}, data={})
     store = BetterAssistantStore(hass, "x")
     await store.async_load()
     entry.runtime_data = BetterAssistantRuntimeData(store=store)
@@ -245,12 +245,43 @@ async def test_options_flow(hass, monkeypatch):
     form = await flow.async_step_voice_training()
     assert form["description_placeholders"]["counts"] == "rob: 1 training"
     keys = [str(k) for k in form["data_schema"].schema]
-    assert keys == ["voice_training", "voice_record_test", "voice_stt_engine", "pipelines", "delete_recordings"]
+    assert keys == ["voice_training", "voice_record_test", "voice_training_phone", "voice_stt_engine", "pipelines",
+                    "delete_recordings"]
     defaults = {str(k): k.default() for k in form["data_schema"].schema if callable(getattr(k, "default", None))}
     assert defaults["voice_training"] is False and defaults["voice_record_test"] is False
     result = await flow.async_step_voice_training({"voice_training": True, "voice_record_test": False,
                                                    "pipelines": ["p1"], "delete_recordings": True})
     assert result["type"] == "create_entry"
-    assert result["data"] == {"web_search": False, "voice_training": True, "voice_record_test": False,
+    assert result["data"] == {"web_search": False, "voice_training": True, "voice_record_test": False, "voice_training_phone": True,
                               "voice_stt_engine": None, "voice_stt_originals": {"p1": "stt.cloud"}}
     assert switched == [(True, ["p1"])] and not voice_root(hass).exists()
+
+
+async def test_phone_mode_speaker_stays_silent(house, monkeypatch):
+    house.entry.options["voice_training_phone"] = True
+    sent = []
+
+    async def fake_notify(call):
+        sent.append(call.data)
+    house.hass.services.async_register("notify", "mobile_app_robs_phone", fake_notify)
+    monkeypatch.setattr(house.skills, "phone_for", lambda p: "notify.mobile_app_robs_phone" if p == "person.rob" else None)
+    speech, keep = await turn(house, "train Rob's voice")
+    assert keep and speech == "Check your phone."
+    assert "1 of 8" in sent[-1]["message"] and PHRASES[0] in sent[-1]["message"]
+    assert sent[-1]["data"]["tag"] == "better_assistant_voice_training"
+    capture = hub(house.hass)
+    for i, phrase in enumerate(PHRASES):
+        capture.note_saved(capture.take(time.time()).token)
+        speech, keep = await turn(house, phrase)
+        assert speech == ""                                  # nothing for the speaker's mic to hear
+        if i < len(PHRASES) - 1:
+            assert keep and f"{i + 2} of 8" in sent[-1]["message"] and PHRASES[i + 1] in sent[-1]["message"]
+    assert not keep and sent[-1]["message"] == "Done. I saved 8 samples of Rob's voice."
+
+
+async def test_phone_mode_without_a_phone_reads_aloud(house):
+    house.entry.options["voice_training_phone"] = True
+    speech, keep = await turn(house, "train Sam's voice")
+    assert keep and speech.startswith("I couldn't find your phone, so I'll read the phrases out.")
+    speech, keep = await turn(house, PHRASES[0])
+    assert speech == f"{PHRASES[1]}."
