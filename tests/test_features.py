@@ -197,3 +197,11 @@ def test_say_where():
     assert say_where(["assist_satellite.bed1"], names) == "on the bedroom speaker"
     assert say_where(["assist_satellite.bed1", "assist_satellite.bed2"], names) == \
         "on the bedroom speaker and the bedroom hub"
+
+
+def test_resolve_person_ignores_spaces_from_speech():
+    from custom_components.better_assistant.core.features import resolve_person
+    people = [("person.supremehomegod", "supremehomegod", []), ("person.leila", "Leila", [])]
+    assert resolve_person("supreme home god", people) == ("person.supremehomegod", None)
+    assert resolve_person("Supreme-Home God", people) == ("person.supremehomegod", None)
+    assert resolve_person("supreme", people) == (None, None)

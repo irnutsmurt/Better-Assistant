@@ -178,9 +178,19 @@ def name_index(people: list[tuple[str, str, list[str]]]) -> dict[str, list[str]]
     return index
 
 
+def _squash(name: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "", name.lower())
+
+
 def resolve_person(spoken: str, people: list[tuple[str, str, list[str]]]) -> tuple[str | None, str | None]:
     """(entity id, None) when one person matches; (None, question) when several do; (None, None) if none."""
-    ids = name_index(people).get(spoken.strip().lower(), [])
+    index = name_index(people)
+    ids = index.get(spoken.strip().lower(), [])
+    if not ids:
+        # speech-to-text splits made-up names ("supremehomegod" -> "supreme home god")
+        squashed = _squash(spoken)
+        ids = list(dict.fromkeys(eid for n, eids in index.items() if squashed and _squash(n) == squashed
+                                 for eid in eids))
     if len(ids) == 1:
         return ids[0], None
     if not ids:
