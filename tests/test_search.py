@@ -193,3 +193,11 @@ def test_everest_end_to_end_keeps_capital():
         "Mount Everest is 8,849 meters tall, the highest mountain above sea level on Earth."]))
     text, _ = compose("how tall is mount everest", data, None)
     assert text.startswith("From magicalnepal dot com, Mount Everest is 8,849")
+
+
+def test_can_be_used_to_sentence_still_wins():
+    data = payload(("https://www.mayoclinic.org/fever", [
+        "Ibuprofen can be used to reduce fever and ease aches in adults with the flu. "
+        "These words can be used interchangeably when talking about a high temperature in general."]))
+    answer, _ = best_answer("what can be used to reduce fever with the flu", data)
+    assert answer.startswith("Ibuprofen can be used to reduce fever")

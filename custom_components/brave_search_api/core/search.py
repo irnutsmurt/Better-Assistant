@@ -53,7 +53,8 @@ def words(t):
 PROMO = re.compile(r"(learn|read|click|discover|find out|see|check out|sign up|subscribe|explore|get)\b", re.I)
 BOILER = re.compile(r"synonyms|antonyms|thesaurus|hypernyms|and much more|related words|usage examples|senior member|"
                     r"community answer|expert.verified|enter your search|cookie|all rights reserved|"
-                    r"while all (?:these|of these|the) words|share a common meaning|can be used", re.I)
+                    r"while all (?:these|of these|the) words|share a common meaning|"
+                    r"can be used interchangeably|(?:can|may) be used in place of", re.I)
 # Sentences that lean on the one before them ("Other dogs can eat grapes…") mislead when read alone.
 DEPENDENT = re.compile(r"(other|others|some|however|but|also|this|these|that|those|they|it|its|he|she|his|her|"
                        r"in addition|additionally|meanwhile|still|yet|so|and|or|unlike|instead|similarly|likewise|"
