@@ -1,0 +1,165 @@
+"""Pure helpers for reminders, notes, messages, alarms and the stopwatch: parsing what was said and
+phrasing what to say back. No Home Assistant imports."""
+from __future__ import annotations
+
+import datetime as dt
+import re
+from dataclasses import dataclass, field
+
+from .timeparse import fmt_time, parse, say_when
+
+# ------------------------------------------------------------------ reminders
+TIME_MARKERS = re.compile(
+    r"\b(in|at|on|by|tomorrow|tonight|today|this|next|every|daily|noon|midnight|the day after|the \d|"
+    r"monday|tuesday|wednesday|thursday|friday|saturday|sunday|january|february|march|april|may|june|"
+    r"july|august|september|october|november|december|\d{1,2}(?::\d{2})?\s?(?:am|pm|a\.m\.|p\.m\.))\b", re.I)
+LEAD = re.compile(r"^(?:to|that|about|i need to|i have to|i've got to)\s+", re.I)
+PLACE = re.compile(
+    r"^(?P<task>.+?)\s+when\s+(?:i|he|she|they|we|you|\w+)\s+"
+    r"(?P<verb>gets? back home|gets? home|gets? back|comes? home|arrives? home|"
+    r"gets? to|arrives? at|reach(?:es)?|leaves?|gets? out of)\b\s*(?P<place>.*?)\W*$", re.I)
+
+
+@dataclass
+class ReminderRequest:
+    task: str
+    kind: str = "time"               # "time" | "arrive" | "leave" | "none" (no time said)
+    at: dt.datetime | None = None
+    repeat: str = "once"
+    place: str | None = None         # "home" or the spoken place name, for arrive/leave
+
+
+def _task(text: str) -> str:
+    return LEAD.sub("", text.strip(" ,.")).strip(" ,.")
+
+
+def _parse_when(when: str, now: dt.datetime):
+    """parse(), but a day without a clock time gets a sensible one ("tomorrow morning" -> 9 AM)."""
+    at, repeat = parse(when, now)
+    if at or not re.search(r"\b(today|tonight|tomorrow|morning|afternoon|evening|monday|tuesday|wednesday|"
+                           r"thursday|friday|saturday|sunday|the \d+(?:st|nd|rd|th)|\d+/\d+|january|february|march|april|may|june|"
+                           r"july|august|september|october|november|december)\b", when, re.I):
+        return at, repeat
+    default = ("at 8 pm" if re.search(r"tonight|evening", when, re.I) else
+               "at 2 pm" if re.search(r"afternoon", when, re.I) else "at 9 am")
+    return parse(f"{when} {default}", now)
+
+
+def parse_reminder(text: str, now: dt.datetime) -> ReminderRequest:
+    """'to call mom tomorrow at 5' / 'at 5 to call mom' / 'to buy milk when I leave work'."""
+    t = re.sub(r"\s+", " ", text.strip(" ,.?!"))
+    m = PLACE.match(LEAD.sub("", t))
+    if m:
+        verb, place = m.group("verb").lower(), m.group("place").strip().removeprefix("the ").strip()
+        if "home" in verb or verb.startswith(("get back", "gets back")):
+            return ReminderRequest(_task(m.group("task")), "arrive", place="home")
+        if verb.startswith("leave"):
+            return ReminderRequest(_task(m.group("task")), "leave", place=place or "home")
+        if verb.startswith("get out"):
+            return ReminderRequest(_task(m.group("task")), "leave", place=place or "home")
+        if place in ("home", "the house", "house"):
+            return ReminderRequest(_task(m.group("task")), "arrive", place="home")
+        return ReminderRequest(_task(m.group("task")), "arrive", place=place or None)
+    # time first: "at 5 to call mom", "tomorrow morning that the bins go out"
+    lead = re.match(r"^(?P<when>.+?)\s+(?:to|that|about)\s+(?P<task>.+)$", t, re.I)
+    if lead and not LEAD.match(t) and TIME_MARKERS.match(lead.group("when")):
+        at, repeat = _parse_when(lead.group("when"), now)
+        if at:
+            return ReminderRequest(_task(lead.group("task")), "time", at, repeat)
+    body = LEAD.sub("", t)
+    for mk in TIME_MARKERS.finditer(body):
+        if mk.start() == 0:
+            continue
+        at, repeat = _parse_when(body[mk.start():], now)
+        if at:
+            return ReminderRequest(_task(body[:mk.start()]), "time", at, repeat)
+    return ReminderRequest(_task(body), "none")
+
+
+def flip_pronouns(text: str) -> str:
+    """'I put my keys in the drawer' -> 'you put your keys in the drawer'."""
+    swaps = {"i": "you", "i'm": "you're", "im": "you're", "i've": "you've", "i'll": "you'll", "i'd": "you'd",
+             "me": "you", "my": "your", "mine": "yours", "myself": "yourself"}
+    out = []
+    for w in re.findall(r"\S+|\s+", text):
+        core = re.match(r"^([\"'(]*)([\w']+)([^\w']*)$", w)
+        if core and core.group(2).lower() in swaps:
+            rep = swaps[core.group(2).lower()]
+            out.append(core.group(1) + rep + core.group(3))
+        else:
+            out.append(w)
+    return "".join(out)
+
+
+def sentence(text: str) -> str:
+    text = text.strip()
+    if not text:
+        return text
+    text = text[:1].upper() + text[1:]
+    return text if text[-1] in ".!?" else text + "."
+
+
+# ------------------------------------------------------------------ notes
+NOTE_STOP = set("a an the of to in on at is are was were my your i you it its where did put leave left "
+                "have has and or for with".split())
+
+
+def _words(t: str) -> set[str]:
+    return {w[:-1] if len(w) > 3 and w.endswith("s") and not w.endswith("ss") else w
+            for w in re.findall(r"[a-z0-9]+", t.lower()) if w not in NOTE_STOP}
+
+
+def best_note(query: str, notes: list[str]) -> str | None:
+    """The note sharing the most words with the query (newest wins ties), or None."""
+    q = _words(query)
+    best, score = None, 0
+    for note in notes:
+        s = len(q & _words(note))
+        if s and s >= score:
+            best, score = note, s
+    return best
+
+
+def note_from(text: str, put: str | None) -> str:
+    """'remember I put the keys in the drawer' -> 'I put the keys in the drawer'."""
+    text = text.strip(" ,.")
+    return f"I {put} {text}" if put else text
+
+
+# ------------------------------------------------------------------ alarms
+def next_alarm(hour: int, minute: int, repeat: str, after: dt.datetime) -> dt.datetime:
+    cand = after.replace(hour=hour, minute=minute, second=0, microsecond=0)
+    for _ in range(9):
+        if cand > after and (repeat in ("once", "daily") or
+                             (repeat == "weekdays" and cand.weekday() < 5) or
+                             (repeat == "weekends" and cand.weekday() >= 5)):
+            return cand
+        cand += dt.timedelta(days=1)
+    return cand
+
+
+def say_alarm(at: dt.datetime, repeat: str, now: dt.datetime) -> str:
+    if repeat == "daily":
+        return f"every day at {fmt_time(at)}"
+    if repeat == "weekdays":
+        return f"every weekday at {fmt_time(at)}"
+    if repeat == "weekends":
+        return f"every weekend day at {fmt_time(at)}"
+    return say_when(at, now)
+
+
+# ------------------------------------------------------------------ stopwatch
+def say_duration(seconds: float) -> str:
+    s = int(round(seconds))
+    h, rem = divmod(s, 3600)
+    m, s = divmod(rem, 60)
+    parts = [f"{n} {u}{'s' if n != 1 else ''}" for n, u in ((h, "hour"), (m, "minute"), (s, "second")) if n]
+    if not parts:
+        return "0 seconds"
+    return parts[0] if len(parts) == 1 else ", ".join(parts[:-1]) + " and " + parts[-1]
+
+
+@dataclass
+class Stopwatch:
+    started: dt.datetime | None = None
+    laps: list[float] = field(default_factory=list)
