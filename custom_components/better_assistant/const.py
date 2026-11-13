@@ -20,6 +20,11 @@ OPT_ALARM_SPEAKER = "alarm_speaker"        # None = the speaker asked from, "all
 OPT_SNOOZE_ENABLED = "snooze_enabled"      # False: no snoozing at all
 OPT_SNOOZE_LIMIT = "snooze_limit"          # 1-10 snoozes per alarm, or None for unlimited
 OPT_VOICE_PENDING = "voice_pending"        # voice setup chosen during first setup, carried out once loaded
+# Voice training (experimental, off by default): nothing is recorded unless OPT_VT_ENABLED.
+OPT_VT_ENABLED = "voice_training"          # training conversation + recording allowed
+OPT_VT_RECORD_TEST = "voice_record_test"   # also record everyday requests (label "test")
+OPT_VT_STT = "voice_stt_engine"            # engine the pass-through wraps (None = pick one)
+OPT_VT_ORIGINALS = "voice_stt_originals"   # pipeline id -> its speech-to-text before we switched it
 
 DEFAULTS = {
     OPT_WEB_SEARCH: True,

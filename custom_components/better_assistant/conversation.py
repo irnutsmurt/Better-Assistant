@@ -183,7 +183,13 @@ class BetterAssistantAgent(conversation.ConversationEntity):
         skills = self._entry.runtime_data.skills
         if skills:
             skills.followup = False
-        if not text and skills and skills.has_pending(user_input):
+        trainer = self._entry.runtime_data.trainer
+        training = await trainer.async_handle(text, user_input, chat_log.conversation_id, skills) \
+            if trainer and skills else None
+        if training:                                        # voice training: never run as a command
+            speech, is_error = training[0], False
+            skills.followup = training[1]
+        elif not text and skills and skills.has_pending(user_input):
             speech, is_error = await skills.answer_pending("", user_input), False
         else:
             speech, is_error = await self._respond(text, user_input) if text else (DIDNT_CATCH, True)

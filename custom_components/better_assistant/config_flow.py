@@ -52,12 +52,17 @@ from .const import (
     OPT_SNOOZE_LIMIT,
     OPT_SPEAK_SOURCE,
     OPT_VOICE_PENDING,
+    OPT_VT_ENABLED,
+    OPT_VT_ORIGINALS,
+    OPT_VT_RECORD_TEST,
+    OPT_VT_STT,
     OPT_WEB_SEARCH,
     PLACEHOLDER_SECTIONS,
     TITLE,
 )
 from .core.features import snooze_from_page
 from .core.search import CannotConnect, InvalidAuth, validate_key
+from .core.voicetrain import count_text
 from .discovery import async_detect, detected_value, effective_section
 from .voice_flow import VoiceSetupMixin
 
@@ -149,7 +154,7 @@ class BetterAssistantOptionsFlow(VoiceSetupMixin, OptionsFlow):
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         return self.async_show_menu(step_id="init", menu_options=[
             "web_search", "behaviour", "alarms", "security", *DEVICE_SECTIONS, *PLACEHOLDER_SECTIONS,
-            "voice_setup", "redetect"])
+            "voice_setup", "voice_training", "redetect"])
 
     async def async_step_web_search(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is not None:
@@ -278,6 +283,38 @@ class BetterAssistantOptionsFlow(VoiceSetupMixin, OptionsFlow):
                 else vol.Optional(name)
             fields[key] = _entity_selector(domain, multiple)
         return self.async_show_form(step_id=section, data_schema=vol.Schema(fields))
+
+    async def async_step_voice_training(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        """Experimental: record labelled voice clips for a later voice-match test (off by default)."""
+        from . import voice_training as vt  # noqa: PLC0415
+        root = vt.voice_root(self.hass)
+        if user_input is not None:
+            if user_input.get("delete_recordings"):
+                await self.hass.async_add_executor_job(vt.delete_clips, root)
+            values = {OPT_VT_ENABLED: bool(user_input.get(OPT_VT_ENABLED)),
+                      OPT_VT_RECORD_TEST: bool(user_input.get(OPT_VT_RECORD_TEST)),
+                      OPT_VT_STT: user_input.get(OPT_VT_STT) or None}
+            originals = await vt.async_switch_pipelines(
+                self.hass, self.config_entry.entry_id, {**self.config_entry.options, **values},
+                list(user_input.get("pipelines") or []))
+            return self._save({**values, OPT_VT_ORIGINALS: originals})
+        counts = await self.hass.async_add_executor_job(vt.count_clips, root)
+        ours = vt.our_stt(self.hass, self.config_entry.entry_id)
+        found = vt.pipelines(self.hass)
+        fields: dict[Any, Any] = {
+            vol.Required(OPT_VT_ENABLED, default=bool(self._opt(OPT_VT_ENABLED))): BooleanSelector(),
+            vol.Required(OPT_VT_RECORD_TEST, default=bool(self._opt(OPT_VT_RECORD_TEST))): BooleanSelector(),
+            vol.Optional(OPT_VT_STT, description={"suggested_value": vt.underlying_engine(
+                self.hass, dict(self.config_entry.options))}):
+                EntitySelector(EntitySelectorConfig(domain="stt", exclude_entities=[ours])),
+        }
+        if found:
+            fields[vol.Optional("pipelines", default=[pid for pid, _n, e in found if e == ours])] = SelectSelector(
+                SelectSelectorConfig(options=[SelectOptionDict(value=pid, label=name) for pid, name, _e in found],
+                                     multiple=True, mode=SelectSelectorMode.LIST))
+        fields[vol.Required("delete_recordings", default=False)] = BooleanSelector()
+        return self.async_show_form(step_id="voice_training", data_schema=vol.Schema(fields),
+                                    description_placeholders={"counts": count_text(counts), "folder": str(root)})
 
     async def async_step_redetect(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is not None:

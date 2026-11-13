@@ -237,6 +237,43 @@ commands locally" on, sentences Home Assistant handled itself never reach the ag
 only text the agent saw. (Home Assistant's pipeline run history is internal and not a stable API for
 custom integrations, so it isn't used.)
 
+## Voice training (experimental)
+
+Off by default, and **nothing is recorded until you turn it on**. It collects labelled voice clips for
+a later "who is speaking" (voice match) test. Nothing recognises voices yet.
+
+**Turning it on:** Settings > Devices & services > Better Assistant > Configure > Voice training.
+Tick "Turn on voice training" and tick the voice assistant(s) that should use **Better Assistant
+speech-to-text**. That entity (`stt.better_assistant_speech_to_text`) passes the audio to your real
+engine (Home Assistant Cloud, Whisper, ...; pick one or leave it to choose) and hands back its answer
+unchanged; it only keeps a copy of the audio while a recording is wanted. Unticking a voice assistant,
+or turning voice training off, switches it back to the engine it had before.
+
+**Training:** on a voice speaker say "train my voice", "learn my voice" or "train Rob's voice". The
+assistant asks for 8 short phrases ("Please say: Turn on the living room lamps."); repeat each one.
+What you say during training is never run as a command. A mumble is asked again once. Say "stop
+voice training" or "cancel" to stop. It only works from a voice speaker, not typed chat. If it can't
+tell who you are, it asks you to say "train <name>'s voice".
+
+**Everyday clips (optional):** "Also record everyday requests" saves every request heard on a speaker
+as a "test" clip, labelled with the only person in the house, or "unknown".
+
+**What is saved, and where:** a 16-bit mono WAV per request, plus a `.json` note (person, label,
+transcript, the phrase asked for, speaker and device when known, length), under
+`/config/better_assistant/voice/<train|test>/<person>/`. Files stay on this machine: nothing is
+uploaded anywhere by this feature (your speech-to-text engine receives the audio exactly as it
+would without it). The settings page shows how many clips each person has.
+
+**Deleting:** tick "Delete all recordings" on the Voice training page, or delete the
+`/config/better_assistant/voice` folder. Backups of `/config` include the clips, so delete them
+before making a backup you share.
+
+**Only record people who agree to it.**
+
+Known limits: Home Assistant doesn't tell a speech-to-text engine which speaker the audio came from,
+so a training prompt "arms" the next recording for about 30 seconds. Run one training session at a
+time; someone else speaking to another speaker in those seconds would be saved under the wrong name.
+
 ## Privacy
 
 - Only the **question text** is sent to the Brave Search API, and only when it gets past the guards
@@ -245,6 +282,8 @@ custom integrations, so it isn't used.)
   Home Assistant companion app.
 - Nothing else leaves your home: no device names, states, locations, voices or audio. Device
   detection reads your local registries only.
+- Voice training (experimental, off by default) saves voice recordings on this machine only; see
+  [Voice training](#voice-training-experimental).
 - The search count is kept in Home Assistant's own storage (`.storage`), not in a file you have to
   manage.
 

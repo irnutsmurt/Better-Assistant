@@ -94,7 +94,8 @@
           "redetect": "Re-detect devices",
           "health": "Health report",
           "broadcast": "Broadcast",
-          "voice_setup": "Set up voice"
+          "voice_setup": "Set up voice",
+          "voice_training": "Voice training (experimental)"
         }
       },
       "web_search": {
@@ -441,6 +442,23 @@
       "voice_summary": {
         "title": "Voice setup",
         "description": "{summary}"
+      },
+      "voice_training": {
+        "title": "Voice training (experimental)",
+        "description": "Records labelled voice clips for a later voice-match test. Nothing recognises voices yet, and nothing is recorded while this is off. Clips stay on this machine in {folder}. Only record people who agree to it.\n\nTo train, say \"train my voice\" or \"train Rob's voice\" on a voice speaker and repeat 8 phrases. Recordings only work when the voice assistant's speech-to-text is Better Assistant speech-to-text (tick it below).\n\nSaved so far: {counts}.",
+        "data": {
+          "voice_training": "Turn on voice training",
+          "voice_record_test": "Also record everyday requests for voice-match testing",
+          "voice_stt_engine": "Speech-to-text engine to pass audio to",
+          "pipelines": "Voice assistants that use Better Assistant speech-to-text",
+          "delete_recordings": "Delete all recordings"
+        },
+        "data_description": {
+          "voice_record_test": "Every request heard on a speaker is saved as a \"test\" clip, labelled with the only person in the house or \"unknown\".",
+          "voice_stt_engine": "Empty: Home Assistant Cloud if you have it, else Whisper (Wyoming), else the first one found.",
+          "pipelines": "Ticked ones switch their speech-to-text to Better Assistant speech-to-text; unticking (or turning voice training off) switches them back.",
+          "delete_recordings": "Removes every clip and its notes from the folder above."
+        }
       }
     },
     "progress": {
@@ -471,6 +489,11 @@
       },
       "night_mode": {
         "name": "Night mode"
+      }
+    },
+    "stt": {
+      "speech_to_text": {
+        "name": "Speech-to-text"
       }
     }
   }

@@ -22,14 +22,16 @@ from .store import BetterAssistantStore
 
 if TYPE_CHECKING:
     from .skills import Skills
+    from .voice_training import VoiceTrainer
 
-PLATFORMS = [Platform.CONVERSATION, Platform.SENSOR, Platform.SWITCH, Platform.TODO]
+PLATFORMS = [Platform.CONVERSATION, Platform.SENSOR, Platform.STT, Platform.SWITCH, Platform.TODO]
 
 
 @dataclass
 class BetterAssistantRuntimeData:
     store: BetterAssistantStore
     skills: Skills | None = None
+    trainer: VoiceTrainer | None = None
     options: dict = field(default_factory=dict)        # options the entry was set up with
     heard: deque[str] = field(default_factory=lambda: deque(maxlen=HISTORY_SIZE))
 
@@ -47,6 +49,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: BetterAssistantConfigEnt
     skills = Skills(hass, entry)
     await skills.async_start()
     entry.runtime_data.skills = skills
+    from .voice_training import VoiceTrainer  # noqa: PLC0415
+
+    entry.runtime_data.trainer = VoiceTrainer(hass, entry)
     entry.async_on_unload(skills.async_stop)
     # Detection: now if Home Assistant is already running, else once it has started; again after
     # registry changes. Anything built from detection (hidden doors, lists) is refreshed after each run.
