@@ -15,7 +15,8 @@ from homeassistant.core import HomeAssistant
 
 from homeassistant.components.http import StaticPathConfig
 
-from .const import ALARM_URL, DOMAIN, HISTORY_SIZE, OPT_SNOOZE, OPT_SNOOZE_ENABLED, OPT_SNOOZE_LIMIT
+from .const import (ALARM_URL, DOMAIN, HISTORY_SIZE, OPT_SNOOZE, OPT_SNOOZE_ENABLED, OPT_SNOOZE_LIMIT,
+                    OPT_VOICE_PENDING)
 from .autodetect import AutoDetect
 from .store import BetterAssistantStore
 
@@ -54,7 +55,30 @@ async def async_setup_entry(hass: HomeAssistant, entry: BetterAssistantConfigEnt
     entry.async_on_unload(auto.async_stop)
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    if entry.options.get(OPT_VOICE_PENDING):
+        entry.async_create_background_task(hass, _async_voice_pending(hass, entry), f"{DOMAIN}_voice_setup")
     return True
+
+
+async def _async_voice_pending(hass: HomeAssistant, entry: BetterAssistantConfigEntry) -> None:
+    """Finish voice setup chosen during first setup: make the pipeline (our conversation entity exists
+    now), switch the chosen speakers, say what happened in a notification, then forget the request."""
+    from homeassistant.components import persistent_notification  # noqa: PLC0415
+    from .core.voice import Report  # noqa: PLC0415
+    from .voice_setup import async_apply  # noqa: PLC0415
+
+    pending = dict(entry.options.get(OPT_VOICE_PENDING) or {})
+    report = Report()
+    try:
+        await async_apply(hass, entry.entry_id, pending.get("stt"), pending.get("tts"),
+                          bool(pending.get("preferred", True)), list(pending.get("satellites") or []), report)
+    except Exception as err:  # noqa: BLE001 - never break the integration over this
+        report.manual.append(f"Create the voice assistant by hand in Settings > Voice assistants ({err})")
+    entry.runtime_data.options.pop(OPT_VOICE_PENDING, None)   # so the update below doesn't reload
+    hass.config_entries.async_update_entry(
+        entry, options={k: v for k, v in entry.options.items() if k != OPT_VOICE_PENDING})
+    persistent_notification.async_create(hass, report.text(), title="Better Assistant voice setup",
+                                         notification_id=f"{DOMAIN}_voice_setup")
 
 
 async def _async_register_tone(hass: HomeAssistant) -> None:

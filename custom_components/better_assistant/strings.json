@@ -17,6 +17,44 @@
         "data": {
           "api_key": "API key"
         }
+      },
+      "voice_setup": {
+        "title": "Voice",
+        "description": "Better Assistant can set up voice for you: speech-to-text (Whisper), text-to-speech (Piper), a \"Better Assistant\" voice assistant and your voice speakers. Anything you already have is kept. You can also do this later from Configure.",
+        "menu_options": {
+          "voice_auto": "Set it up for me",
+          "voice_skip": "Skip"
+        }
+      },
+      "voice_confirm": {
+        "title": "Install speech engines",
+        "description": "These will be downloaded and installed as Home Assistant add-ons:\n\n{downloads}\n\nWhisper model `{model}` was chosen for this hardware. The first start can take a few minutes while the model downloads. Submit to begin."
+      },
+      "voice_manual": {
+        "title": "Connect speech engines",
+        "description": "This Home Assistant has no add-on store (Docker or Core install), so the speech engines run as your own containers. For example:\n\n```\n{commands}\n```\n\nThen enter the host each one runs on (the IP of the Docker host). Leave a host empty to skip it. Already set up: {have}.",
+        "data": {
+          "whisper_host": "Whisper host",
+          "whisper_port": "Whisper port",
+          "piper_host": "Piper host",
+          "piper_port": "Piper port"
+        },
+        "data_description": {
+          "whisper_host": "Speech-to-text (rhasspy/wyoming-whisper), usually port 10300.",
+          "piper_host": "Text-to-speech (rhasspy/wyoming-piper), usually port 10200."
+        }
+      },
+      "voice_pipeline": {
+        "title": "Voice assistant",
+        "description": "A voice assistant called \"Better Assistant\" will use speech-to-text {stt}, text-to-speech {tts} and Better Assistant for conversation, with \"Prefer handling commands locally\" on.",
+        "data": {
+          "preferred": "Make it the preferred voice assistant",
+          "satellites": "Switch these voice speakers to it"
+        }
+      },
+      "voice_summary": {
+        "title": "Voice setup",
+        "description": "{summary}"
       }
     },
     "error": {
@@ -27,6 +65,10 @@
     "abort": {
       "already_configured": "Already set up. Use Configure to change settings.",
       "reconfigure_successful": "API key updated."
+    },
+    "progress": {
+      "voice_install": "Installing and starting the speech add-ons. This can take several minutes on the first run while Whisper downloads its model.",
+      "voice_connect": "Connecting to your speech engines."
     }
   },
   "options": {
@@ -51,7 +93,8 @@
           "guest_mode": "Guest mode",
           "redetect": "Re-detect devices",
           "health": "Health report",
-          "broadcast": "Broadcast"
+          "broadcast": "Broadcast",
+          "voice_setup": "Set up voice"
         }
       },
       "web_search": {
@@ -360,7 +403,49 @@
           "passphrase": "Never shown, logged or spoken. Case, spaces and punctuation don't matter.",
           "owner": "A notification on every correct and wrong passphrase."
         }
+      },
+      "voice_setup": {
+        "title": "Voice",
+        "description": "Better Assistant can set up voice for you: speech-to-text (Whisper), text-to-speech (Piper), a \"Better Assistant\" voice assistant and your voice speakers. Anything you already have is kept. You can also do this later from Configure.",
+        "menu_options": {
+          "voice_auto": "Set it up for me",
+          "voice_skip": "Skip"
+        }
+      },
+      "voice_confirm": {
+        "title": "Install speech engines",
+        "description": "These will be downloaded and installed as Home Assistant add-ons:\n\n{downloads}\n\nWhisper model `{model}` was chosen for this hardware. The first start can take a few minutes while the model downloads. Submit to begin."
+      },
+      "voice_manual": {
+        "title": "Connect speech engines",
+        "description": "This Home Assistant has no add-on store (Docker or Core install), so the speech engines run as your own containers. For example:\n\n```\n{commands}\n```\n\nThen enter the host each one runs on (the IP of the Docker host). Leave a host empty to skip it. Already set up: {have}.",
+        "data": {
+          "whisper_host": "Whisper host",
+          "whisper_port": "Whisper port",
+          "piper_host": "Piper host",
+          "piper_port": "Piper port"
+        },
+        "data_description": {
+          "whisper_host": "Speech-to-text (rhasspy/wyoming-whisper), usually port 10300.",
+          "piper_host": "Text-to-speech (rhasspy/wyoming-piper), usually port 10200."
+        }
+      },
+      "voice_pipeline": {
+        "title": "Voice assistant",
+        "description": "A voice assistant called \"Better Assistant\" will use speech-to-text {stt}, text-to-speech {tts} and Better Assistant for conversation, with \"Prefer handling commands locally\" on.",
+        "data": {
+          "preferred": "Make it the preferred voice assistant",
+          "satellites": "Switch these voice speakers to it"
+        }
+      },
+      "voice_summary": {
+        "title": "Voice setup",
+        "description": "{summary}"
       }
+    },
+    "progress": {
+      "voice_install": "Installing and starting the speech add-ons. This can take several minutes on the first run while Whisper downloads its model.",
+      "voice_connect": "Connecting to your speech engines."
     }
   },
   "entity": {

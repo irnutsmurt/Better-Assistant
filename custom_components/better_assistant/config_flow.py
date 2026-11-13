@@ -51,6 +51,7 @@ from .const import (
     OPT_SNOOZE_ENABLED,
     OPT_SNOOZE_LIMIT,
     OPT_SPEAK_SOURCE,
+    OPT_VOICE_PENDING,
     OPT_WEB_SEARCH,
     PLACEHOLDER_SECTIONS,
     TITLE,
@@ -58,6 +59,7 @@ from .const import (
 from .core.features import snooze_from_page
 from .core.search import CannotConnect, InvalidAuth, validate_key
 from .discovery import async_detect, detected_value, effective_section
+from .voice_flow import VoiceSetupMixin
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -80,8 +82,9 @@ async def _check_key(flow: ConfigFlow, key: str) -> str | None:
     return None
 
 
-class BetterAssistantConfigFlow(ConfigFlow, domain=DOMAIN):
+class BetterAssistantConfigFlow(VoiceSetupMixin, ConfigFlow, domain=DOMAIN):
     VERSION = 1
+    _key = ""
 
     @staticmethod
     @callback
@@ -97,8 +100,16 @@ class BetterAssistantConfigFlow(ConfigFlow, domain=DOMAIN):
             if key and (err := await _check_key(self, key)):
                 errors["base"] = err
             else:
-                return self.async_create_entry(title=TITLE, data={CONF_API_KEY: key})
+                self._key = key
+                return await self.async_step_voice_setup()
         return self.async_show_form(step_id="user", data_schema=KEY_SCHEMA, errors=errors)
+
+    def _voice_entry_id(self) -> str | None:
+        return None
+
+    def _voice_finish(self, pending: dict[str, Any] | None) -> ConfigFlowResult:
+        return self.async_create_entry(title=TITLE, data={CONF_API_KEY: self._key},
+                                       options={OPT_VOICE_PENDING: pending} if pending else {})
 
     async def async_step_reconfigure(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Change or remove the API key."""
@@ -119,19 +130,26 @@ def _entity_selector(domain: str | list[str], multiple: bool):
     return EntitySelector(EntitySelectorConfig(domain=domain, multiple=multiple))
 
 
-class BetterAssistantOptionsFlow(OptionsFlow):
+class BetterAssistantOptionsFlow(VoiceSetupMixin, OptionsFlow):
     """Menu of sections. Device sections are pre-filled from automatic detection; what the user
     submits is stored as an override, so re-detecting never wipes their choices."""
 
     def _opt(self, key: str) -> Any:
         return self.config_entry.options.get(key, DEFAULTS.get(key))
 
+    def _voice_entry_id(self) -> str | None:
+        return self.config_entry.entry_id
+
+    def _voice_finish(self, pending: dict[str, Any] | None) -> ConfigFlowResult:
+        return self._save({})
+
     def _save(self, values: dict[str, Any]) -> ConfigFlowResult:
         return self.async_create_entry(data={**self.config_entry.options, **values})
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         return self.async_show_menu(step_id="init", menu_options=[
-            "web_search", "behaviour", "alarms", "security", *DEVICE_SECTIONS, *PLACEHOLDER_SECTIONS, "redetect"])
+            "web_search", "behaviour", "alarms", "security", *DEVICE_SECTIONS, *PLACEHOLDER_SECTIONS,
+            "voice_setup", "redetect"])
 
     async def async_step_web_search(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is not None:
