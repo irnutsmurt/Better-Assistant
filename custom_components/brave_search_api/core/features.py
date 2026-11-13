@@ -163,3 +163,27 @@ def say_duration(seconds: float) -> str:
 class Stopwatch:
     started: dt.datetime | None = None
     laps: list[float] = field(default_factory=list)
+
+
+# ------------------------------------------------------------------ people
+def name_index(people: list[tuple[str, str, list[str]]]) -> dict[str, list[str]]:
+    """[(entity_id, full name, aliases)] -> spoken name (lower-case) -> person entity ids.
+    Full name, first name and every alias are all ways to say someone."""
+    index: dict[str, list[str]] = {}
+    for entity_id, full, aliases in people:
+        for n in {full, full.split()[0] if full.split() else full, *aliases}:
+            n = (n or "").strip().lower()
+            if n and entity_id not in index.setdefault(n, []):
+                index[n].append(entity_id)
+    return index
+
+
+def resolve_person(spoken: str, people: list[tuple[str, str, list[str]]]) -> tuple[str | None, str | None]:
+    """(entity id, None) when one person matches; (None, question) when several do; (None, None) if none."""
+    ids = name_index(people).get(spoken.strip().lower(), [])
+    if len(ids) == 1:
+        return ids[0], None
+    if not ids:
+        return None, None
+    names = [full for eid, full, _ in people if eid in ids]
+    return None, "Did you mean " + ", ".join(names[:-1]) + " or " + names[-1] + "?"

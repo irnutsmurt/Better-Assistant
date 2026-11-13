@@ -78,6 +78,7 @@ contain a real definition.
 |---|---|
 | Web search | On/off, monthly cap, country (2-letter code), say the source site |
 | Behaviour | Question-only guard, compound commands on/off, most parts in one compound command (2-4) |
+| Alarms | Snooze length (1-30 minutes, default 5) |
 | Voice speakers, Music, Calendar, Reminders & notes, Cameras & outside, Thermostat, TV, Bed, Rooms & lights | Devices found automatically, for features coming in later versions |
 | Night mode, Guest mode | Coming in a later version |
 | Re-detect devices | Scan again |
@@ -108,7 +109,7 @@ speaker with several people in the house, say the person's name ("remind Sam to 
 | Skill | Say | What happens |
 |---|---|---|
 | Reminders | "remind me to call the dentist tomorrow at 3", "remind me at 5 to ...", "remind me to buy milk when I get home / when I leave", "... when I get to work / leave work", "remind Sam to feed the cat at 6 / when she gets home", "what are my reminders", "cancel my reminders", "cancel the reminder to call the dentist" | Kept in the integration's own **Reminders** to-do list. When due, announced on the voice speaker and sent to the person's phone, then ticked off. Places are your Home Assistant zones; if a place has no zone you're told how to add one. A reminder for someone else waits until they're home. Confirmations always give the exact clock time ("tomorrow at 5 AM"). Names are matched against your people and their aliases; an unknown name gets "There's no one named Bob in this home." |
-| Alarms | "set an alarm for 7", "wake me up at 6:30", "set an alarm for every weekday at 6:45", "what time is my alarm", "cancel my alarm", "snooze", "stop the alarm" | One alarm per voice speaker. Rings with a bundled tone on that speaker's own media player for up to 10 minutes. Snooze is 9 minutes. Daily, weekday and weekend repeats. A plain "stop" (Home Assistant's own media stop) also ends a ringing alarm. |
+| Alarms | "set an alarm for 7", "wake me up at 6:30", "set an alarm for every weekday at 6:45", "what time is my alarm", "cancel my alarm", "snooze", "give me 5 more minutes", "how long is the snooze", "stop the alarm" | One alarm per voice speaker. Rings with a bundled tone on that speaker's own media player for up to 10 minutes. Snooze is 5 minutes by default (Settings > Alarms, or say "set the snooze to 10 minutes"); "snooze for 10 minutes" or "just 5 more minutes" snoozes once for that long. Daily, weekday and weekend repeats. A plain "stop" (Home Assistant's own media stop) also ends a ringing alarm. |
 | Timers | "set a pizza timer for 20 minutes", "set a 20 minute pizza timer", "add a minute to the timer", "give the pizza timer 5 more minutes", "take a minute off the timer" | Extra wordings handed to Home Assistant's **built-in** timers. Plain "set a timer for 10 minutes" still goes straight to the built-in. |
 | Notes | "take a note that the wifi password is on the fridge", "remember that ...", "remember I put the passports in the top drawer", "where did I put the passports", "read my notes", "clear my notes" | **Notes** to-do list. Read back with "my" turned into "your". |
 | Messages | "leave a message for Sam that dinner is in the oven", "leave a note that ...", "any messages?" | **Messages** to-do list. Messages are read to the person they're for (or anyone) and then ticked off. |

@@ -35,6 +35,7 @@ from .const import (
     OPT_MONTHLY_CAP,
     OPT_OVERRIDES,
     OPT_QUESTION_GUARD,
+    OPT_SNOOZE,
     OPT_SPEAK_SOURCE,
     OPT_WEB_SEARCH,
     PLACEHOLDER_SECTIONS,
@@ -115,7 +116,7 @@ class BraveSearchApiOptionsFlow(OptionsFlow):
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         return self.async_show_menu(step_id="init", menu_options=[
-            "web_search", "behaviour", *DEVICE_SECTIONS, *PLACEHOLDER_SECTIONS, "redetect"])
+            "web_search", "behaviour", "alarms", *DEVICE_SECTIONS, *PLACEHOLDER_SECTIONS, "redetect"])
 
     async def async_step_web_search(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is not None:
@@ -144,6 +145,16 @@ class BraveSearchApiOptionsFlow(OptionsFlow):
                 NumberSelectorConfig(min=2, max=4, step=1, mode=NumberSelectorMode.SLIDER)),
         })
         return self.async_show_form(step_id="behaviour", data_schema=schema)
+
+    async def async_step_alarms(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        if user_input is not None:
+            return self._save({OPT_SNOOZE: int(user_input[OPT_SNOOZE])})
+        schema = vol.Schema({
+            vol.Required(OPT_SNOOZE, default=self._opt(OPT_SNOOZE)): NumberSelector(
+                NumberSelectorConfig(min=1, max=30, step=1, unit_of_measurement="min",
+                                     mode=NumberSelectorMode.SLIDER)),
+        })
+        return self.async_show_form(step_id="alarms", data_schema=schema)
 
     async def _device_section(self, section: str, user_input: dict[str, Any] | None) -> ConfigFlowResult:
         if user_input is not None:

@@ -53,7 +53,19 @@ intents:
   AlarmSnooze:
     data:
       - sentences:
-          - "snooze [the|my] [alarm]"
+          - "snooze [it|the alarm|my alarm|alarm]"
+          - "snooze [it|the alarm|my alarm] for {snooze_minutes:minutes} [more] minute[s]"
+          - "[just|give me|ok|okay] {snooze_minutes:minutes} more minute[s] [please]"
+          - "(just|give me) {snooze_minutes:minutes} more minute[s] [please]"
+  AlarmSnoozeSet:
+    data:
+      - sentences:
+          - "(set|change|make) [the|my] snooze [time|length] (to|for) {snooze_minutes:minutes} minute[s]"
+  AlarmSnoozeQuery:
+    data:
+      - sentences:
+          - "how long is [the|my] snooze [time]"
+          - "what('s| is) [the|my] snooze [time|length] [set to]"
   AlarmStop:
     data:
       - sentences:
@@ -121,5 +133,80 @@ lists:
     wildcard: true
   name:
     wildcard: true
+  # Explicit numbers only: an open wildcard here would steal "add 5 more minutes" from the timer intents.
+  snooze_minutes:
+    values:
+      - in: "1"
+        out: 1
+      - in: "2"
+        out: 2
+      - in: "3"
+        out: 3
+      - in: "4"
+        out: 4
+      - in: "5"
+        out: 5
+      - in: "6"
+        out: 6
+      - in: "7"
+        out: 7
+      - in: "8"
+        out: 8
+      - in: "9"
+        out: 9
+      - in: "10"
+        out: 10
+      - in: "11"
+        out: 11
+      - in: "12"
+        out: 12
+      - in: "15"
+        out: 15
+      - in: "20"
+        out: 20
+      - in: "25"
+        out: 25
+      - in: "30"
+        out: 30
+      - in: "one"
+        out: 1
+      - in: "two"
+        out: 2
+      - in: "three"
+        out: 3
+      - in: "four"
+        out: 4
+      - in: "five"
+        out: 5
+      - in: "six"
+        out: 6
+      - in: "seven"
+        out: 7
+      - in: "eight"
+        out: 8
+      - in: "nine"
+        out: 9
+      - in: "ten"
+        out: 10
+      - in: "eleven"
+        out: 11
+      - in: "twelve"
+        out: 12
+      - in: "fifteen"
+        out: 15
+      - in: "twenty"
+        out: 20
+      - in: "twenty five"
+        out: 25
+      - in: "twenty-five"
+        out: 25
+      - in: "thirty"
+        out: 30
+      - in: "a few"
+        out: 3
+      - in: "a couple"
+        out: 2
+      - in: "a couple of"
+        out: 2
   person:
     values: []

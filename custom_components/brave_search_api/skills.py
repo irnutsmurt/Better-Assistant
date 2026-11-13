@@ -19,7 +19,7 @@ from homeassistant.helpers.event import async_track_point_in_time, async_track_s
 from homeassistant.helpers.network import NoURLAvailableError, get_url
 from homeassistant.util import dt as dt_util
 
-from .const import ALARM_URL, RING_MINUTES, SNOOZE_MINUTES
+from .const import ALARM_URL, DEFAULTS, OPT_SNOOZE, RING_MINUTES
 from .core import intents as sentences
 from .core.features import (
     Stopwatch,
@@ -28,6 +28,7 @@ from .core.features import (
     next_alarm,
     note_from,
     parse_reminder,
+    resolve_person,
     say_alarm,
     say_duration,
     sentence,
@@ -89,18 +90,28 @@ class Skills:
     def satellites(self) -> list[str]:
         return list(self._section("voice_speakers").get("satellites") or [])
 
-    def people(self) -> dict[str, str]:
-        """Spoken name (lower-case) -> person entity id."""
-        out = {}
+    def people_list(self) -> list[tuple[str, str, list[str]]]:
+        """[(person entity id, full name, aliases)]."""
         ents = er.async_get(self.hass)
+        out = []
         for state in self.hass.states.async_all("person"):
-            out[state.name.lower()] = state.entity_id
-            out[state.name.split()[0].lower()] = state.entity_id
             reg = ents.async_get(state.entity_id)
-            for alias in (reg.aliases if reg else ()):
-                if isinstance(alias, str) and alias.strip():
-                    out[alias.strip().lower()] = state.entity_id
+            aliases = [a for a in (reg.aliases if reg else ()) if isinstance(a, str) and a.strip()]
+            out.append((state.entity_id, state.name, aliases))
         return out
+
+    def people(self) -> dict[str, list[str]]:
+        """Spoken name (lower-case) -> person entity ids."""
+        from .core.features import name_index  # noqa: PLC0415
+        return name_index(self.people_list())
+
+    def resolve(self, spoken: str) -> tuple[str | None, str]:
+        """(person, "") or (None, what to say)."""
+        person, question = resolve_person(spoken, self.people_list())
+        if person:
+            return person, ""
+        name = spoken.strip()
+        return None, question or f"There's no one named {name[:1].upper() + name[1:]} in this home."
 
     def person_name(self, entity_id: str | None) -> str:
         state = self.hass.states.get(entity_id) if entity_id else None
@@ -254,9 +265,9 @@ class Skills:
         return f"{who} to {flip_pronouns(req.task) if not for_other else req.task} {when}."
 
     async def _h_reminder_add_for(self, slots: dict, user_input) -> str:
-        person = self.people().get((slots.get("person") or "").lower())
+        person, problem = self.resolve(slots.get("person") or "")
         if not person:
-            return "Sorry, I don't know who that is."
+            return problem
         text = re.sub(r"\bwhen (he|she|they) (get|gets|come|comes) (back )?home\b", "when I get home",
                       slots.get("text", ""), flags=re.I)
         text = re.sub(r"\bwhen (he|she|they) (leave|leaves)\b", "when I leave", text, flags=re.I)
@@ -422,19 +433,32 @@ class Skills:
             cancel()
         return "OK, your alarm is cancelled."
 
+    def snooze_default(self) -> int:
+        return int(self.entry.options.get(OPT_SNOOZE, DEFAULTS[OPT_SNOOZE]))
+
+    async def _h_alarm_snooze_set(self, slots: dict, user_input) -> str:
+        minutes = max(1, min(30, int(slots.get("minutes") or self.snooze_default())))
+        self.hass.config_entries.async_update_entry(self.entry, options={**self.entry.options, OPT_SNOOZE: minutes})
+        return f"Okay, snooze is now {minutes} minute{'s' if minutes != 1 else ''}."
+
+    async def _h_alarm_snooze_query(self, slots: dict, user_input) -> str:
+        n = self.snooze_default()
+        return f"Snooze is {n} minute{'s' if n != 1 else ''}."
+
     async def _h_alarm_snooze(self, slots: dict, user_input) -> str:
         sat = self._alarm_target(user_input)
         if not sat or sat not in self._ringing:
-            return "There's no alarm ringing."
+            return "There's no alarm going off right now."
+        minutes = int(slots.get("minutes") or self.snooze_default())
         self._stop_ringing(sat)
-        when = dt_util.now() + dt.timedelta(minutes=SNOOZE_MINUTES)
+        when = dt_util.now() + dt.timedelta(minutes=minutes)
 
         @callback
         def _again(_now: dt.datetime) -> None:
             self._start_ringing(sat)
 
         self._timers[f"snooze:{sat}"] = async_track_point_in_time(self.hass, _again, when)
-        return f"Snoozing for {SNOOZE_MINUTES} minutes."
+        return f"Okay, snoozing for {minutes} minute{'s' if minutes != 1 else ''}."
 
     async def _h_alarm_stop(self, slots: dict, user_input) -> str:
         sat = self._alarm_target(user_input)
@@ -596,7 +620,11 @@ class Skills:
         text = (slots.get("text") or "").strip(" ,.")
         if not text:
             return "What's the message?"
-        person = self.people().get((slots.get("person") or "").lower()) if slots.get("person") else None
+        person = None
+        if slots.get("person"):
+            person, problem = self.resolve(slots["person"])
+            if not person:
+                return problem
         sender = self.speaker_person(user_input)
         summary = f"For {self.person_name(person)}: {text}" if person else text
         desc = ";".join(x for x in (f"for={person}" if person else "", f"from={sender}" if sender else "") if x)

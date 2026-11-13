@@ -36,6 +36,7 @@
         "menu_options": {
           "web_search": "Web search",
           "behaviour": "Behaviour",
+          "alarms": "Alarms",
           "voice_speakers": "Voice speakers",
           "music": "Music",
           "calendar": "Calendar",
@@ -155,6 +156,15 @@
       "redetect": {
         "title": "Re-detect devices",
         "description": "Scan your devices again and refresh the suggested setup. Choices you changed by hand are kept."
+      },
+      "alarms": {
+        "title": "Alarms",
+        "data": {
+          "snooze_minutes": "Snooze length"
+        },
+        "data_description": {
+          "snooze_minutes": "Used for \"snooze\". You can also say \"set the snooze to 10 minutes\"."
+        }
       }
     }
   },

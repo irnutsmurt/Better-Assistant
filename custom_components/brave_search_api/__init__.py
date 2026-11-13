@@ -15,7 +15,7 @@ from homeassistant.helpers.start import async_at_started
 
 from homeassistant.components.http import StaticPathConfig
 
-from .const import ALARM_URL, DOMAIN, HISTORY_SIZE
+from .const import ALARM_URL, DOMAIN, HISTORY_SIZE, OPT_SNOOZE
 from .discovery import async_detect
 from .store import BraveStore
 
@@ -29,6 +29,7 @@ PLATFORMS = [Platform.CONVERSATION, Platform.SENSOR, Platform.TODO]
 class BraveRuntimeData:
     store: BraveStore
     skills: Skills | None = None
+    options: dict = field(default_factory=dict)        # options the entry was set up with
     heard: deque[str] = field(default_factory=lambda: deque(maxlen=HISTORY_SIZE))
 
 
@@ -44,7 +45,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: BraveConfigEntry) -> boo
             await store.async_set_detected(async_detect(hass, dict(entry.options)))
 
         entry.async_on_unload(async_at_started(hass, _first_detect))
-    entry.runtime_data = BraveRuntimeData(store=store)
+    entry.runtime_data = BraveRuntimeData(store=store, options=dict(entry.options))
     await _async_register_tone(hass)
     from .skills import Skills  # noqa: PLC0415 - needs runtime_data set first
 
@@ -67,7 +68,12 @@ async def _async_register_tone(hass: HomeAssistant) -> None:
 
 
 async def _async_update_listener(hass: HomeAssistant, entry: BraveConfigEntry) -> None:
-    await hass.config_entries.async_reload(entry.entry_id)
+    """Reload on option changes, except the snooze length (read live, so a ringing alarm survives)."""
+    old = {k: v for k, v in entry.runtime_data.options.items() if k != OPT_SNOOZE}
+    new = {k: v for k, v in entry.options.items() if k != OPT_SNOOZE}
+    entry.runtime_data.options = dict(entry.options)
+    if old != new:
+        await hass.config_entries.async_reload(entry.entry_id)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: BraveConfigEntry) -> bool:

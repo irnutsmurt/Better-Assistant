@@ -73,3 +73,17 @@ def test_durations():
     assert say_duration(3725) == "1 hour, 2 minutes and 5 seconds"
     assert say_duration(61) == "1 minute and 1 second"
     assert say_duration(0.2) == "0 seconds"
+
+
+PEOPLE = [("person.sam_smith", "Sam Smith", []), ("person.sam_lee", "Sam Lee", ["Sammy"]),
+          ("person.alex", "Alex Jordan", ["Grandpa"])]
+
+
+def test_resolve_person():
+    from core.features import resolve_person
+    assert resolve_person("alex", PEOPLE) == ("person.alex", None)
+    assert resolve_person("GRANDPA", PEOPLE) == ("person.alex", None)
+    assert resolve_person("sammy", PEOPLE) == ("person.sam_lee", None)
+    assert resolve_person("Sam Lee", PEOPLE) == ("person.sam_lee", None)
+    assert resolve_person("sam", PEOPLE) == (None, "Did you mean Sam Smith or Sam Lee?")
+    assert resolve_person("bob", PEOPLE) == (None, None)

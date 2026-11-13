@@ -101,3 +101,33 @@ def test_known_people_and_me_still_win():
 def test_aliases_are_matched_like_names():
     r = recognize("remind grandpa to take his pills at 8", ["sam", "grandpa"])
     assert r.intent == "ReminderAddFor" and r.slots["person"] == "grandpa"
+
+
+@pytest.mark.parametrize("text,minutes", [
+    ("snooze", None), ("snooze it", None), ("snooze the alarm", None),
+    ("snooze for 10 minutes", 10), ("snooze it for ten minutes", 10),
+    ("5 more minutes", 5), ("five more minutes", 5), ("give me 3 more minutes", 3),
+    ("just 2 more minutes", 2), ("just a couple more minutes", 2), ("a few more minutes", 3),
+    ("give me fifteen more minutes please", 15),
+])
+def test_snooze(text, minutes):
+    intent, slots = m(text)
+    assert intent == "AlarmSnooze"
+    assert slots.get("minutes") == minutes
+
+
+def test_snooze_settings():
+    assert m("set the snooze to 10 minutes") == ("AlarmSnoozeSet", {"minutes": 10})
+    assert m("change my snooze time to twenty minutes") == ("AlarmSnoozeSet", {"minutes": 20})
+    assert m("how long is the snooze")[0] == "AlarmSnoozeQuery"
+
+
+@pytest.mark.parametrize("text", ["give the pizza timer 5 more minutes", "add 5 more minutes",
+                                  "add another 5 minutes", "give the timer 5 more minutes"])
+def test_timer_phrases_beat_snooze(text):
+    assert m(text)[0] == "HassIncreaseTimer"
+
+
+@pytest.mark.parametrize("text", ["17 more minutes", "snooze for 45 minutes", "lots more minutes"])
+def test_snooze_numbers_are_explicit(text):
+    assert m(text)[0] != "AlarmSnooze"

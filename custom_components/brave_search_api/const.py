@@ -15,6 +15,7 @@ OPT_QUESTION_GUARD = "question_guard"
 OPT_COMPOUND = "compound_commands"
 OPT_MAX_PARTS = "max_compound_parts"
 OPT_OVERRIDES = "overrides"
+OPT_SNOOZE = "snooze_minutes"
 
 DEFAULTS = {
     OPT_WEB_SEARCH: True,
@@ -24,6 +25,7 @@ DEFAULTS = {
     OPT_QUESTION_GUARD: True,
     OPT_COMPOUND: True,
     OPT_MAX_PARTS: 4,
+    OPT_SNOOZE: 5,
 }
 
 STORAGE_VERSION = 1
@@ -52,11 +54,11 @@ DEVICE_SECTIONS: dict[str, dict[str, tuple[str, str, bool]]] = {
             "bed_presets": ("bed.presets", "select", True)},
     "rooms_lights": {"lights": ("lights", ["light", "switch"], True)},
 }
+SETTINGS_SECTIONS = ["web_search", "behaviour", "alarms"]
 PLACEHOLDER_SECTIONS = ["night_mode", "guest_mode"]
 
 # The integration's own to-do lists: key -> name.
 LISTS = {"reminders": "Reminders", "notes": "Notes", "messages": "Messages"}
 
 ALARM_URL = "/brave_search_api/alarm.mp3"
-SNOOZE_MINUTES = 9
 RING_MINUTES = 10
