@@ -2,6 +2,16 @@
 # {text} is free text; {person} and {zone} lists are filled at run time from your person and zone entities.
 language: en
 intents:
+  WhoAmI:
+    data:
+      - sentences:
+          - "who am i"
+          - "who is (this|talking|speaking)"
+          - "who's (this|talking|speaking)"
+          - "do you know who (i am|this is|is talking)"
+          - "(do|can) you (recognize|recognise|know) (me|my voice)"
+          - "what's my name"
+          - "what is my name"
   ReminderAdd:
     data:
       - sentences:

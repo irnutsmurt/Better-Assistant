@@ -277,6 +277,8 @@ once from this project's GitHub repository and checked against a checksum. Nothi
   set of strangers' voices score, and the page shows **Ready ✓** or **Needs a better sample**.
 - **Not sure means not sure:** a request that doesn't clearly match one person is treated as before
   (the signed-in user, or asking who you are). It's never used to unlock doors or turn off guest mode.
+- **"Who am I?"** (or "do you recognise my voice") answers with who voice match heard: "You sound like
+  Rob.", "I'm not sure…" or "I don't recognise your voice."
 - **Recordings tab:** what your speakers heard and who voice match thought it was, with **Play**,
   **That was…** (a person, or "Someone else / the TV") and **Delete**. Labelling a recording teaches voice
   match. Administrators see everyone's recordings; other users only their own and unassigned ones.

@@ -255,6 +255,30 @@ class Skills(HouseSkills, SecuritySkills):
         speech = (response.speech or {}).get("plain", {}).get("speech")
         return speech or "Done."
 
+    async def _h_who_am_i(self, slots: dict, user_input) -> str:
+        """"Who am I?": the signed-in user, else what voice match heard in this request."""
+        from .const import OPT_VM_ENABLED, OPT_VT_ENABLED  # noqa: PLC0415
+        user_id = user_input.context.user_id if user_input.context else None
+        for state in self.hass.states.async_all("person"):
+            if user_id and state.attributes.get("user_id") == user_id:
+                return f"You're {self.person_name(state.entity_id)}."
+        if not (user_input.device_id or getattr(user_input, "satellite_id", None)):
+            return "I can only tell who you are by your voice. Ask me on a voice speaker."
+        opts = self.entry.options
+        matcher = getattr(getattr(self.entry, "runtime_data", None), "matcher", None)
+        if not (opts.get(OPT_VT_ENABLED) and opts.get(OPT_VM_ENABLED)) or matcher is None:
+            return "I don't know voices yet. Turn on voice match on the Voice training page."
+        if matcher.status != "ready":
+            return "Voice match is still getting ready. Ask me again in a minute."
+        if not matcher.prints:
+            return "Nobody has taught me their voice yet. You can on the Voice training page."
+        heard = matcher.recent()
+        if heard and heard.person:
+            return f"You sound like {self.person_name(heard.person)}."
+        if heard and heard.runner_up and heard.score >= 0.3:
+            return f"I'm not sure. You might be {self.person_name(heard.runner_up)}, but I'd rather not guess."
+        return "I don't recognise your voice. You can teach me on the Voice training page."
+
     async def _h_unknown_person(self, slots: dict, user_input) -> str:
         name = (slots.get("name") or "").strip(" ,.")
         return f"There's no one named {name[:1].upper() + name[1:]} in this home."

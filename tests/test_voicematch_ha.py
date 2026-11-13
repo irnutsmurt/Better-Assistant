@@ -169,3 +169,33 @@ async def test_skills_use_voice_match_when_no_one_is_signed_in(hass):
     signed_in = ConversationInput(text="x", context=Context(user_id="u-rob"), conversation_id="c", device_id="d",
                                   satellite_id=None, language="en", agent_id="conversation.x")
     assert skills.speaker_person(signed_in) == "person.rob"                    # the app's login still wins
+
+
+async def test_who_am_i(hass):
+    from homeassistant.components.conversation import ConversationInput
+    from homeassistant.core import Context
+    from custom_components.better_assistant.core.intents import recognize
+    from custom_components.better_assistant.skills import Skills
+    for text in ("who am I", "do you know who I am", "do you recognise my voice", "who's talking"):
+        assert recognize(text, ["rob"]).intent == "WhoAmI", text
+    m = matcher(hass)
+    m.entry.options = {"voice_training": True, "voice_match": True}
+    skills = Skills.__new__(Skills)
+    skills.hass, skills.entry = hass, m.entry
+
+    def ui(user=None, voice=True):
+        return ConversationInput(text="who am i", context=Context(user_id=user), conversation_id="c",
+                                 device_id="d" if voice else None, satellite_id=None, language="en", agent_id="x")
+    ask = lambda u: skills._h_who_am_i({}, u)
+    assert await ask(ui()) == "Nobody has taught me their voice yet. You can on the Voice training page."
+    m.prints = [{"person": "person.rob"}]
+    m._last = (vm.Match("person.rob", 0.62), time.time())
+    assert await ask(ui()) == "You sound like Rob."
+    m._last = (vm.Match(None, 0.42, "person.leila"), time.time())
+    assert await ask(ui()) == "I'm not sure. You might be Leila, but I'd rather not guess."
+    m._last = (vm.Match(None, 0.05, "person.rob"), time.time())
+    assert await ask(ui()) == "I don't recognise your voice. You can teach me on the Voice training page."
+    assert await ask(ui(user="u-leila", voice=False)) == "You're Leila."
+    assert (await ask(ui(voice=False))).startswith("I can only tell who you are by your voice")
+    m.entry.options = {"voice_training": True}
+    assert (await ask(ui())).startswith("I don't know voices yet")
