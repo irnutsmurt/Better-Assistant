@@ -88,6 +88,11 @@ class Skills(HouseSkills, SecuritySkills):
         self.apply_door_hiding()
 
     @callback
+    def on_detected(self) -> None:
+        """Detection ran: refresh what was built from it at start-up."""
+        self.apply_door_hiding()
+
+    @callback
     def async_stop(self) -> None:
         for unsub in self._unsubs + list(self._timers.values()):
             unsub()

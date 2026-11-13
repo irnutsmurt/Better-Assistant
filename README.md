@@ -96,7 +96,7 @@ and inputs, lights and light switches per room (status LEDs on Zigbee routers an
 left out), battery sensors (phones and watches tagged as personal), unavailable devices, and Sleep
 Number beds.
 
-Detection runs once after Home Assistant starts. Just press Submit to accept a section. If you change
+Detection runs as soon as the integration is added (or once Home Assistant has started), and again by itself about 30 seconds after you add, remove or move devices, entities or areas. Just press Submit to accept a section. If you change
 something, only your changes are stored, separately, so **Re-detect devices** refreshes everything
 else without undoing your edits.
 
@@ -148,7 +148,7 @@ garage door") is never taken over.
 | Bed | "set the bed to flat", "set my side to read", "raise my side", "flatten the bed", "set my sleep number to 45", "what's our sleep number", "how did I sleep" | Sleep Number (SleepIQ). Sleepers are matched by name; otherwise pick who sleeps on each side in settings. |
 | Health report | "is anything wrong", "are any devices offline", "house status", "which batteries are low", "status of all batteries", "what's the kitchen sensor battery", "what's the battery on my phone" | Offline devices, batteries under 20 percent (phones and watches left out), vacuum errors and waiting updates. |
 | Guest mode | "turn on guest mode", "turn off guest mode" | Also a switch. Calendars, notes, reminder lists and sleep data are private, and the locks and garage doors you choose are hidden from Assist until it's off; their earlier Assist setting is put back exactly (including "default"), even after a restart. Search, lights and music still work. |
-| Night mode | "turn on night mode" | Also a switch, and on a schedule (10 PM to 7 AM by default). Only the voice speakers: lowers each one's volume and dims its LED ring, then puts them back. Room lights are not touched. |
+| Night mode | "turn on night mode" | Off until you switch it on in its settings (so nothing changes on the first night). Then also a switch, and on a schedule (10 PM to 7 AM by default). Only the voice speakers: lowers each one's volume and dims its LED ring, then puts them back. Room lights are not touched. |
 | Broadcast | "tell everyone that dinner's ready", "announce the car is here" | Every other voice speaker, plus any media players you add in settings. |
 | Help | "what can you do", "what can you do with music" | Only lists the features that are switched on. |
 

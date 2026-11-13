@@ -148,3 +148,11 @@ def test_guest_exposure_restores_exactly():
     assert restore_action(default_on) == ("clear", True)          # back to the default, not an explicit True
     assert restore_action(default_off) == ("clear", False)
     assert default_on == {"explicit": False, "default": True}     # plain data, saved with the integration
+
+
+def test_say_sleep():
+    from core.devices import say_sleep
+    assert say_sleep("Robin", ("452", "min"), ("81", None), ("56", "bpm"), True) == \
+        "You slept 7 hours and 32 minutes with a sleep score of 81. Average heart rate 56."
+    assert say_sleep("Robin", ("7.5", "h"), None) == "Robin slept 7 hours and 30 minutes."
+    assert say_sleep("Robin", None, ("70", None)) == "Robin had a sleep score of 70."

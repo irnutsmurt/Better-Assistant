@@ -340,3 +340,33 @@ def restore_action(record: dict) -> tuple[str, bool | None]:
     if record.get("explicit"):
         return "set", bool(record.get("value"))
     return "clear", bool(record.get("default", False))
+
+
+def _hours_minutes(value: float, unit: str | None) -> str:
+    unit = (unit or "min").lower()
+    minutes = value * 60 if unit in ("h", "hr", "hrs", "hours") else value / 60 if unit in ("s", "sec") else value
+    h, m = divmod(int(round(minutes)), 60)
+    parts = [f"{h} hour{'s' if h != 1 else ''}"] if h else []
+    if m or not parts:
+        parts.append(f"{m} minute{'s' if m != 1 else ''}")
+    return " and ".join(parts)
+
+
+def say_sleep(name: str, duration=None, score=None, heart_rate=None, speaker_is_sleeper: bool = False) -> str:
+    """duration/score/heart_rate: (state string, unit) or None."""
+    who = "You" if speaker_is_sleeper else name
+    parts = []
+    if duration:
+        try:
+            parts.append(f"{who} slept {_hours_minutes(float(duration[0]), duration[1])}")
+        except ValueError:
+            pass
+    if score:
+        parts.append(("with a sleep score of " if parts else f"{who} had a sleep score of ") + f"{float(score[0]):g}")
+    text = " ".join(parts) + "." if parts else f"I don't have last night's sleep for {name.lower() if who == 'You' else name}."
+    if heart_rate:
+        try:
+            text += f" Average heart rate {float(heart_rate[0]):g}."
+        except ValueError:
+            pass
+    return text

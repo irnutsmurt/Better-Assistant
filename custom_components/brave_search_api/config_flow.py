@@ -34,6 +34,7 @@ from .const import (
     DEFAULTS,
     DEVICE_SECTIONS,
     EXTRA_FIELDS,
+    FEATURE_DEFAULT_OFF,
     FEATURE_SECTIONS,
     DOMAIN,
     OPT_COMPOUND,
@@ -239,7 +240,7 @@ class BraveSearchApiOptionsFlow(OptionsFlow):
         current = effective_section(dict(self.config_entry.options), detected, section)
         fields: dict[Any, Any] = {}
         if section in FEATURE_SECTIONS:
-            on = (self.config_entry.options.get(OPT_FEATURES) or {}).get(section, True)
+            on = (self.config_entry.options.get(OPT_FEATURES) or {}).get(section, section not in FEATURE_DEFAULT_OFF)
             fields[vol.Required("enabled", default=on)] = BooleanSelector()
         stored = (self.config_entry.options.get(OPT_SETTINGS) or {}).get(section) or {}
         for key, (kind, default, cfg) in EXTRA_FIELDS.get(section, {}).items():

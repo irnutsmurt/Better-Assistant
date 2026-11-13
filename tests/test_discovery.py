@@ -163,3 +163,57 @@ def test_rooms_take_plugs_and_fans_but_never_network_gear(house):
     assert "switch.router_plug" not in lights and "switch.coffee_maker" not in lights
     assert d["rooms"]["bedroom"]["fans"] == ["fan.bedroom_fan"]           # device area; not the config or rack fan
     assert d["rooms"]["living"]["fans"] == ["fan.living_fan"]             # entity area
+
+
+def test_health_false_positives_regression(house):
+    """A working light group, a working helper switch, our own entities and leftovers are never
+    'offline'; a device counts only when all of its actionable entities are down."""
+    house.devices["pihole"] = Device("pihole", name="Pi-hole")
+    house.devices["cast9"] = Device("cast9", name="Den Chromecast")
+    house.devices["board"] = Device("board", name="rtl_433 board")
+    house.devices["ours"] = Device("ours", name="Brave Search API")
+    house.entities += [
+        Entity("light.lounge_lamps", platform="group", name="Lounge lamps"),                      # group helper, on
+        Entity("switch.pihole_blocking_both", platform="template", name="Pi-hole blocking (both)"),
+        Entity("switch.pihole_blocking_a", platform="pi_hole", device_id="pihole", available=False),
+        Entity("switch.pihole_blocking_b", platform="pi_hole", device_id="pihole"),               # still up
+        Entity("media_player.den_chromecast", platform="cast", device_id="cast9", available=False),
+        Entity("switch.board_relay", platform="mqtt", device_id="board", available=False),
+        Entity("switch.brave_search_api_night_mode", platform="brave_search_api", device_id="ours",
+               available=False, restored=True),
+        Entity("switch.old_thing", platform="zha", available=False, restored=True),
+        Entity("light.hidden_lamp", platform="zha", available=False, hidden=True),
+    ]
+    d = classify(house)
+    assert set(d["unavailable"]) == {"bulb1", "cast9", "board"}
+    assert d["unavailable_names"]["cast9"] == "Den Chromecast"
+    assert d["unavailable_names"]["board"] == "rtl_433 board"
+
+
+def test_sleepiq_sleepers(house):
+    house.people.append(Person("person.robin_example", name="Robin Example"))
+    bed = "sleepnumber_testbed"
+    for eid in [f"sensor.{bed}_robin_sleep_score", f"sensor.{bed}_robin_sleep_duration",
+                f"sensor.{bed}_robin_heart_rate_average", f"sensor.{bed}_robin_sleepnumber",
+                f"number.{bed}_robin_firmness", f"number.{bed}_left_head_position",
+                f"select.{bed}_foundation_preset_left", f"select.{bed}_foundation_preset_right",
+                f"binary_sensor.{bed}_robin_is_in_bed", f"sensor.{bed}_casey_sleep_score"]:
+        house.entities.append(Entity(eid, platform="sleepiq"))
+    b = classify(house)["bed"]
+    assert b["sleepers"]["person.robin_example"] == {
+        "score": f"sensor.{bed}_robin_sleep_score", "duration": f"sensor.{bed}_robin_sleep_duration",
+        "heart_rate": f"sensor.{bed}_robin_heart_rate_average", "sleep_number": f"sensor.{bed}_robin_sleepnumber",
+        "firmness": f"number.{bed}_robin_firmness", "in_bed": f"binary_sensor.{bed}_robin_is_in_bed"}
+    assert "person.casey" not in b["sleepers"]                     # no such person in the house
+    assert b["sides"]["left"] == {"actuators": [f"number.{bed}_left_head_position"],
+                                  "presets": [f"select.{bed}_foundation_preset_left"]}
+    assert b["sides"]["right"]["presets"] == [f"select.{bed}_foundation_preset_right"]
+    assert f"number.{bed}_robin_firmness" in b["firmness"] and f"number.{bed}_left_head_position" in b["actuators"]
+
+
+def test_sleepiq_kind_prefers_translation_key(house):
+    house.people.append(Person("person.robin_example", name="Robin Example"))
+    house.entities.append(Entity("sensor.sleepnumber_testbed_robin_score_2", platform="sleepiq",
+                                 translation_key="sleep_score", unique_id="abc_robin_sleep_score"))
+    assert classify(house)["bed"]["sleepers"]["person.robin_example"]["score"] == \
+        "sensor.sleepnumber_testbed_robin_score_2"

@@ -19,7 +19,7 @@ from homeassistant.helpers import area_registry as ar, device_registry as dr, en
 from homeassistant.helpers.event import async_call_later, async_track_time_change
 from homeassistant.util import dt as dt_util
 
-from .const import EXTRA_FIELDS, FEATURE_SECTIONS, HA_AGENT_ID, OPT_FEATURES, OPT_SETTINGS
+from .const import EXTRA_FIELDS, FEATURE_DEFAULT_OFF, FEATURE_SECTIONS, HA_AGENT_ID, OPT_FEATURES, OPT_SETTINGS
 from .core.calendar import day_range, parse_event, say_events, say_next
 from .core.devices import (
     HELP_TOPICS,
@@ -38,6 +38,7 @@ from .core.devices import (
     say_health,
     say_help,
     say_outside,
+    say_sleep,
     side_of,
     sleeper_matches,
     source_words,
@@ -70,7 +71,7 @@ class HouseSkills:
 
     # ------------------------------------------------------------ settings and switches
     def feature_on(self, section: str) -> bool:
-        return bool((self.entry.options.get(OPT_FEATURES) or {}).get(section, True))
+        return bool((self.entry.options.get(OPT_FEATURES) or {}).get(section, section not in FEATURE_DEFAULT_OFF))
 
     def disabled_features(self) -> frozenset[str]:
         return frozenset(s for s in FEATURE_SECTIONS if not self.feature_on(s))
@@ -735,10 +736,19 @@ class HouseSkills:
             return "right"
         return None
 
+    def _sleeper(self, person: str | None) -> dict[str, str]:
+        return ((self._bed().get("sleepers") or {}).get(person or "") or {})
+
     def _side_entities(self, kind: str, person: str | None) -> list[str]:
         ents = list(self._bed().get(kind) or [])
         if person is None:
             return ents
+        if kind == "firmness" and self._sleeper(person).get("firmness"):
+            return [self._sleeper(person)["firmness"]]            # SleepIQ: named after the sleeper
+        side = self._side(person)
+        by_side = ((self._bed().get("sides") or {}).get(side or "") or {}).get(kind) if side else None
+        if by_side:
+            return list(by_side)
         first = self.person_name(person)
         named = [e for e in ents if sleeper_matches(self._friendly(e), first)]
         if named:
@@ -831,12 +841,16 @@ class HouseSkills:
         if problem:
             return problem
         first = self.person_name(person)
-        for eid in self._bed().get("sensors") or []:
-            if re.search(r"sleep.?score|sleep.?quality|sleepiq", eid) and sleeper_matches(self._friendly(eid), first):
-                st = self.hass.states.get(eid)
-                if st and st.state not in ("unknown", "unavailable"):
-                    return f"{first}'s sleep score was {st.state}."
-        return "I don't have sleep data from the bed."
+        sensors = self._sleeper(person)
+        values = {}
+        for kind in ("duration", "score", "heart_rate"):
+            st = self.hass.states.get(sensors.get(kind, ""))
+            if st and st.state not in ("unknown", "unavailable", ""):
+                values[kind] = (st.state, st.attributes.get("unit_of_measurement"))
+        if not values:
+            return f"I don't have sleep data for {first} from the bed."
+        return say_sleep(first, values.get("duration"), values.get("score"), values.get("heart_rate"),
+                         speaker_is_sleeper=slots.get("who") == "me")
 
     # ------------------------------------------------------------ health
     def _battery_entities(self, include_personal: bool = True) -> list[str]:
@@ -859,11 +873,7 @@ class HouseSkills:
     async def _h_health_report(self, slots, user_input) -> str:
         from .discovery import async_detect  # noqa: PLC0415
         detected = async_detect(self.hass, dict(self.entry.options))
-        devs = dr.async_get(self.hass)
-        names = {}
-        for key in detected.get("unavailable") or {}:
-            dev = devs.async_get(key)
-            names[key] = (dev.name_by_user or dev.name) if dev else self._friendly(key)
+        names = dict(detected.get("unavailable_names") or {})
         threshold = int(self.setting("health", "battery_threshold"))
         low = [x for x in self._battery_levels(False) if x[1] < threshold]
         vac = [self._friendly(s.entity_id).lower() for s in self.hass.states.async_all("vacuum") if s.state == "error"]

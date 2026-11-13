@@ -38,7 +38,10 @@ def async_snapshot(hass: HomeAssistant) -> Snapshot:
             supported_features=int(attrs.get(ATTR_SUPPORTED_FEATURES, entry.supported_features or 0) or 0),
             entity_category=entry.entity_category.value if entry.entity_category else None,
             name=(state.name if state else entry.name or entry.original_name or "") or "",
-            available=not state or state.state != STATE_UNAVAILABLE))
+            available=not state or state.state != STATE_UNAVAILABLE,
+            hidden=entry.hidden_by is not None,
+            restored=bool(state and state.attributes.get("restored")) or state is None,
+            unique_id=str(entry.unique_id or ""), translation_key=entry.translation_key))
         seen.add(entry.entity_id)
     for state in hass.states.async_all():                    # entities without a unique id
         if state.entity_id in seen:
@@ -49,7 +52,7 @@ def async_snapshot(hass: HomeAssistant) -> Snapshot:
             name=state.name, available=state.state != STATE_UNAVAILABLE))
 
     for state in hass.states.async_all("person"):
-        snap.people.append(Person(entity_id=state.entity_id, user_id=state.attributes.get("user_id"),
+        snap.people.append(Person(entity_id=state.entity_id, user_id=state.attributes.get("user_id"), name=state.name,
                                   device_trackers=list(state.attributes.get("device_trackers") or [])))
     snap.notify_services = [s for s in hass.services.async_services_for_domain("notify") if s.startswith("mobile_app_")]
     return snap

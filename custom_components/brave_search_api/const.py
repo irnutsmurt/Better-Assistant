@@ -74,6 +74,7 @@ FEATURE_SECTIONS = ["music", "calendar", "rooms_lights", "thermostat", "cameras_
                     "health", "guest_mode", "night_mode", "broadcast"]
 OPT_SECURITY = "security"            # options[OPT_SECURITY] = {passphrase, require_doors, require_guest, owner}
 OPT_FEATURES = "features"            # options[OPT_FEATURES][section] = bool
+FEATURE_DEFAULT_OFF = {"night_mode"}  # opt-in: don't change anyone's speakers on the first night
 OPT_SETTINGS = "settings"            # options[OPT_SETTINGS][section][key] = value
 
 # Extra (non-device) settings per section: key -> (kind, default, extra config).

@@ -53,6 +53,10 @@ class Entity:
     entity_category: str | None = None
     name: str = ""
     available: bool = True
+    hidden: bool = False                 # hidden by the user or an integration
+    restored: bool = False               # a registry leftover with no live entity behind it
+    unique_id: str = ""
+    translation_key: str | None = None
 
     @property
     def domain(self) -> str:
@@ -64,6 +68,7 @@ class Person:
     entity_id: str
     user_id: str | None = None
     device_trackers: list[str] = field(default_factory=list)
+    name: str = ""
 
 
 @dataclass
@@ -199,20 +204,19 @@ def classify(snap: Snapshot, outdoor_areas: list[str] | None = None) -> dict[str
         {"entity_id": e.entity_id, "personal": e.platform == "mobile_app" or bool(PERSONAL_MODEL.search(h.model(e)))}
         for e in h.of("sensor") if e.device_class == "battery"]
 
-    unavailable: dict[str, list[str]] = {}
-    for e in snap.entities:
-        if not e.available and e.domain in ACTIONABLE and e.entity_category is None:
-            unavailable.setdefault(e.device_id or e.entity_id, []).append(e.entity_id)
-    out["unavailable"] = unavailable
+    out["unavailable"], out["unavailable_names"] = _unavailable(h)
 
     bed = [e for e in snap.entities if e.platform == "sleepiq"]
-    firm = re.compile(r"firmness|sleep.?number", re.I)
-    out["bed"] = {"firmness": [e.entity_id for e in bed if e.domain == "number" and firm.search(e.entity_id + " " + e.name)],
-                  "actuators": [e.entity_id for e in bed if e.domain == "number" and not firm.search(e.entity_id + " " + e.name)],
+    sleepers, sides = _sleepiq(bed, snap.people)
+    def is_firm(e):                       # every SleepIQ entity id starts "sleepnumber_", so look at the end
+        return _sleepiq_kind(e) in ("firmness", "sleep_number") or "firmness" in e.name.lower()
+
+    out["bed"] = {"firmness": [e.entity_id for e in bed if e.domain == "number" and is_firm(e)],
+                  "actuators": [e.entity_id for e in bed if e.domain == "number" and not is_firm(e)],
                   "presets": [e.entity_id for e in bed if e.domain == "select"],
                   "presence": [e.entity_id for e in bed if e.domain == "binary_sensor"],
                   "sensors": [e.entity_id for e in bed if e.domain == "sensor"],
-                  "left_person": None, "right_person": None}
+                  "left_person": None, "right_person": None, "sleepers": sleepers, "sides": sides}
     out["locks"] = [e.entity_id for e in h.of("lock")]
     out["garage_doors"] = [e.entity_id for e in h.of("cover") if e.device_class in ("garage", "gate")]
     out["protected"] = out["locks"] + out["garage_doors"]
@@ -220,6 +224,71 @@ def classify(snap: Snapshot, outdoor_areas: list[str] | None = None) -> dict[str
     out["broadcast_players"] = []
     out["vacuums"] = [e.entity_id for e in h.of("vacuum")]
     return out
+
+
+OWN_PLATFORM = "brave_search_api"
+
+
+def _unavailable(h: _House) -> tuple[dict[str, list[str]], dict[str, str]]:
+    """Devices whose actionable entities are ALL unavailable, plus device-less entities that are.
+    Disabled, hidden and leftover (restored) entities and this integration's own are ignored."""
+    def counts(e: Entity) -> bool:
+        return (e.domain in ACTIONABLE and e.entity_category is None and not e.hidden and not e.restored
+                and e.platform != OWN_PLATFORM)
+
+    by_device: dict[str, list[Entity]] = {}
+    out: dict[str, list[str]] = {}
+    names: dict[str, str] = {}
+    for e in h.snap.entities:
+        if not counts(e):
+            continue
+        if e.device_id and e.device_id in h.snap.devices:
+            by_device.setdefault(e.device_id, []).append(e)
+        elif not e.available:                          # no device: judged on its own state
+            out[e.entity_id] = [e.entity_id]
+            names[e.entity_id] = e.name or e.entity_id
+    for dev_id, ents in by_device.items():
+        if all(not e.available for e in ents):
+            out[dev_id] = [e.entity_id for e in ents]
+            names[dev_id] = h.snap.devices[dev_id].name or ents[0].name
+    return out, names
+
+
+SLEEPIQ_KINDS = [("sleep_score", "score"), ("sleep_duration", "duration"), ("heart_rate_average", "heart_rate"),
+                 ("respiratory_rate_average", "breathing"), ("hrv", "hrv"), ("is_in_bed", "in_bed"),
+                 ("firmness", "firmness"), ("sleepnumber", "sleep_number"), ("sleep_number", "sleep_number"),
+                 ("pressure", "pressure")]
+
+
+def _sleepiq_kind(e: Entity) -> str | None:
+    for source in (e.translation_key or "", e.unique_id or "", e.entity_id):
+        low = source.lower()
+        for suffix, kind in SLEEPIQ_KINDS:
+            if low.endswith(suffix):
+                return kind
+    return None
+
+
+def _sleepiq(bed: list[Entity], people: list[Person]) -> tuple[dict, dict]:
+    """Per-person sensors and controls ('sensor.sleepnumber_<bed>_<name>_sleep_score' belongs to the
+    person whose first name is <name>), and per-side presets and actuators."""
+    firsts = {}
+    for p in people:
+        first = slugify((p.name or "").split()[0]) if (p.name or "").split() else ""
+        if first:
+            firsts[first] = p.entity_id
+    sleepers: dict[str, dict[str, str]] = {}
+    sides: dict[str, dict[str, list[str]]] = {}
+    for e in bed:
+        ident = e.entity_id.split(".", 1)[1]
+        person = next((pid for first, pid in firsts.items() if re.search(rf"(^|_){first}_", ident)), None)
+        kind = _sleepiq_kind(e)
+        if person and kind:
+            sleepers.setdefault(person, {}).setdefault(kind, e.entity_id)
+        side = "left" if re.search(r"(^|_)left(_|$)", ident) else "right" if re.search(r"(^|_)right(_|$)", ident) else None
+        if side and e.domain in ("select", "number"):
+            sides.setdefault(side, {}).setdefault("presets" if e.domain == "select" else "actuators", []).append(e.entity_id)
+    return sleepers, sides
 
 
 def _phones(h: _House) -> list[dict[str, Any]]:
