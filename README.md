@@ -42,7 +42,7 @@ Requires **Home Assistant 2025.11 or newer** (the agent uses the conversation dr
 
 
 1. HACS > three-dot menu > **Custom repositories** > add
-   `https://github.com/irnutsmurt/better-assistant` as type **Integration**.
+   `https://github.com/irnutsmurt/Better-Assistant` as type **Integration**.
 2. Install **Better Assistant**, then restart Home Assistant.
 3. **Settings > Devices & services > Add integration > Better Assistant.**
 
