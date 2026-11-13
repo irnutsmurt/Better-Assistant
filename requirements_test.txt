@@ -1,3 +1,5 @@
 pytest
 pytest-asyncio
 aiohttp
+hassil>=3.0
+PyYAML

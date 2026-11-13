@@ -1,0 +1,118 @@
+# Sentences the Brave Search API agent handles itself (matched with hassil before guards and search).
+# {text} is free text; {person} and {zone} lists are filled at run time from your person and zone entities.
+language: en
+intents:
+  ReminderAdd:
+    data:
+      - sentences:
+          - "remind me {text}"
+          - "set [a|an] reminder {text}"
+          - "(make|create|add) a reminder {text}"
+  ReminderAddFor:
+    data:
+      - sentences:
+          - "remind {person} {text}"
+  ReminderList:
+    data:
+      - sentences:
+          - "(what are|list|read) [all] my reminders"
+          - "(what|which) reminders do i have"
+          - "do i have any reminders"
+          - "what reminders are (there|set)"
+  ReminderCancelAll:
+    data:
+      - sentences:
+          - "(cancel|delete|clear|remove) (all [of] my|my|all [the]|all) reminders"
+  ReminderCancel:
+    data:
+      - sentences:
+          - "(cancel|delete|remove) (the|my) reminder (to|about|for) {text}"
+  AlarmSet:
+    data:
+      - sentences:
+          - "(set|create|make) (an|a|my|the) alarm (for|at|in) {text}"
+          - "(set|create|make) (an|a|my|the) {text} alarm"
+          - "(set|create|make) (an|a|my|the) alarm {text}"
+          - "wake me [up] {text}"
+  AlarmQuery:
+    data:
+      - sentences:
+          - "(what time is|when is|what's|what is) my alarm [set for]"
+          - "(is there|do i have|have i got) (an|any) alarm[s] [set]"
+          - "is my alarm (set|on)"
+  AlarmCancel:
+    data:
+      - sentences:
+          - "(cancel|delete|remove|clear) [my|the|all] alarm[s]"
+          - "(turn off|disable) my alarm"
+  AlarmSnooze:
+    data:
+      - sentences:
+          - "snooze [the|my] [alarm]"
+  AlarmStop:
+    data:
+      - sentences:
+          - "(stop|silence|dismiss|turn off) (the|my) alarm"
+          - "alarm off"
+          - "i'm up"
+          - "i am up"
+  NoteAdd:
+    data:
+      - sentences:
+          - "(take|make|write) [a|an] note [that|saying] {text}"
+          - "(note|remember) that {text}"
+      - sentences:
+          - "remember (where i put|i put) {text}"
+        slots:
+          put: "put"
+      - sentences:
+          - "remember (where i left|i left) {text}"
+        slots:
+          put: "left"
+  NoteFind:
+    data:
+      - sentences:
+          - "where did i (put|leave) {text}"
+          - "where have i (put|left) {text}"
+  NoteRead:
+    data:
+      - sentences:
+          - "(read|what are|list) my notes"
+          - "what's in my notes"
+          - "what is in my notes"
+          - "do i have any notes"
+  NoteClear:
+    data:
+      - sentences:
+          - "(clear|delete|erase|remove) [all] [of] my notes"
+  MessageLeave:
+    data:
+      - sentences:
+          - "leave (a|an) (note|message) for {person} [that|saying] {text}"
+          - "leave {person} (a|an) (note|message) [that|saying] {text}"
+          - "leave (a|an) (note|message) [that|saying] {text}"
+  MessageRead:
+    data:
+      - sentences:
+          - "(any|are there any|do i have any|have i got any) [new] messages"
+          - "(read|play|what are) [my|the] messages"
+          - "did anyone leave (me a|a) (message|note)"
+  StopwatchStart:
+    data:
+      - sentences:
+          - "(start|begin) [a|the] stopwatch"
+  StopwatchStop:
+    data:
+      - sentences:
+          - "(stop|end) [the] stopwatch"
+  StopwatchRead:
+    data:
+      - sentences:
+          - "(check|read) [the] stopwatch"
+          - "how long (has|is) the stopwatch [been] [running|going|on]"
+          - "what('s| is) [on] the stopwatch"
+lists:
+  text:
+    wildcard: true
+  person:
+    values: []

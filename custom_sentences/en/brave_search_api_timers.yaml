@@ -1,0 +1,44 @@
+# Extra wordings for Home Assistant's built-in timers.
+# The article is required in the naming sentences so plain "set a timer for 10 minutes" still reaches the built-in one.
+language: en
+intents:
+  HassStartTimer:
+    data:
+      - sentences:
+          - "(set|start) (a|an|the|my) {timer_name:name} timer for {timer_minutes:minutes}( |-)minute[s]"
+          - "(set|start) (a|an|the|my) {timer_minutes:minutes}( |-)minute {timer_name:name} timer"
+          - "(set|start) (a|an|the|my) {timer_name:name} timer for {timer_hours:hours}( |-)hour[s]"
+          - "(set|start) (a|an|the|my) {timer_hours:hours}( |-)hour {timer_name:name} timer"
+  HassIncreaseTimer:
+    data:
+      - sentences:
+          - "(add|put) (a|one) minute (to|on) [the|my] timer"
+          - "(add|put) (a|one) minute (to|on) [the|my] {timer_name:name} timer"
+        slots:
+          minutes: 1
+      - sentences:
+          - "(add|put) (a|one) hour (to|on) [the|my] timer"
+        slots:
+          hours: 1
+      - sentences:
+          - "(add|put) {timer_seconds:seconds}( |-)second[s] (to|on) [the|my] timer"
+          - "(add|put) {timer_seconds:seconds}( |-)second[s] (to|on) [the|my] {timer_name:name} timer"
+          - "give [the|my] timer {timer_seconds:seconds} more second[s]"
+      - sentences:
+          - "give [the|my] timer {timer_minutes:minutes} more minute[s]"
+          - "give [the|my] {timer_name:name} timer {timer_minutes:minutes} more minute[s]"
+          - "(add|put) [another] {timer_minutes:minutes} [more] minute[s] [on|to] [it|that]"
+  HassDecreaseTimer:
+    data:
+      - sentences:
+          - "(subtract|remove|take|take away) {timer_seconds:seconds}( |-)second[s] (from|off) [the|my] timer"
+          - "(subtract|remove|take|take away) {timer_seconds:seconds}( |-)second[s] (from|off) [the|my] {timer_name:name} timer"
+      - sentences:
+          - "(subtract|take away) {timer_minutes:minutes}( |-)minute[s] (from|off) [the|my] timer"
+          - "(subtract|take away) {timer_minutes:minutes}( |-)minute[s] (from|off) [the|my] {timer_name:name} timer"
+          - "take (off|away) {timer_minutes:minutes}( |-)minute[s]"
+      - sentences:
+          - "take (a|one) minute off [the|my] timer"
+          - "take (a|one) minute off [the|my] {timer_name:name} timer"
+        slots:
+          minutes: 1
