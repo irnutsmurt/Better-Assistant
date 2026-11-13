@@ -37,8 +37,10 @@ from .core.devices import (
     say_climate,
     say_health,
     say_help,
+    say_lights_on,
     say_outside,
     say_sleep,
+    say_tv,
     side_of,
     sleeper_matches,
     source_words,
@@ -425,6 +427,22 @@ class HouseSkills:
         area = self._area_id(slots.get("area", ""))
         return await self._room(area, False) if area else "I don't know that room."
 
+    async def _h_room_which_lights(self, slots, user_input) -> str:
+        """"what lights are on (in the kitchen)": the lights that are on, room by room."""
+        rooms = self._rooms()
+        if slots.get("area"):
+            area = self._area_id(slots["area"])
+            if not area:
+                return "I don't know that room."
+            rooms = {area: rooms.get(area) or {}}
+        found: list[tuple[str, list[str]]] = []
+        for area_id, room in rooms.items():
+            on = [e for e in (room or {}).get("lights", [])
+                  if e.startswith("light.") and (st := self.hass.states.get(e)) and st.state == "on"]
+            if on:
+                found.append((self._area_name(area_id) or "Somewhere", [self._friendly(e) for e in on]))
+        return say_lights_on(found, self._area_name(next(iter(rooms))) if slots.get("area") else None)
+
     async def _h_room_on(self, slots, user_input) -> str:
         area = self._area_id(slots.get("area", ""))
         return await self._room(area, True) if area else "I don't know that room."
@@ -679,6 +697,15 @@ class HouseSkills:
             return "I couldn't find a TV."
         await self._call("media_player", "select_source", {"entity_id": tv, "source": source})
         return f"Okay, switching the {self._friendly(tv).lower()} to {source}."
+
+    async def _h_tv_whats_on(self, slots, user_input) -> str:
+        tv = self._tv_for(slots, user_input)
+        if not tv:
+            return "I couldn't find a TV."
+        st = self.hass.states.get(tv)
+        a = st.attributes if st else {}
+        return say_tv(self._friendly(tv), st.state if st else "unavailable", a.get("media_title"),
+                      a.get("media_series_title"), a.get("app_name"), a.get("source"))
 
     async def _h_tv_app(self, slots, user_input) -> str:
         app = slots.get("app")

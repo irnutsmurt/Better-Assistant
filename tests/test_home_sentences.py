@@ -74,6 +74,12 @@ def m(text, disabled=frozenset()):
     ("close the camera", "CameraClose", {}),
     # TV
     ("switch the tv to hdmi 2", "TvSource", {"source": "HDMI 2"}), ("switch to the playstation", "TvSource", {"source": "HDMI 2"}),
+    ("what's on the living room tv right now", "TvWhatsOn", {"tv": "media_player.living_tv"}),
+    ("what's playing on the tv", "TvWhatsOn", {}), ("is the tv on", "TvWhatsOn", {}),
+    ("what lights are on in the house right now", "RoomWhichLights", {}),
+    ("what lights are on the house right now", "RoomWhichLights", {}),    # Whisper dropped "in"
+    ("which lights are still on", "RoomWhichLights", {}), ("did I leave any lights on", "RoomWhichLights", {}),
+    ("are any lights on in the kitchen", "RoomWhichLights", {"area": "kitchen"}),
     ("open netflix", "TvApp", {"app": "com.netflix.ninja"}), ("launch youtube on the tv", "TvApp", {"app": "com.google.android.youtube.tv"}),
     # bed
     ("set the bed to flat", "BedPreset", {"preset": "Flat"}), ("set my side to read", "BedPreset", {"preset": "Read", "who": "me"}),

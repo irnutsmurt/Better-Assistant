@@ -93,6 +93,18 @@ intents:
           - "(turn|switch|shut) off [the] {area}"
           - "(turn|switch|shut) [the] {area} off"
           - "turn everything off in [the] {area}"
+  RoomWhichLights:
+    data:
+      - sentences:
+          - "(what|which) lights are [still] on [right now]"
+          - "(what|which) lights are [still] on (in|on|at) [the|my|our] (house|home) [right now]"
+          - "(what|which) lights are [still] on (the|my|our) (house|home) [right now]"
+          - "are (any|there any) lights [still] on [right now]"
+          - "are (any|there any) lights [still] on (in|on|at) [the|my|our] (house|home) [right now]"
+          - "did I leave (any|the) lights on"
+      - sentences:
+          - "(what|which) lights are [still] on (in|on) [the] {area} [right now]"
+          - "are (any|there any|the) lights [still] on (in|on) [the] {area} [right now]"
   RoomOn:
     data:
       - sentences:
@@ -265,6 +277,16 @@ intents:
           - "(switch|change|set|turn|put) the (tv|television) (to|on|input to) {tv_source:source}"
           - "switch [the] (tv|television) input to {tv_source:source}"
           - "switch to [the] {tv_source:source}"
+  TvWhatsOn:
+    data:
+      - sentences:
+          - "what's (on|playing on|showing on) [the] {tv} [right now]"
+          - "what's (on|playing on|showing on) the (tv|television) [right now]"
+          - "what is (on|playing on|showing on) [the] {tv} [right now]"
+          - "what is (on|playing on|showing on) the (tv|television) [right now]"
+          - "what's on tv right now"
+          - "is the (tv|television) on"
+          - "is [the] {tv} on"
   TvApp:
     data:
       - sentences:

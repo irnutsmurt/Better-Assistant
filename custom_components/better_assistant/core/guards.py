@@ -20,6 +20,19 @@ QUESTION = re.compile(r"^(please |hey |so |um |uh |okay |ok )*(what|what's|whats
                       r"find out|give me|explain|i wonder|any idea)\b|\?\s*$", re.I)
 
 
+# Questions about the state of the house never go to the web ("what lights are on the house right now"
+# found the Empire State Building's lighting schedule).
+HOUSE_STATE = re.compile(
+    r"\b(lights?|lamps?|tv|television|doors?|locks?|garage|thermostat|fans?|blinds?|windows?)\b.*"
+    r"\b(on|off|open|closed|locked|unlocked|playing|right now|left on)\b"
+    r"|\b(on|playing|showing)\b.*\b(the|my|our) (tv|television|lights?|lamps?)\b"
+    r"|\b(in|on|at) (the|my|our) (house|home)\b", re.I)
+
+
+def about_the_house(text: str) -> bool:
+    return bool(HOUSE_STATE.search(text))
+
+
 def is_question(text: str) -> bool:
     return bool(QUESTION.search(text.strip()))
 
@@ -31,7 +44,7 @@ def looks_like_command(text: str, home_names: Iterable[str]) -> bool:
         return True
     if len(t.split()) < MIN_WORDS and not SHORT_OK.match(t.strip()):
         return True
-    return any(f" {n} " in t for n in home_names)
+    return any(f" {n} " in t for n in home_names) or about_the_house(t)
 
 
 def plan_compound(text: str, home_names: Iterable[str], max_parts: int = 4) -> list[str] | None:

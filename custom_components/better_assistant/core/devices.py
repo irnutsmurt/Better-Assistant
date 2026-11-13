@@ -386,3 +386,36 @@ def say_sleep(name: str, duration=None, score=None, heart_rate=None, speaker_is_
         except ValueError:
             pass
     return text
+
+
+# ------------------------------------------------------------------ "what lights are on" / "what's on the TV"
+def _and(items: list[str]) -> str:
+    return items[0] if len(items) == 1 else ", ".join(items[:-1]) + " and " + items[-1]
+
+
+def say_lights_on(found: list[tuple[str, list[str]]], only_room: str | None = None) -> str:
+    """[(room, [light names on])] -> "3 lights are on: the lamp and the desk light in the living room, ..."."""
+    total = sum(len(names) for _room, names in found)
+    if not total:
+        return f"All the lights in the {only_room.lower()} are off." if only_room else "All the lights are off."
+    head = "1 light is on" if total == 1 else f"{total} lights are on"
+    if only_room:
+        return f"{head} in the {only_room.lower()}: {_and([n for _r, names in found for n in names])}."
+    parts = [f"{_and(names)} in the {room.lower()}" for room, names in found]
+    return f"{head}: {'; '.join(parts)}."
+
+
+def say_tv(name: str, state: str, title: str | None, series: str | None, app: str | None,
+           source: str | None) -> str:
+    """The TV's state as a sentence: "The living room TV is playing Bluey on Disney Plus."."""
+    tv = name if name.lower().startswith("the ") else f"the {name}"
+    if state in ("off", "standby", "unavailable", "unknown"):
+        return f"{tv[0].upper()}{tv[1:]} is off." if state != "unavailable" else f"I can't reach {tv}."
+    what = f"{series}: {title}" if series and title and series != title else title or series
+    where = app or source
+    if what and where and what != where:
+        return f"{tv[0].upper()}{tv[1:]} is playing {what} on {where}."
+    if what or where:
+        verb = "playing" if what else "on"
+        return f"{tv[0].upper()}{tv[1:]} is {verb} {what or where}."
+    return f"{tv[0].upper()}{tv[1:]} is on, but it isn't saying what's playing."
