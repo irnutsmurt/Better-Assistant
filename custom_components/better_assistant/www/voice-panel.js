@@ -97,6 +97,8 @@ class BetterAssistantVoicePanel extends HTMLElement {
   disconnectedCallback() { if (this._unsub) { this._unsub(); this._unsub = null; this._hass = null; } }
 
   async _act(action) {
+    if (action === "match_off" && !confirm("Turn off voice match? It stops recording everyday requests and deletes " +
+        "the ones nobody labelled. Training recordings stay, so turning it back on works straight away.")) return;
     this._busy = true; this._error = ""; this._render();
     try {
       const res = await this._hass.callWS({ type: "better_assistant/voice_training/action", action });
@@ -169,7 +171,8 @@ class BetterAssistantVoicePanel extends HTMLElement {
       return `<div class="card"><h3>Voice match</h3>
         <p class="lead">Recognise who's speaking, so "my calendar" and "my reminders" work for whoever asks.
           It runs on this machine (a one-time 19 MB download) and only knows people who've trained their voice.
-          It's never used to unlock doors.</p>
+          It's never used to unlock doors. While it's on, everyday requests are kept for 14 days so you can check them;
+          when it's off, nothing is recorded except training.</p>
         <button ${busy} data-a="match_on">Turn on voice match</button></div>`;
     }
     if (m.status === "downloading" || m.status === "off") {
@@ -191,7 +194,7 @@ class BetterAssistantVoicePanel extends HTMLElement {
     }).join("") || `<p class="empty">Nobody has trained yet. Press Start above.</p>`;
     return `<div class="card"><h3>Voice match</h3>
       <p class="lead">Who it knows. Recordings that don't sound like the rest (the TV, someone else) are left out automatically.</p>
-      ${rows}</div>`;
+      ${rows}<div class="buttons"><button class="small" ${busy} data-a="match_off">Turn off voice match</button></div></div>`;
   }
 
   // ------------------------------------------------------------ recordings tab

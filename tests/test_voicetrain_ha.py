@@ -130,6 +130,8 @@ async def test_everyday_requests_are_test_clips(hass, engine):
     hass.states.async_set("person.a", "home")
     hass.states.async_set("person.b", "home")
     await run_stt(hass, make_entry(hass, voice_training=True, voice_record_test=True), AUDIO)
+    assert wavs(hass) == []                               # voice match off: nothing recorded, old setting or not
+    await run_stt(hass, make_entry(hass, voice_training=True, voice_match=True), AUDIO)
     [path] = wavs(hass)
     assert path.parent.name == "unknown" and path.parent.parent.name == "test"
 
@@ -138,13 +140,13 @@ async def test_engine_error_is_returned_unchanged_and_nothing_saved(hass, engine
     bad = stt.SpeechResult(None, stt.SpeechResultState.ERROR)
     engine(bad)
     hub(hass).arm(CaptureSlot(person="person.rob", label="train", token="t"), time.time())
-    _ent, result = await run_stt(hass, make_entry(hass, voice_training=True, voice_record_test=True), AUDIO)
+    _ent, result = await run_stt(hass, make_entry(hass, voice_training=True, voice_match=True), AUDIO)
     assert result is bad and wavs(hass) == []
 
 
 async def test_stop_and_mumbles_are_not_saved(hass, engine):
     engine(stt.SpeechResult("stop voice training", stt.SpeechResultState.SUCCESS))
-    await run_stt(hass, make_entry(hass, voice_training=True, voice_record_test=True), AUDIO)
+    await run_stt(hass, make_entry(hass, voice_training=True, voice_match=True), AUDIO)
     assert wavs(hass) == []
 
 
@@ -247,11 +249,11 @@ async def test_options_flow(hass, monkeypatch):
     form = await flow.async_step_voice_training()
     assert form["description_placeholders"]["counts"] == "rob: 1 training"
     keys = [str(k) for k in form["data_schema"].schema]
-    assert keys == ["voice_training", "voice_match", "voice_record_test", "voice_training_phone", "voice_training_satellite",
+    assert keys == ["voice_training", "voice_match", "voice_training_phone", "voice_training_satellite",
                     "voice_stt_engine", "pipelines",
                     "delete_recordings"]
     defaults = {str(k): k.default() for k in form["data_schema"].schema if callable(getattr(k, "default", None))}
-    assert defaults["voice_training"] is False and defaults["voice_record_test"] is False
+    assert defaults["voice_training"] is False and defaults["voice_match"] is False
     result = await flow.async_step_voice_training({"voice_training": True, "voice_record_test": False,
                                                    "pipelines": ["p1"], "delete_recordings": True})
     assert result["type"] == "create_entry"

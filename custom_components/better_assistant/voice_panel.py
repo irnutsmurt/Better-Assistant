@@ -133,6 +133,9 @@ async def ws_action(hass: HomeAssistant, connection: websocket_api.ActiveConnect
         if not connection.user or not connection.user.is_admin:
             connection.send_error(msg["id"], "unauthorized", "Only an administrator can turn voice match on or off.")
             return
+        if msg["action"] == "match_off":
+            from . import voice_match as vmf  # noqa: PLC0415
+            await hass.async_add_executor_job(vmf.delete_everyday, vmf.voice_dir(hass))
         hass.config_entries.async_update_entry(
             entry, options={**entry.options, OPT_VM_ENABLED: msg["action"] == "match_on"})
     else:

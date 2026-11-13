@@ -115,6 +115,16 @@ def move_clip(root: Path, wav: Path, label: str, person: str) -> Path:
     return new
 
 
+def delete_everyday(root: Path) -> int:
+    """Voice match turned off: delete everyday recordings nobody labelled (training clips stay)."""
+    gone = 0
+    for wav in list_clips(root):
+        if wav.parent.parent.name == TEST and not read_meta(wav).get("confirmed"):
+            delete_clip(wav)
+            gone += 1
+    return gone
+
+
 def list_clips(root: Path) -> list[Path]:
     out = []
     for label in (TRAIN, TEST, OTHER):

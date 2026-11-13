@@ -283,9 +283,12 @@ once from this project's GitHub repository and checked against a checksum. Nothi
   **That was…** (a person, or "Someone else / the TV") and **Delete**. Labelling a recording teaches voice
   match. Administrators see everyone's recordings; other users only their own and unassigned ones.
   Unlabelled everyday recordings are deleted after 14 days. **Delete voice** forgets a person entirely.
+- **Turn off voice match** on the same card stops it listening for voices and recording everyday
+  requests, and deletes the unlabelled ones. Training recordings stay, so turning it back on is instant.
 
-**Everyday clips (optional):** "Also record everyday requests" saves every request heard on a speaker
-as a "test" clip, labelled with the only person in the house, or "unknown".
+**Everyday clips:** only while voice match is on. Requests heard on a speaker are kept for 14 days so
+you can check them on the Recordings tab. With voice match off, nothing is recorded except training
+sessions you start yourself; **Turn off voice match** also deletes the everyday recordings nobody labelled.
 
 **What is saved, and where:** a 16-bit mono WAV per request, plus a `.json` note (person, label,
 transcript, the phrase asked for, speaker and device when known, length), under

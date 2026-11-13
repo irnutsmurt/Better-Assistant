@@ -294,8 +294,11 @@ class BetterAssistantOptionsFlow(VoiceSetupMixin, OptionsFlow):
         if user_input is not None:
             if user_input.get("delete_recordings"):
                 await self.hass.async_add_executor_job(vt.delete_clips, root)
+            elif self.config_entry.options.get(OPT_VM_ENABLED) and not user_input.get(OPT_VM_ENABLED):
+                from .voice_match import delete_everyday  # noqa: PLC0415 - voice match off: stop keeping them
+                await self.hass.async_add_executor_job(delete_everyday, root)
             values = {OPT_VT_ENABLED: bool(user_input.get(OPT_VT_ENABLED)),
-                      OPT_VT_RECORD_TEST: bool(user_input.get(OPT_VT_RECORD_TEST)),
+                      OPT_VT_RECORD_TEST: False,
                       OPT_VT_PHONE: bool(user_input.get(OPT_VT_PHONE, True)),
                       OPT_VM_ENABLED: bool(user_input.get(OPT_VM_ENABLED)),
                       OPT_VT_SATELLITE: user_input.get(OPT_VT_SATELLITE) or None,
@@ -311,7 +314,6 @@ class BetterAssistantOptionsFlow(VoiceSetupMixin, OptionsFlow):
             vol.Required(OPT_VT_ENABLED, default=bool(self._opt(OPT_VT_ENABLED))): BooleanSelector(),
             vol.Required(OPT_VM_ENABLED, default=bool(self.config_entry.options.get(OPT_VM_ENABLED))):
                 BooleanSelector(),
-            vol.Required(OPT_VT_RECORD_TEST, default=bool(self._opt(OPT_VT_RECORD_TEST))): BooleanSelector(),
             vol.Required(OPT_VT_PHONE, default=bool(self.config_entry.options.get(OPT_VT_PHONE, True))):
                 BooleanSelector(),
             vol.Optional(OPT_VT_SATELLITE, description={"suggested_value": self._opt(OPT_VT_SATELLITE)}):

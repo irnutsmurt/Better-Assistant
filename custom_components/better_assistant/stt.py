@@ -18,7 +18,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import BetterAssistantConfigEntry
-from .const import OPT_VM_ENABLED, OPT_VT_ENABLED, OPT_VT_RECORD_TEST
+from .const import OPT_VM_ENABLED, OPT_VT_ENABLED
 from .core.voicetrain import NOTHING_HEARD, TEST, TRAIN, CaptureSlot, is_stop, matches_phrase, max_bytes, too_short
 from .sensor import device_info
 from .voice_setup import pipeline_select
@@ -91,7 +91,7 @@ class PassThroughSTT(stt.SpeechToTextEntity):
         slot = hub(self.hass).take(time.time())
         if slot:
             return slot
-        if self._entry.options.get(OPT_VT_RECORD_TEST) or self._entry.options.get(OPT_VM_ENABLED):
+        if self._entry.options.get(OPT_VM_ENABLED):
             # everyday requests, kept 14 days for the Recordings tab (and voice match's decisions)
             return CaptureSlot(person=guess_person(self.hass), label=TEST)
         return None

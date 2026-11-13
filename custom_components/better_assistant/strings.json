@@ -448,7 +448,6 @@
         "description": "Records labelled voice clips for a later voice-match test. Nothing recognises voices yet, and nothing is recorded while this is off. Clips stay on this machine in {folder}. Only record people who agree to it.\n\nTo train, say \"train my voice\" or \"train Rob's voice\" on a voice speaker and say 8 phrases to the speaker (shown on your phone, or read out). Recordings only work when the voice assistant's speech-to-text is Better Assistant speech-to-text (tick it below).\n\nSaved so far: {counts}.",
         "data": {
           "voice_training": "Turn on voice training",
-          "voice_record_test": "Also record everyday requests for voice-match testing",
           "voice_stt_engine": "Speech-to-text engine to pass audio to",
           "pipelines": "Voice assistants that use Better Assistant speech-to-text",
           "delete_recordings": "Delete all recordings",
@@ -457,13 +456,12 @@
           "voice_match": "Voice match: recognise who's speaking"
         },
         "data_description": {
-          "voice_record_test": "Every request heard on a speaker is saved as a \"test\" clip, labelled with the only person in the house or \"unknown\".",
           "voice_stt_engine": "Empty: Home Assistant Cloud if you have it, else Whisper (Wyoming), else the first one found.",
           "pipelines": "Ticked ones switch their speech-to-text to Better Assistant speech-to-text; unticking (or turning voice training off) switches them back.",
           "delete_recordings": "Removes every clip and its notes from the folder above.",
           "voice_training_phone": "Uses the Home Assistant app on the phone linked to the person being trained. Without one, the speaker reads the phrases out.",
           "voice_training_satellite": "The phone's Start voice training button makes this speaker listen without the wake word. Empty: the first voice speaker.",
-          "voice_match": "Uses the voices trained on the Voice training page, on this machine (downloads a 19 MB model once). Never used to unlock doors. Everyday requests are kept 14 days so you can check who it thought it was on the Recordings tab."
+          "voice_match": "Uses the voices trained on the Voice training page, on this machine (downloads a 19 MB model once). Never used to unlock doors. While it's on, everyday requests are kept 14 days so you can check who it thought it was on the Recordings tab; turning it off deletes the unlabelled ones and stops recording them."
         }
       }
     },

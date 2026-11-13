@@ -199,3 +199,13 @@ async def test_who_am_i(hass):
     assert (await ask(ui(voice=False))).startswith("I can only tell who you are by your voice")
     m.entry.options = {"voice_training": True}
     assert (await ask(ui())).startswith("I don't know voices yet")
+
+
+async def test_turning_voice_match_off_deletes_unlabelled_everyday_recordings(hass):
+    root = vmf.voice_dir(hass)
+    train = put(root, "train", "person.rob", "20261113T100000Z_1", ROB)
+    labelled = put(root, "test", "person.rob", "20261113T100100Z_2", ROB, {"confirmed": "person.rob"})
+    loose = put(root, "test", "unknown", "20261113T100200Z_3", ROB)
+    assert vmf.delete_everyday(root) == 1
+    assert train.exists() and labelled.exists() and not loose.exists()
+    assert not loose.with_suffix(".json").exists() and not loose.with_name(loose.stem + ".emb.npy").exists()
