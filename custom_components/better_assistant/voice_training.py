@@ -22,6 +22,7 @@ from homeassistant.util import dt as dt_util
 from .const import (DOMAIN, OPT_VT_ENABLED, OPT_VT_ORIGINALS, OPT_VT_PHONE, OPT_VT_RECORD_TEST,
                     OPT_VT_SATELLITE, OPT_VT_STT)
 from .core.voicetrain import (
+    SPOKEN_INTRO,
     view,
     ACTION_SKIP,
     ACTION_STOP,
@@ -291,9 +292,21 @@ class VoiceTrainer:
         _LOGGER.warning("Voice training: %s couldn't start listening: %s", satellite, problem)
         return problem
 
+    def _wait_for_ding(self, conversation_id: str, session: Session) -> None:
+        """This turn ends; the next phrase comes in the conversation the ding starts."""
+        self._sessions.pop(conversation_id, None)
+        session.until = time.time() + PENDING_SECONDS
+        self._pending[session.satellite] = session
+        self.entry.async_create_background_task(self.hass, self._relisten(session), "better_assistant_voice_relisten")
+
     async def _relisten(self, session: Session) -> None:
-        """After a silent turn the speaker stops listening; open it again for the next phrase."""
+        """After the turn the speaker stops listening; when it is quiet again, ding and listen."""
         await asyncio.sleep(0.4)
+        for _ in range(60):                            # up to ~30 s for it to finish talking
+            state = self.hass.states.get(session.satellite)
+            if state is None or state.state == "idle":
+                break
+            await asyncio.sleep(0.5)
         if session.until and await self._listen(session.satellite):
             self._end(session, "stopped")
 
@@ -327,6 +340,12 @@ class VoiceTrainer:
         self._pending[satellite] = session
         self._publish(session, "training")
         await self._borrow(session)
+        try:                                           # the instructions, once; then the ding
+            await self.hass.services.async_call(
+                "assist_satellite", "announce",
+                {"entity_id": satellite, "message": SPOKEN_INTRO, "preannounce": False}, blocking=True)
+        except Exception:  # noqa: BLE001 - the screen says it too
+            _LOGGER.debug("Voice training: couldn't say the instructions", exc_info=True)
         problem = await self._listen(satellite)
         if problem:
             self._end(session, "stopped")
@@ -362,11 +381,7 @@ class VoiceTrainer:
             speech = await self._say(session, skills, result.reply)
             if not result.done and session.silent and session.satellite:
                 # nothing said, so the speaker won't keep listening by itself: open it again
-                self._sessions.pop(conversation_id, None)
-                session.until = time.time() + PENDING_SECONDS
-                self._pending[session.satellite] = session
-                self.entry.async_create_background_task(self.hass, self._relisten(session),
-                                                        "better_assistant_voice_relisten")
+                self._wait_for_ding(conversation_id, session)
                 return speech, False
             return speech, not result.done
         if is_stop_training(text):
@@ -399,8 +414,12 @@ class VoiceTrainer:
             session.silent = bool(session.phone)
             if session.phone:
                 await self._say(session, skills, intro(session.name))
-                session.last_said = PHONE_START
-                return PHONE_START, True
+                spoken = f"{PHONE_START} {SPOKEN_INTRO}"
+                session.last_said = spoken
+                if session.satellite:                  # speak the instructions, then the ding
+                    self._wait_for_ding(conversation_id, session)
+                    return spoken, False
+                return spoken, True
             session.last_said = NO_PHONE + intro(session.name)
             return session.last_said, True
         session.last_said = intro(session.name)

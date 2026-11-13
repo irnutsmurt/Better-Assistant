@@ -270,7 +270,7 @@ async def test_phone_mode_speaker_stays_silent(house, monkeypatch):
     house.hass.services.async_register("notify", "mobile_app_robs_phone", fake_notify)
     monkeypatch.setattr(house.skills, "phone_for", lambda p: "notify.mobile_app_robs_phone" if p == "person.rob" else None)
     speech, keep = await turn(house, "train Rob's voice")
-    assert keep and speech == "Check your phone."
+    assert keep and speech.startswith("Check your phone. We're going to have you repeat some phrases")
     assert "1 of 8" in sent[-1]["message"] and PHRASES[0] in sent[-1]["message"]
     assert sent[-1]["data"]["tag"] == "better_assistant_voice_training"
     capture = hub(house.hass)
@@ -297,6 +297,11 @@ async def test_start_button_then_skip_and_stop(house):
     async def fake_start(call):
         started.append(call.data)
     house.hass.services.async_register("assist_satellite", "start_conversation", fake_start)
+    said = []
+
+    async def fake_announce(call):
+        said.append(call.data["message"])
+    house.hass.services.async_register("assist_satellite", "announce", fake_announce)
     house.hass.states.async_set("assist_satellite.kitchen", "idle")
     t = house.trainer
     assert t.view["status"] == "idle"
@@ -304,6 +309,8 @@ async def test_start_button_then_skip_and_stop(house):
     assert await t.async_start_from_phone(house.skills, "nobody") is not None
     assert await t.async_start_from_phone(house.skills, "u1") is None
     assert started[-1]["entity_id"] == "assist_satellite.kitchen" and not started[-1]["preannounce"]
+    assert said == ["We're going to have you repeat some phrases on the screen. When you hear the ding, "
+                    "start saying the highlighted phrase."]               # once, before the first ding
     assert t.view["status"] == "training" and t.view["current"] == 1 and t.view["name"] == "Rob"
     assert [p["state"] for p in t.view["phrases"]][:2] == ["current", "waiting"]
     slot = hub(house.hass).take(time.time())

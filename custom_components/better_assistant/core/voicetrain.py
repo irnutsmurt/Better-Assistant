@@ -139,6 +139,8 @@ def intro(name: str) -> str:
 PHONE_TAG = "better_assistant_voice_training"   # one notification, replaced phrase by phrase
 PHONE_TITLE = "Voice training"
 PHONE_START = "Check your phone."
+SPOKEN_INTRO = ("We're going to have you repeat some phrases on the screen. When you hear the ding, start "
+                "saying the highlighted phrase.")
 ACTION_STOP = "BETTER_ASSISTANT_VT_STOP"      # notification buttons
 ACTION_SKIP = "BETTER_ASSISTANT_VT_SKIP"
 PENDING_SECONDS = 60.0                        # a start from the phone waits this long for the speaker
