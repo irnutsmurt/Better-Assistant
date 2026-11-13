@@ -309,8 +309,8 @@ async def test_start_button_then_skip_and_stop(house):
     assert await t.async_start_from_phone(house.skills, "nobody") is not None
     assert await t.async_start_from_phone(house.skills, "u1") is None
     assert started[-1]["entity_id"] == "assist_satellite.kitchen" and not started[-1]["preannounce"]
-    assert said == ["We're going to have you repeat some phrases on the screen. When you hear the ding, "
-                    "start saying the highlighted phrase."]               # once, before the first ding
+    assert said == ["We're going to have you repeat some phrases on the screen. After each ding, take a "
+                    "breath, then say the highlighted phrase."]               # once, before the first ding
     assert t.view["status"] == "training" and t.view["current"] == 1 and t.view["name"] == "Rob"
     assert [p["state"] for p in t.view["phrases"]][:2] == ["current", "waiting"]
     slot = hub(house.hass).take(time.time())

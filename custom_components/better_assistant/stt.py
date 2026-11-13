@@ -138,7 +138,7 @@ class PassThroughSTT(stt.SpeechToTextEntity):
         try:
             if not pcm or too_short(transcript) or is_stop(transcript):
                 return
-            if slot.label == TRAIN and slot.phrase and not matches_phrase(slot.phrase, transcript):
+            if slot.label == TRAIN and slot.phrase and not matches_phrase(slot.phrase, transcript, slot.tail_ok):
                 return                                     # not the phrase: training asks again
             info: dict[str, Any] = {
                 "transcript": transcript, "prompt": slot.phrase, "satellite": slot.satellite,

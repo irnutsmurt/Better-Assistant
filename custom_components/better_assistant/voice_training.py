@@ -213,7 +213,7 @@ class VoiceTrainer:
         session.until = time.time() + SESSION_SECONDS
         hub(self.hass).arm(CaptureSlot(person=session.person, label=TRAIN, phrase=PHRASES[session.index],
                                        token=session.token, satellite=session.satellite,
-                                       device_id=session.device_id), time.time())
+                                       device_id=session.device_id, tail_ok=session.silent), time.time())
 
     def _claim(self, conversation_id: str, user_input) -> Session | None:
         """The first turn from a speaker that the phone started training on."""

@@ -101,13 +101,21 @@ def is_echo(last_said: str, heard: str) -> bool:
     return bool(got) and set(got) <= set(_words(last_said))
 
 
-def matches_phrase(phrase: str, heard: str) -> bool:
-    """Heard is the phrase: most of its words, without a lot of other talk (the TV, someone else)."""
+def matches_phrase(phrase: str, heard: str, tail_ok: bool = False) -> bool:
+    """Heard is the phrase: most of its words, without a lot of other talk (the TV, someone else).
+    tail_ok: the end of the phrase is enough. A speaker starts recording a moment after its ding, so
+    the first word or two are often lost ("sleep last night"). Only safe when the speaker isn't talking
+    (it can't be hearing the end of its own sentence)."""
     want, got = _words(phrase), _words(heard)
     if not want or not got:
         return False
     found = sum(1 for w in set(want) if w in got) / len(set(want))
-    return found >= 0.66 and len(got) <= len(want) * 1.5 + 2
+    if found >= 0.66 and len(got) <= len(want) * 1.5 + 2:
+        return True
+    if not tail_ok or len(got) < max(3, -(-len(want) * 2 // 5)):      # at least 3 words and 40 %
+        return False
+    end = want[-(len(got) + 1):]                       # the end of the phrase (one word of slack)
+    return sum(1 for w in got if w in end) >= len(got) - 1 and got[-1] == want[-1]
 
 
 @dataclass
@@ -139,8 +147,8 @@ def intro(name: str) -> str:
 PHONE_TAG = "better_assistant_voice_training"   # one notification, replaced phrase by phrase
 PHONE_TITLE = "Voice training"
 PHONE_START = "Check your phone."
-SPOKEN_INTRO = ("We're going to have you repeat some phrases on the screen. When you hear the ding, start "
-                "saying the highlighted phrase.")
+SPOKEN_INTRO = ("We're going to have you repeat some phrases on the screen. After each ding, take a breath, "
+                "then say the highlighted phrase.")
 ACTION_STOP = "BETTER_ASSISTANT_VT_STOP"      # notification buttons
 ACTION_SKIP = "BETTER_ASSISTANT_VT_SKIP"
 PENDING_SECONDS = 60.0                        # a start from the phone waits this long for the speaker
@@ -212,7 +220,7 @@ def step(session: Session, heard: str) -> Step:
             return Step(f"Okay, I stopped voice training. I kept {session.saved} "
                         f"{'sample' if session.saved == 1 else 'samples'}.", True, False)
         return Step("Okay, I stopped voice training.", True, False)
-    if not matches_phrase(PHRASES[session.index], heard):
+    if not matches_phrase(PHRASES[session.index], heard, tail_ok=session.silent):
         if session.reasks < MAX_REASKS:
             session.reasks += 1
             if is_echo(session.last_said, heard):
@@ -243,12 +251,8 @@ class CaptureSlot:
     token: str = ""
     satellite: str | None = None
     device_id: str | None = None
-    silent: bool = False        # the speaker says nothing (phrases on a phone or the dashboard)
-    results: list[str] = field(default_factory=list)   # per phrase: "said" / "skipped" (in order)
-    hint: str = ""              # the last "try again" message, for the screen
-    borrowed: tuple[str, str | None, bool] | None = None   # (pipeline id, its speech-to-text, prefer local
-                                                            # intents) to put back after training
     until: float = 0.0
+    tail_ok: bool = False       # the end of the phrase is enough (see matches_phrase)
 
 
 @dataclass

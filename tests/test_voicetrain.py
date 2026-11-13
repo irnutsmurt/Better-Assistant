@@ -189,3 +189,14 @@ def test_echo_of_own_reply_gets_a_short_go_ahead():
     s.last_said = r.reply
     r = step(s, PHRASES[1])
     assert r.reply == f"{PHRASES[2]}." and s.index == 2
+
+
+def test_clipped_start_counts_when_the_speaker_is_silent():
+    from core.voicetrain import matches_phrase
+    # what the speaker really recorded after its ding (the first words lost)
+    assert matches_phrase("How did I sleep last night", "Sleep last night.", tail_ok=True)
+    assert matches_phrase("Remind me to take out the trash at seven", "Take out the trash at 7.", tail_ok=True)
+    assert matches_phrase("What's on my calendar tomorrow", "Let's on my calendar tomorrow.")
+    assert not matches_phrase("Remind me to take out the trash at seven", "7.", tail_ok=True)
+    assert not matches_phrase("How did I sleep last night", "Sleep last night.")          # speaker talks: no
+    assert not matches_phrase("How did I sleep last night", "Last night the game was great", tail_ok=True)
