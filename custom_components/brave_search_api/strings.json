@@ -163,6 +163,17 @@
       "searches_this_month": {
         "name": "Brave searches this month"
       }
+    },
+    "todo": {
+      "reminders": {
+        "name": "Reminders"
+      },
+      "notes": {
+        "name": "Notes"
+      },
+      "messages": {
+        "name": "Messages"
+      }
     }
   }
 }

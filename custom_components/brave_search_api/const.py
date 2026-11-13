@@ -53,3 +53,10 @@ DEVICE_SECTIONS: dict[str, dict[str, tuple[str, str, bool]]] = {
     "rooms_lights": {"lights": ("lights", ["light", "switch"], True)},
 }
 PLACEHOLDER_SECTIONS = ["night_mode", "guest_mode"]
+
+# The integration's own to-do lists: key -> name.
+LISTS = {"reminders": "Reminders", "notes": "Notes", "messages": "Messages"}
+
+ALARM_URL = "/brave_search_api/alarm.mp3"
+SNOOZE_MINUTES = 9
+RING_MINUTES = 10
