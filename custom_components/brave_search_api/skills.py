@@ -45,6 +45,7 @@ from .core.features import (
 from .core.intents import TIMER_INTENTS, Match
 from .core.timeparse import fmt_time, parse, say_when
 from .discovery import effective_section
+from .house import GUEST_REPLY, HouseSkills
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -53,7 +54,7 @@ HOW_TO_ADD_ZONE = ("I don't know a place called {place}. Add it as a zone in Set
                    "zones, Zones, then ask me again.")
 
 
-class Skills:
+class Skills(HouseSkills):
     """Per config entry. Created in async_setup_entry, stopped on unload."""
 
     def __init__(self, hass: HomeAssistant, entry) -> None:
@@ -80,6 +81,7 @@ class Skills:
         for key in list(self._alarms()):
             self._schedule_alarm(key)
         self._track_people()
+        self.start_night_schedule()
 
     @callback
     def async_stop(self) -> None:
@@ -205,11 +207,14 @@ class Skills:
 
     # ------------------------------------------------------------ dispatch
     def recognize(self, text: str) -> Match | None:
-        return sentences.recognize(text, sorted({n for n in self.people()}, key=len, reverse=True))
+        return sentences.recognize(text, sorted({n for n in self.people()}, key=len, reverse=True),
+                                   lists=self.slot_lists(), disabled=self.disabled_features())
 
     async def async_handle(self, match: Match, text: str, user_input: conversation.ConversationInput) -> str:
         if match.intent in TIMER_INTENTS:
             return await self._builtin_timer(match, text, user_input)
+        if self.guest_blocks(match.intent):
+            return GUEST_REPLY
         handler = getattr(self, "_h_" + re.sub(r"(?<!^)([A-Z])", r"_\1", match.intent).lower())
         return await handler(match.slots, user_input)
 

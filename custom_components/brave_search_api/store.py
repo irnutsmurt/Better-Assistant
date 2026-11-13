@@ -28,7 +28,8 @@ class BraveStore:
         for key in LISTS:
             self.data["lists"].setdefault(key, [])
         self.data.setdefault("reminders", {})       # todo uid -> reminder details
-        self.data.setdefault("alarms", {})          # satellite entity id -> alarm
+        self.data.setdefault("alarms", {})          # alarm key -> alarm
+        self.data.setdefault("modes", {"guest": False, "night": False, "night_saved": {}, "guest_saved": {}})
 
     @staticmethod
     def _month() -> str:

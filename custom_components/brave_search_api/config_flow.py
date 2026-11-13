@@ -25,6 +25,7 @@ from homeassistant.helpers.selector import (
     TextSelector,
     TextSelectorConfig,
     TextSelectorType,
+    TimeSelector,
 )
 
 from .const import (
@@ -32,13 +33,17 @@ from .const import (
     CONF_API_KEY,
     DEFAULTS,
     DEVICE_SECTIONS,
+    EXTRA_FIELDS,
+    FEATURE_SECTIONS,
     DOMAIN,
     OPT_COMPOUND,
     OPT_COUNTRY,
+    OPT_FEATURES,
     OPT_MAX_PARTS,
     OPT_MONTHLY_CAP,
     OPT_OVERRIDES,
     OPT_QUESTION_GUARD,
+    OPT_SETTINGS,
     OPT_SNOOZE,
     OPT_ALARM_SPEAKER,
     OPT_SNOOZE_ENABLED,
@@ -197,10 +202,32 @@ class BraveSearchApiOptionsFlow(OptionsFlow):
                 store = self.config_entry.runtime_data.store
                 await store.async_set_detected(
                     async_detect(self.hass, {OPT_OVERRIDES: overrides}))
-            return self._save({OPT_OVERRIDES: overrides})
+            save: dict[str, Any] = {OPT_OVERRIDES: overrides}
+            if section in FEATURE_SECTIONS:
+                save[OPT_FEATURES] = {**(self.config_entry.options.get(OPT_FEATURES) or {}),
+                                      section: bool(user_input.get("enabled", True))}
+            if section in EXTRA_FIELDS:
+                settings = dict(self.config_entry.options.get(OPT_SETTINGS) or {})
+                settings[section] = {k: user_input.get(k, default) for k, (_kind, default, _c)
+                                     in EXTRA_FIELDS[section].items()}
+                save[OPT_SETTINGS] = settings
+            return self._save(save)
         detected = self.config_entry.runtime_data.store.detected
         current = effective_section(dict(self.config_entry.options), detected, section)
         fields: dict[Any, Any] = {}
+        if section in FEATURE_SECTIONS:
+            on = (self.config_entry.options.get(OPT_FEATURES) or {}).get(section, True)
+            fields[vol.Required("enabled", default=on)] = BooleanSelector()
+        stored = (self.config_entry.options.get(OPT_SETTINGS) or {}).get(section) or {}
+        for key, (kind, default, cfg) in EXTRA_FIELDS.get(section, {}).items():
+            value = stored.get(key, default)
+            if kind == "time":
+                fields[vol.Required(key, default=value)] = TimeSelector()
+            else:
+                extra = {"unit_of_measurement": cfg["unit"]} if cfg.get("unit") else {}
+                fields[vol.Required(key, default=value)] = NumberSelector(NumberSelectorConfig(
+                    min=cfg.get("min", 0), max=cfg.get("max", 100), step=cfg.get("step", 1),
+                    mode=NumberSelectorMode.BOX, **extra))
         for name, (_path, domain, multiple) in DEVICE_SECTIONS[section].items():
             value = current.get(name)
             key = vol.Optional(name, description={"suggested_value": value}) if value not in (None, []) \
@@ -214,17 +241,6 @@ class BraveSearchApiOptionsFlow(OptionsFlow):
                 async_detect(self.hass, dict(self.config_entry.options)))
             return await self.async_step_init()
         return self.async_show_form(step_id="redetect", data_schema=vol.Schema({}))
-
-    async def _placeholder(self, step: str, user_input: dict[str, Any] | None) -> ConfigFlowResult:
-        if user_input is not None:
-            return await self.async_step_init()
-        return self.async_show_form(step_id=step, data_schema=vol.Schema({}))
-
-    async def async_step_night_mode(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
-        return await self._placeholder("night_mode", user_input)
-
-    async def async_step_guest_mode(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
-        return await self._placeholder("guest_mode", user_input)
 
 
 def _make_section_step(section: str):

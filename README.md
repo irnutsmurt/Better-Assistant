@@ -79,8 +79,8 @@ contain a real definition.
 | Web search | On/off, monthly cap, country (2-letter code), say the source site |
 | Behaviour | Question-only guard, compound commands on/off, most parts in one compound command (2-4) |
 | Alarms | Default alarm speaker (empty = the one you asked from, a voice speaker, or all), snooze length (1-30 minutes, default 5), Snoozing on/off, snooze limit per alarm (empty = no limit, 1-10; 0 turns snoozing off) |
-| Voice speakers, Music, Calendar, Reminders & notes, Cameras & outside, Thermostat, TV, Bed, Rooms & lights | Devices found automatically, for features coming in later versions |
-| Night mode, Guest mode | Coming in a later version |
+| Voice speakers, Reminders & notes | Devices found automatically |
+| Music, Calendar, Rooms & lights, Thermostat, Cameras & outside, TV, Bed, Health report, Guest mode, Night mode, Broadcast | An on/off switch, the devices found automatically, and that feature's own settings |
 | Re-detect devices | Scan again |
 
 ### Automatic device detection
@@ -129,6 +129,29 @@ If you also want Home Assistant's own agent to understand them (for example in a
 doesn't use this integration), copy `custom_sentences/en/brave_search_api_timers.yaml` from this
 repository into `config/custom_sentences/en/` and restart Home Assistant (or reload Conversation).
 
+## Around the house
+
+Each of these has its own page under **Configure** with an on/off switch, pre-filled from the
+devices found in your house. Names you can say (rooms, speakers, lights, cameras, TV inputs, apps,
+bed presets, calendars, battery names) come from your own devices, so a sentence that belongs to
+Home Assistant itself ("turn off the kitchen lights", "set a timer for 10 minutes", "open the
+garage door") is never taken over.
+
+| Feature | Say | Notes |
+|---|---|---|
+| Music | "play music by Queen in the kitchen", "play my workout playlist", "play the album Abbey Road", "play music like Adele", "play jazz everywhere", "what's playing", "turn it up", "stop the music", "move the music to the bedroom", "stop the music in 30 minutes" | Needs Music Assistant. Plays on the Music Assistant player on the speaker you asked from, or in its room. News and podcast requests go to Home Assistant's own media search. |
+| Calendar | "what's on my calendar tomorrow / this week / this weekend", "when's my next appointment", "add dentist to my calendar Friday at 3", "add lunch to the work calendar tomorrow at noon" | Events are an hour long, or all day when no time is said. With a day given, 1-6 o'clock means PM. Pick the calendars to read and the one to write to in settings. |
+| Rooms and lights | "turn off the living room", "turn on the kitchen", "turn off the fan in 10 minutes", "turn on the heater for 30 minutes", "dim the kitchen by 30 percent", "brighten the desk lamp", "make the bedroom warmer" | A room means its lights and light switches (plus media players when turning off), never a voice speaker's own LED or player, settings switches or network gear. "turn off the kitchen lights" is left to Home Assistant. Delays need the words second/minute/hour. |
+| Thermostat | "make it 2 degrees warmer", "I'm cold", "what's the thermostat set to", "is the heat on", "switch to cooling", "set the thermostat to auto", "eco mode", "turn off the thermostat" | Uses the thermostat in your room (or the first one), and only the modes and presets it supports. |
+| Outside and cameras | "is anyone outside", "is anyone at the driveway", "any motion in the back yard", "show the driveway camera on the living room TV", "close the camera" | Person sensors first (Frigate person occupancy), outdoor motion sensors as a fallback: "No one's outside right now. The last person was seen 10 minutes ago." Cameras are shown on detected Cast TVs. |
+| TV | "switch the TV to HDMI 2", "switch to the PlayStation", "switch to the game", "open Netflix" | Inputs come from the TV's own source list. Apps open through the TV's remote (Android TV app names are built in; the remote's own list wins). |
+| Bed | "set the bed to flat", "set my side to read", "raise my side", "flatten the bed", "set my sleep number to 45", "what's our sleep number", "how did I sleep" | Sleep Number (SleepIQ). Sleepers are matched by name; otherwise pick who sleeps on each side in settings. |
+| Health report | "is anything wrong", "are any devices offline", "house status", "which batteries are low", "status of all batteries", "what's the kitchen sensor battery", "what's the battery on my phone" | Offline devices, batteries under 20 percent (phones and watches left out), vacuum errors and waiting updates. |
+| Guest mode | "turn on guest mode", "turn off guest mode" | Also a switch. Calendars, notes, reminder lists and sleep data are private, and the locks and garage doors you choose are hidden from Assist until it's off. Search, lights and music still work. |
+| Night mode | "turn on night mode" | Also a switch, and on a schedule (10 PM to 7 AM by default). Lowers each voice speaker's volume and dims its LED ring, then puts them back. |
+| Broadcast | "tell everyone that dinner's ready", "announce the car is here" | Every other voice speaker, plus any media players you add in settings. |
+| Help | "what can you do", "what can you do with music" | Only lists the features that are switched on. |
+
 ## "What did you hear?"
 
 The agent remembers the last 5 sentences **it** received (in memory only, cleared on restart) and
@@ -150,17 +173,9 @@ custom integrations, so it isn't used.)
 
 ## Roadmap
 
-Later versions will use the detected devices for:
-
 - Recipes, read step by step
-- Music on any speaker ("play jazz in the kitchen", "play it here")
-- Calendar: what's on, and adding events
-- Whole-room on/off ("turn off the living room")
-- Cameras and outside: "who's outside?", show a camera on a TV
-- Health report: low batteries and unavailable devices
-- Guest mode and night mode
-- Thermostat, TV (apps and inputs) and bed controls
-- Broadcasts to every speaker
+- Location reminders for other people's arrival at places other than home
+- More languages
 
 ## Development
 

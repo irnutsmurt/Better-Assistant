@@ -48,7 +48,9 @@
           "rooms_lights": "Rooms & lights",
           "night_mode": "Night mode",
           "guest_mode": "Guest mode",
-          "redetect": "Re-detect devices"
+          "redetect": "Re-detect devices",
+          "health": "Health report",
+          "broadcast": "Broadcast"
         }
       },
       "web_search": {
@@ -84,18 +86,46 @@
       },
       "music": {
         "title": "Music",
-        "description": "Coming in a later version. Detected devices are pre-filled; anything you change is kept when you re-detect.",
+        "description": "Music Assistant players. \"play jazz in the kitchen\", \"what's playing\", \"stop the music in 30 minutes\".",
         "data": {
           "music_players": "Music Assistant players",
-          "broadcast_targets": "Broadcast speakers"
+          "broadcast_targets": "Broadcast speakers",
+          "enabled": "Turn this feature on",
+          "battery_threshold": "Low battery below",
+          "night_start": "Night starts",
+          "night_end": "Night ends",
+          "night_volume": "Speaker volume at night (0-1)",
+          "night_led": "LED ring brightness at night",
+          "dim_step": "Dim / brighten step",
+          "kelvin_step": "Warmer / cooler step",
+          "degree_step": "Degrees per \"warmer\" / \"cooler\"",
+          "bed_left_person": "Person on the left side",
+          "bed_right_person": "Person on the right side",
+          "protected": "Locks and doors Assist can't open in guest mode",
+          "broadcast_players": "Also speak broadcasts on these media players",
+          "broadcast_tts": "Text-to-speech engine for those players"
         }
       },
       "calendar": {
         "title": "Calendar",
-        "description": "Coming in a later version. Detected devices are pre-filled; anything you change is kept when you re-detect.",
+        "description": "\"What's on my calendar tomorrow\", \"add dentist to my calendar Friday at 3\".",
         "data": {
           "calendars": "Calendars to read",
-          "write_calendar": "Calendar for new events"
+          "write_calendar": "Calendar for new events",
+          "enabled": "Turn this feature on",
+          "battery_threshold": "Low battery below",
+          "night_start": "Night starts",
+          "night_end": "Night ends",
+          "night_volume": "Speaker volume at night (0-1)",
+          "night_led": "LED ring brightness at night",
+          "dim_step": "Dim / brighten step",
+          "kelvin_step": "Warmer / cooler step",
+          "degree_step": "Degrees per \"warmer\" / \"cooler\"",
+          "bed_left_person": "Person on the left side",
+          "bed_right_person": "Person on the right side",
+          "protected": "Locks and doors Assist can't open in guest mode",
+          "broadcast_players": "Also speak broadcasts on these media players",
+          "broadcast_tts": "Text-to-speech engine for those players"
         }
       },
       "reminders_notes": {
@@ -108,50 +138,152 @@
       },
       "cameras_outside": {
         "title": "Cameras & outside",
-        "description": "Coming in a later version. Detected devices are pre-filled; anything you change is kept when you re-detect.",
+        "description": "\"Is anyone outside\", \"show the driveway camera on the living room TV\".",
         "data": {
           "cameras": "Cameras",
           "camera_cast_targets": "TVs to show cameras on",
           "outside_sensors": "Outside activity sensors",
-          "outdoor_areas": "Areas that count as outdoors"
+          "outdoor_areas": "Areas that count as outdoors",
+          "enabled": "Turn this feature on",
+          "battery_threshold": "Low battery below",
+          "night_start": "Night starts",
+          "night_end": "Night ends",
+          "night_volume": "Speaker volume at night (0-1)",
+          "night_led": "LED ring brightness at night",
+          "dim_step": "Dim / brighten step",
+          "kelvin_step": "Warmer / cooler step",
+          "degree_step": "Degrees per \"warmer\" / \"cooler\"",
+          "bed_left_person": "Person on the left side",
+          "bed_right_person": "Person on the right side",
+          "protected": "Locks and doors Assist can't open in guest mode",
+          "broadcast_players": "Also speak broadcasts on these media players",
+          "broadcast_tts": "Text-to-speech engine for those players"
         }
       },
       "thermostat": {
         "title": "Thermostat",
-        "description": "Coming in a later version. Detected devices are pre-filled; anything you change is kept when you re-detect.",
+        "description": "\"Make it 2 degrees warmer\", \"is the heat on\", \"switch to cooling\".",
         "data": {
-          "thermostats": "Thermostats"
+          "thermostats": "Thermostats",
+          "enabled": "Turn this feature on",
+          "battery_threshold": "Low battery below",
+          "night_start": "Night starts",
+          "night_end": "Night ends",
+          "night_volume": "Speaker volume at night (0-1)",
+          "night_led": "LED ring brightness at night",
+          "dim_step": "Dim / brighten step",
+          "kelvin_step": "Warmer / cooler step",
+          "degree_step": "Degrees per \"warmer\" / \"cooler\"",
+          "bed_left_person": "Person on the left side",
+          "bed_right_person": "Person on the right side",
+          "protected": "Locks and doors Assist can't open in guest mode",
+          "broadcast_players": "Also speak broadcasts on these media players",
+          "broadcast_tts": "Text-to-speech engine for those players"
         }
       },
       "tv": {
         "title": "TV",
-        "description": "Coming in a later version. Detected devices are pre-filled; anything you change is kept when you re-detect.",
+        "description": "\"Switch the TV to HDMI 2\", \"open Netflix\".",
         "data": {
-          "tvs": "TVs"
+          "tvs": "TVs",
+          "enabled": "Turn this feature on",
+          "battery_threshold": "Low battery below",
+          "night_start": "Night starts",
+          "night_end": "Night ends",
+          "night_volume": "Speaker volume at night (0-1)",
+          "night_led": "LED ring brightness at night",
+          "dim_step": "Dim / brighten step",
+          "kelvin_step": "Warmer / cooler step",
+          "degree_step": "Degrees per \"warmer\" / \"cooler\"",
+          "bed_left_person": "Person on the left side",
+          "bed_right_person": "Person on the right side",
+          "protected": "Locks and doors Assist can't open in guest mode",
+          "broadcast_players": "Also speak broadcasts on these media players",
+          "broadcast_tts": "Text-to-speech engine for those players"
         }
       },
       "bed": {
         "title": "Bed",
-        "description": "Coming in a later version. Detected devices are pre-filled; anything you change is kept when you re-detect.",
+        "description": "Sleep Number. Leave the sides empty if the bed's own sleeper names match your people.",
         "data": {
           "bed_firmness": "Firmness controls",
-          "bed_presets": "Presets"
+          "bed_presets": "Presets",
+          "enabled": "Turn this feature on",
+          "battery_threshold": "Low battery below",
+          "night_start": "Night starts",
+          "night_end": "Night ends",
+          "night_volume": "Speaker volume at night (0-1)",
+          "night_led": "LED ring brightness at night",
+          "dim_step": "Dim / brighten step",
+          "kelvin_step": "Warmer / cooler step",
+          "degree_step": "Degrees per \"warmer\" / \"cooler\"",
+          "bed_left_person": "Person on the left side",
+          "bed_right_person": "Person on the right side",
+          "protected": "Locks and doors Assist can't open in guest mode",
+          "broadcast_players": "Also speak broadcasts on these media players",
+          "broadcast_tts": "Text-to-speech engine for those players"
         }
       },
       "rooms_lights": {
         "title": "Rooms & lights",
-        "description": "Coming in a later version. Detected devices are pre-filled; anything you change is kept when you re-detect.",
+        "description": "\"Turn off the living room\", \"dim the kitchen by 30 percent\", \"turn off the fan in 10 minutes\".",
         "data": {
-          "lights": "Lights (including light switches)"
+          "lights": "Lights (including light switches)",
+          "enabled": "Turn this feature on",
+          "battery_threshold": "Low battery below",
+          "night_start": "Night starts",
+          "night_end": "Night ends",
+          "night_volume": "Speaker volume at night (0-1)",
+          "night_led": "LED ring brightness at night",
+          "dim_step": "Dim / brighten step",
+          "kelvin_step": "Warmer / cooler step",
+          "degree_step": "Degrees per \"warmer\" / \"cooler\"",
+          "bed_left_person": "Person on the left side",
+          "bed_right_person": "Person on the right side",
+          "protected": "Locks and doors Assist can't open in guest mode",
+          "broadcast_players": "Also speak broadcasts on these media players",
+          "broadcast_tts": "Text-to-speech engine for those players"
         }
       },
       "night_mode": {
         "title": "Night mode",
-        "description": "Coming in a later version."
+        "description": "Lowers each voice speaker's volume and dims its LED ring between these times, and puts them back afterwards. Also a switch entity.",
+        "data": {
+          "enabled": "Turn this feature on",
+          "battery_threshold": "Low battery below",
+          "night_start": "Night starts",
+          "night_end": "Night ends",
+          "night_volume": "Speaker volume at night (0-1)",
+          "night_led": "LED ring brightness at night",
+          "dim_step": "Dim / brighten step",
+          "kelvin_step": "Warmer / cooler step",
+          "degree_step": "Degrees per \"warmer\" / \"cooler\"",
+          "bed_left_person": "Person on the left side",
+          "bed_right_person": "Person on the right side",
+          "protected": "Locks and doors Assist can't open in guest mode",
+          "broadcast_players": "Also speak broadcasts on these media players",
+          "broadcast_tts": "Text-to-speech engine for those players"
+        }
       },
       "guest_mode": {
         "title": "Guest mode",
-        "description": "Coming in a later version."
+        "description": "While on: calendars, notes, reminder lists and sleep data are private, and the locks and doors below are hidden from Assist. Web search, lights and music still work. Also a switch entity.",
+        "data": {
+          "enabled": "Turn this feature on",
+          "battery_threshold": "Low battery below",
+          "night_start": "Night starts",
+          "night_end": "Night ends",
+          "night_volume": "Speaker volume at night (0-1)",
+          "night_led": "LED ring brightness at night",
+          "dim_step": "Dim / brighten step",
+          "kelvin_step": "Warmer / cooler step",
+          "degree_step": "Degrees per \"warmer\" / \"cooler\"",
+          "bed_left_person": "Person on the left side",
+          "bed_right_person": "Person on the right side",
+          "protected": "Locks and doors Assist can't open in guest mode",
+          "broadcast_players": "Also speak broadcasts on these media players",
+          "broadcast_tts": "Text-to-speech engine for those players"
+        }
       },
       "redetect": {
         "title": "Re-detect devices",
@@ -171,6 +303,46 @@
           "snooze_enabled": "Off: the alarm rings until you stop it.",
           "alarm_speaker": "Leave empty to ring on the speaker you asked from (all voice speakers when set from the app). You can also say \"set an alarm for 7 in the bedroom\" or \"... everywhere\"."
         }
+      },
+      "health": {
+        "title": "Health report",
+        "description": "\"Is anything wrong\", \"which batteries are low\". Phones and watches are left out of battery reports.",
+        "data": {
+          "enabled": "Turn this feature on",
+          "battery_threshold": "Low battery below",
+          "night_start": "Night starts",
+          "night_end": "Night ends",
+          "night_volume": "Speaker volume at night (0-1)",
+          "night_led": "LED ring brightness at night",
+          "dim_step": "Dim / brighten step",
+          "kelvin_step": "Warmer / cooler step",
+          "degree_step": "Degrees per \"warmer\" / \"cooler\"",
+          "bed_left_person": "Person on the left side",
+          "bed_right_person": "Person on the right side",
+          "protected": "Locks and doors Assist can't open in guest mode",
+          "broadcast_players": "Also speak broadcasts on these media players",
+          "broadcast_tts": "Text-to-speech engine for those players"
+        }
+      },
+      "broadcast": {
+        "title": "Broadcast",
+        "description": "\"Tell everyone that dinner's ready\" speaks on every other voice speaker. Extra media players are optional.",
+        "data": {
+          "enabled": "Turn this feature on",
+          "battery_threshold": "Low battery below",
+          "night_start": "Night starts",
+          "night_end": "Night ends",
+          "night_volume": "Speaker volume at night (0-1)",
+          "night_led": "LED ring brightness at night",
+          "dim_step": "Dim / brighten step",
+          "kelvin_step": "Warmer / cooler step",
+          "degree_step": "Degrees per \"warmer\" / \"cooler\"",
+          "bed_left_person": "Person on the left side",
+          "bed_right_person": "Person on the right side",
+          "protected": "Locks and doors Assist can't open in guest mode",
+          "broadcast_players": "Also speak broadcasts on these media players",
+          "broadcast_tts": "Text-to-speech engine for those players"
+        }
       }
     }
   },
@@ -189,6 +361,14 @@
       },
       "messages": {
         "name": "Messages"
+      }
+    },
+    "switch": {
+      "guest_mode": {
+        "name": "Guest mode"
+      },
+      "night_mode": {
+        "name": "Night mode"
       }
     }
   }

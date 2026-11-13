@@ -56,11 +56,35 @@ DEVICE_SECTIONS: dict[str, dict[str, tuple[str, str, bool]]] = {
     "thermostat": {"thermostats": ("thermostats", "climate", True)},
     "tv": {"tvs": ("tvs", "media_player", True)},
     "bed": {"bed_firmness": ("bed.firmness", "number", True),
-            "bed_presets": ("bed.presets", "select", True)},
+            "bed_presets": ("bed.presets", "select", True),
+            "bed_left_person": ("bed.left_person", "person", False),
+            "bed_right_person": ("bed.right_person", "person", False)},
     "rooms_lights": {"lights": ("lights", ["light", "switch"], True)},
+    "health": {},
+    "guest_mode": {"protected": ("protected", ["lock", "cover"], True)},
+    "night_mode": {},
+    "broadcast": {"broadcast_players": ("broadcast_players", "media_player", True),
+                  "broadcast_tts": ("tts_engine", "tts", False)},
 }
 SETTINGS_SECTIONS = ["web_search", "behaviour", "alarms"]
-PLACEHOLDER_SECTIONS = ["night_mode", "guest_mode"]
+PLACEHOLDER_SECTIONS: list[str] = []
+
+# Features with an on/off switch on their settings page (all on by default).
+FEATURE_SECTIONS = ["music", "calendar", "rooms_lights", "thermostat", "cameras_outside", "tv", "bed",
+                    "health", "guest_mode", "night_mode", "broadcast"]
+OPT_FEATURES = "features"            # options[OPT_FEATURES][section] = bool
+OPT_SETTINGS = "settings"            # options[OPT_SETTINGS][section][key] = value
+
+# Extra (non-device) settings per section: key -> (kind, default, extra config).
+EXTRA_FIELDS: dict[str, dict[str, tuple[str, object, dict]]] = {
+    "health": {"battery_threshold": ("number", 20, {"min": 5, "max": 50, "unit": "%"})},
+    "night_mode": {"night_start": ("time", "22:00:00", {}), "night_end": ("time", "07:00:00", {}),
+                   "night_volume": ("number", 0.2, {"min": 0.0, "max": 1.0, "step": 0.05}),
+                   "night_led": ("number", 10, {"min": 0, "max": 100, "unit": "%"})},
+    "rooms_lights": {"dim_step": ("number", 20, {"min": 5, "max": 50, "unit": "%"}),
+                     "kelvin_step": ("number", 500, {"min": 100, "max": 2000, "unit": "K"})},
+    "thermostat": {"degree_step": ("number", 2, {"min": 1, "max": 5})},
+}
 
 # The integration's own to-do lists: key -> name.
 LISTS = {"reminders": "Reminders", "notes": "Notes", "messages": "Messages"}

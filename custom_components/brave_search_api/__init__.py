@@ -22,7 +22,7 @@ from .store import BraveStore
 if TYPE_CHECKING:
     from .skills import Skills
 
-PLATFORMS = [Platform.CONVERSATION, Platform.SENSOR, Platform.TODO]
+PLATFORMS = [Platform.CONVERSATION, Platform.SENSOR, Platform.SWITCH, Platform.TODO]
 
 
 @dataclass
