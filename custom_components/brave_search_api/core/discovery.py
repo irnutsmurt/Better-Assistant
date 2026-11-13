@@ -79,6 +79,7 @@ def slugify(text: str) -> str:
 class _House:
     def __init__(self, snap: Snapshot) -> None:
         self.snap = snap
+        self.outdoor: set[str] = set()
         self.by_device: dict[str, list[Entity]] = {}
         for e in snap.entities:
             if e.device_id:
@@ -101,7 +102,7 @@ class _House:
         return [e for e in self.snap.entities if e.domain == domain and (platform is None or e.platform == platform)]
 
     def is_outdoor_area(self, area_id: str | None) -> bool:
-        return bool(area_id and OUTDOOR_AREA.search(self.snap.areas.get(area_id, "")))
+        return bool(area_id and area_id in self.outdoor)
 
 
 def _is_tv(h: _House, e: Entity) -> bool:
@@ -112,10 +113,16 @@ def _is_cast_group(h: _House, e: Entity) -> bool:
     return bool(CAST_GROUP_MODEL.search(h.model(e)))
 
 
-def classify(snap: Snapshot) -> dict[str, Any]:
-    """Suggested setup as plain JSON-able data."""
+def guess_outdoor_areas(areas: dict[str, str]) -> list[str]:
+    """Areas whose name sounds outdoors (yard, porch, driveway...): the default the user can change."""
+    return [a for a, name in areas.items() if OUTDOOR_AREA.search(name)]
+
+
+def classify(snap: Snapshot, outdoor_areas: list[str] | None = None) -> dict[str, Any]:
+    """Suggested setup as plain JSON-able data. `outdoor_areas` overrides the area-name guess."""
     h = _House(snap)
-    out: dict[str, Any] = {}
+    h.outdoor = set(guess_outdoor_areas(snap.areas) if outdoor_areas is None else outdoor_areas)
+    out: dict[str, Any] = {"outdoor_areas": sorted(h.outdoor)}
 
     # Voice speakers, and the Music Assistant player on the same device ("here").
     ma_players = h.of("media_player", "music_assistant")

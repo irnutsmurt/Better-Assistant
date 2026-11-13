@@ -133,3 +133,11 @@ def test_sleepiq_bed(house):
     assert classify(house)["bed"] == {"firmness": ["number.bed_left_firmness"],
                                       "presets": ["select.bed_foundation_preset"],
                                       "presence": ["binary_sensor.bed_left_is_in_bed"]}
+
+
+def test_outdoor_areas_guess_and_override(house):
+    assert classify(house)["outdoor_areas"] == ["yard"]
+    house.entities = [e for e in house.entities if e.platform != "frigate"]
+    d = classify(house, outdoor_areas=["bedroom"])                 # user says the bedroom counts
+    assert d["outdoor_areas"] == ["bedroom"]
+    assert [s["entity_id"] for s in d["outside_sensors"]] == ["binary_sensor.bedroom_motion"]

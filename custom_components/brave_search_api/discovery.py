@@ -56,8 +56,10 @@ def async_snapshot(hass: HomeAssistant) -> Snapshot:
 
 
 @callback
-def async_detect(hass: HomeAssistant) -> dict[str, Any]:
-    return classify(async_snapshot(hass))
+def async_detect(hass: HomeAssistant, options: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Detect devices; the user's chosen outdoor areas (if any) replace the area-name guess."""
+    chosen = ((options or {}).get(OPT_OVERRIDES) or {}).get("cameras_outside", {}).get("outdoor_areas")
+    return classify(async_snapshot(hass), chosen)
 
 
 def detected_value(detected: dict[str, Any], path: str, multiple: bool) -> Any:

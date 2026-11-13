@@ -31,6 +31,10 @@ comes to this agent, which:
 
 ## Install (HACS)
 
+Requires **Home Assistant 2025.11 or newer** (the agent uses the conversation dry-run matcher
+`async_debug_recognize` added in 2025.11, and `satellite_id` routing added in 2025.10).
+
+
 1. HACS > three-dot menu > **Custom repositories** > add
    `https://github.com/irnutsmurt/brave-search-api` as type **Integration**.
 2. Install **Brave Search API**, then restart Home Assistant.
@@ -46,7 +50,8 @@ The key is optional. Without one, everything except web search still works.
 1. Sign up at the Brave Search API dashboard (`api-dashboard.search.brave.com`).
 2. Subscribe to a plan that includes the **LLM Context** endpoint. Brave has offered a free monthly
    credit; check their current pricing, as plans change.
-3. Create a key and paste it in the setup dialog. It is checked with one small request and stored in
+3. Create a key and paste it in the setup dialog. It is checked with one small request (this uses
+   1 search from your Brave credit) and stored in
    the config entry. It is never logged. To change or remove it later use **Reconfigure** on the
    integration.
 
@@ -82,7 +87,8 @@ device class, integration, supported features and area (never names), and pre-fi
 voice satellites (and a Music Assistant player on the same device), Music Assistant players, Cast
 groups for broadcasts, thermostats, calendars (and the first one that can create events), to-do
 lists, people and their phones' notify services, cameras and the Cast TVs that can show them, outdoor
-motion/person sensors (Frigate person sensors preferred, indoor rooms skipped), TVs with their remote
+motion/person sensors (Frigate person sensors preferred, indoor rooms skipped; which areas count as
+outdoors is guessed from area names and can be changed under Cameras & outside), TVs with their remote
 and inputs, lights and light switches per room (status LEDs on Zigbee routers and voice satellites
 left out), battery sensors (phones and watches tagged as personal), unavailable devices, and Sleep
 Number beds.

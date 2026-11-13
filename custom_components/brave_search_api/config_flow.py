@@ -10,6 +10,8 @@ from homeassistant.config_entries import ConfigEntry, ConfigFlow, ConfigFlowResu
 from homeassistant.core import callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.selector import (
+    AreaSelector,
+    AreaSelectorConfig,
     BooleanSelector,
     EntitySelector,
     EntitySelectorConfig,
@@ -22,6 +24,7 @@ from homeassistant.helpers.selector import (
 )
 
 from .const import (
+    AREA,
     CONF_API_KEY,
     DEFAULTS,
     DEVICE_SECTIONS,
@@ -94,7 +97,9 @@ class BraveSearchApiConfigFlow(ConfigFlow, domain=DOMAIN):
         return self.async_show_form(step_id="reconfigure", data_schema=KEY_SCHEMA, errors=errors)
 
 
-def _entity_selector(domain: str | list[str], multiple: bool) -> EntitySelector:
+def _entity_selector(domain: str | list[str], multiple: bool):
+    if domain == AREA:
+        return AreaSelector(AreaSelectorConfig(multiple=multiple))
     return EntitySelector(EntitySelectorConfig(domain=domain, multiple=multiple))
 
 
@@ -151,6 +156,11 @@ class BraveSearchApiOptionsFlow(OptionsFlow):
                 if value != detected_value(detected, path, multi):
                     changed[f] = value
             overrides[section] = changed
+            if section == "cameras_outside" and "outdoor_areas" in changed:
+                # outdoor areas decide which sensors count as outside: detect again with them
+                store = self.config_entry.runtime_data.store
+                await store.async_set_detected(
+                    async_detect(self.hass, {OPT_OVERRIDES: overrides}))
             return self._save({OPT_OVERRIDES: overrides})
         detected = self.config_entry.runtime_data.store.detected
         current = effective_section(dict(self.config_entry.options), detected, section)
@@ -164,7 +174,8 @@ class BraveSearchApiOptionsFlow(OptionsFlow):
 
     async def async_step_redetect(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is not None:
-            await self.config_entry.runtime_data.store.async_set_detected(async_detect(self.hass))
+            await self.config_entry.runtime_data.store.async_set_detected(
+                async_detect(self.hass, dict(self.config_entry.options)))
             return await self.async_step_init()
         return self.async_show_form(step_id="redetect", data_schema=vol.Schema({}))
 

@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Brave Search API",
-        "description": "Optional: paste a Brave Search API key to let the assistant look things up on the web. Leave it empty to use only the local answers (spelling, maths, units, dates, world clock); you can add a key later with Reconfigure.",
+        "description": "Optional: paste a Brave Search API key to let the assistant look things up on the web. Leave it empty to use only the local answers (spelling, maths, units, dates, world clock); you can add a key later with Reconfigure. Checking the key uses 1 search from your Brave credit.",
         "data": {
           "api_key": "API key"
         },
@@ -13,7 +13,7 @@
       },
       "reconfigure": {
         "title": "Change API key",
-        "description": "Enter a new key, or leave it empty to turn web search off.",
+        "description": "Enter a new key, or leave it empty to turn web search off. Checking a new key uses 1 search from your Brave credit.",
         "data": {
           "api_key": "API key"
         }
@@ -111,7 +111,8 @@
         "data": {
           "cameras": "Cameras",
           "camera_cast_targets": "TVs to show cameras on",
-          "outside_sensors": "Outside activity sensors"
+          "outside_sensors": "Outside activity sensors",
+          "outdoor_areas": "Areas that count as outdoors"
         }
       },
       "thermostat": {

@@ -6,8 +6,8 @@
 
 Spoken times: "in 20 minutes", "in an hour and a half", "at 7", "6:30 a.m.", "7 pm tomorrow", "noon",
 "tonight at 8", "monday at 9", "every weekday at 6:45", "november 20th at 3", "the 20th", "11/28".
-Alarm mode reads a bare 7 as 7 AM; reminders take the next sensible time it comes round
-("at 3" means 3 PM). Pure Python, no Home Assistant imports.
+With no AM/PM, a time means the next time that clock time comes round ("7" at 6:28 PM is 7 PM),
+for alarms too. When a day or date is given, 1-6 o'clock means PM for reminders and AM for alarms. Pure Python, no Home Assistant imports.
 """
 from __future__ import annotations
 
@@ -141,6 +141,8 @@ def parse(text, now, alarm=False):
         sub, _ = parse(rest, dt.datetime.combine(on_date, dt.time(0, 0)), alarm)
         if sub is None:
             return None, repeat
+        if not alarm and 1 <= sub.hour <= 6 and not re.search(r"\b(am|morning)\b", rest):
+            sub += dt.timedelta(hours=12)                  # a date given: "at 3" means 3 PM for an event
         return dt.datetime.combine(on_date, sub.time()), repeat
     m = re.search(r"\bevery (weekday|weekdays|week day|day|morning|weekend|weekend day)s?\b|\b(daily)\b", t)
     if m:
@@ -148,7 +150,7 @@ def parse(text, now, alarm=False):
         repeat = "weekdays" if "week" in k and "end" not in k else "weekends" if "end" in k else "daily"
         t = (t[:m.start()] + t[m.end():]).strip()
         if k == "morning":
-            t += " morning"                                # keep the AM hint
+            t += " morning"                                # "every morning at 7" is an AM hint
     # relative: in 20 minutes / in 1 hour and 30 minutes / in 1.5 hours / in 0.5 hour
     m = re.search(r"\bin (\d+(?:\.\d+)?|\.5) ?(minute|min|hour|hr)s?(?: and (\d+(?:\.\d+)?) ?(minute|min)s?)?(?: and a half)?\b", t)
     if m:
@@ -174,7 +176,7 @@ def parse(text, now, alarm=False):
     pm_hint = bool(re.search(r"\b(tonight|evening|afternoon|pm)\b", t))
     am_hint = bool(re.search(r"\b(morning|am)\b", t))
     if re.search(r"\bnoon\b|\bmidday\b", t):
-        h, mi = 12, 0
+        h, mi, pm_hint = 12, 0, True
     elif re.search(r"\bmidnight\b", t):
         h, mi, day_off = 0, 0, (1 if day_off in (None, 0) else day_off)
     else:
@@ -192,9 +194,9 @@ def parse(text, now, alarm=False):
             h = 0
         elif h < 12 and pm_hint:
             h += 12
-    if not alarm and not am_hint and not pm_hint and 1 <= h <= 6:
-        h += 12                                            # "tomorrow at 3" means 3 PM for reminders/events
     base = now.replace(second=0, microsecond=0)
+    if (wd is not None or day_off is not None) and 1 <= h <= 6 and not am_hint and not pm_hint and not alarm:
+        h += 12                                            # "tomorrow at 3" means 3 PM for a reminder or event
     if wd is not None:
         delta = (wd - now.weekday()) % 7
         cand = base.replace(hour=h, minute=mi) + dt.timedelta(days=delta)
@@ -206,27 +208,17 @@ def parse(text, now, alarm=False):
         if day_off == 0 and cand <= now and h < 12 and not am_hint:
             cand += dt.timedelta(hours=12)                 # "tonight at 8" said as 8 → 8 PM
         return cand, repeat
-    ambiguous = h <= 12 and not am_hint and not pm_hint and h != 0
-    cand = base.replace(hour=h % 24, minute=mi)
-    if ambiguous and not alarm:
-        options = [cand, cand + dt.timedelta(hours=12)] if h < 12 else [cand]
-        options = [o + dt.timedelta(days=n) for n in range(8) for o in options]
-        future = [o for o in options if o > now and _next_allowed(o, repeat) == o]
-        daytime = [o for o in future if 7 <= o.hour <= 22]      # "remind me at 2" means 2 PM, not 2 AM
-        cand = min(daytime or future)
-    while cand <= now:
-        cand += dt.timedelta(days=1)
-    return _next_allowed(cand, repeat), repeat
-
-
-def _next_allowed(cand, repeat):
+    # No AM/PM said: like Google, take the next time that clock time comes round (7 at 6:28 PM -> 7 PM).
+    ambiguous = 1 <= h <= 12 and not am_hint and not pm_hint
+    hours = [h % 12, h % 12 + 12] if ambiguous else [h % 24]
     if repeat == "weekdays":
-        while cand.weekday() >= 5:
-            cand += dt.timedelta(days=1)
+        ok_day = lambda d: d.weekday() < 5
     elif repeat == "weekends":
-        while cand.weekday() < 5:
-            cand += dt.timedelta(days=1)
-    return cand
+        ok_day = lambda d: d.weekday() >= 5
+    else:
+        ok_day = lambda d: True
+    cands = [base.replace(hour=hh, minute=mi) + dt.timedelta(days=k) for k in range(8) for hh in hours]
+    return min(c for c in cands if c > now and ok_day(c)), repeat
 
 
 def world_clock(place: str, now: dt.datetime | None = None) -> str | None:

@@ -33,7 +33,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: BraveConfigEntry) -> boo
     if not store.detected:
         # First run: detect devices once everything else has loaded.
         async def _first_detect(hass: HomeAssistant) -> None:
-            await store.async_set_detected(async_detect(hass))
+            await store.async_set_detected(async_detect(hass, dict(entry.options)))
 
         entry.async_on_unload(async_at_started(hass, _first_detect))
     entry.runtime_data = BraveRuntimeData(store=store)

@@ -30,6 +30,8 @@ STORAGE_VERSION = 1
 HISTORY_SIZE = 5
 HA_AGENT_ID = "conversation.home_assistant"
 
+AREA = "area"  # pseudo-domain: an area picker instead of an entity picker
+
 # Device sections shown pre-filled from detection. The user's edits are stored as overrides.
 DEVICE_SECTIONS: dict[str, dict[str, tuple[str, str, bool]]] = {
     # section -> field -> (detected key, entity domain, multiple)
@@ -42,7 +44,8 @@ DEVICE_SECTIONS: dict[str, dict[str, tuple[str, str, bool]]] = {
                         "people": ("people", "person", True)},
     "cameras_outside": {"cameras": ("cameras", "camera", True),
                         "camera_cast_targets": ("camera_cast_targets", "media_player", True),
-                        "outside_sensors": ("outside_sensors", "binary_sensor", True)},
+                        "outside_sensors": ("outside_sensors", "binary_sensor", True),
+                        "outdoor_areas": ("outdoor_areas", AREA, True)},
     "thermostat": {"thermostats": ("thermostats", "climate", True)},
     "tv": {"tvs": ("tvs", "media_player", True)},
     "bed": {"bed_firmness": ("bed.firmness", "number", True),

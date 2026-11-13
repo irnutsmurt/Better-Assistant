@@ -12,15 +12,37 @@ def at(text, alarm=False):
     return parse(text, NOW, alarm)
 
 
+EVENING = dt.datetime(2026, 11, 12, 18, 28)
+EARLY = dt.datetime(2026, 11, 12, 6, 10)
+
+
+@pytest.mark.parametrize("text,alarm,now,expected", [
+    ("7", True, EVENING, dt.datetime(2026, 11, 12, 19, 0)),
+    ("7", False, EVENING, dt.datetime(2026, 11, 12, 19, 0)),
+    ("2", False, EVENING, dt.datetime(2026, 11, 13, 2, 0)),
+    ("tomorrow at 3", False, EVENING, dt.datetime(2026, 11, 13, 15, 0)),
+    ("tomorrow at 6", True, EVENING, dt.datetime(2026, 11, 13, 6, 0)),
+    ("november 20th at 3", False, EVENING, dt.datetime(2026, 11, 20, 15, 0)),
+    ("november 20th at 3 am", False, EVENING, dt.datetime(2026, 11, 20, 3, 0)),
+    ("noon", False, EVENING, dt.datetime(2026, 11, 13, 12, 0)),
+    ("midnight", False, EVENING, dt.datetime(2026, 11, 13, 0, 0)),
+    ("every weekday at 6:45", False, EVENING, dt.datetime(2026, 11, 12, 18, 45)),
+    ("2", False, EARLY, dt.datetime(2026, 11, 12, 14, 0)),
+    ("every weekday at 6:45", True, EARLY, dt.datetime(2026, 11, 12, 6, 45)),
+])
+def test_next_occurrence_rule(text, alarm, now, expected):
+    assert parse(text, now, alarm)[0] == expected
+
+
 @pytest.mark.parametrize("text,expected", [
     ("tomorrow at 3", dt.datetime(2026, 11, 13, 15, 0)),
-    ("november 20th at 3", dt.datetime(2026, 11, 20, 15, 0)),
     ("11/28 at 6:30 pm", dt.datetime(2026, 11, 28, 18, 30)),
     ("in 20 minutes", NOW + dt.timedelta(minutes=20)),
     ("in an hour and a half", NOW + dt.timedelta(minutes=90)),
     ("at noon", dt.datetime(2026, 11, 12, 12, 0)),
     ("tonight at 8", dt.datetime(2026, 11, 12, 20, 0)),
     ("monday at 9", dt.datetime(2026, 11, 16, 9, 0)),
+    ("friday at 2", dt.datetime(2026, 11, 13, 14, 0)),
     ("half past 6 tomorrow morning", dt.datetime(2026, 11, 13, 6, 30)),
     ("at 2", dt.datetime(2026, 11, 12, 14, 0)),
 ])
@@ -29,35 +51,22 @@ def test_reminder_times(text, expected):
 
 
 def test_the_20th():
-    when, _ = at("the 20th at 9 am")
-    assert when == dt.datetime(2026, 11, 20, 9, 0)
-    when, _ = at("the 5th at 9 am")                 # already past this month -> next month
-    assert when == dt.datetime(2026, 12, 5, 9, 0)
+    assert at("the 20th at 9 am")[0] == dt.datetime(2026, 11, 20, 9, 0)
+    assert at("the 5th at 9 am")[0] == dt.datetime(2026, 12, 5, 9, 0)      # past this month -> next month
 
 
 def test_in_30_seconds():
     assert at("in 30 seconds")[0] == NOW + dt.timedelta(seconds=30)
 
 
-def test_every_weekday():
-    when, repeat = at("every weekday at 6:45", alarm=True)
-    assert repeat == "weekdays" and when == dt.datetime(2026, 11, 13, 6, 45)
-    when, repeat = at("every weekday at 6:45 am")
-    assert repeat == "weekdays" and when == dt.datetime(2026, 11, 13, 6, 45)
-
-
 def test_every_weekend_and_morning():
     assert at("every weekend at 9") == (dt.datetime(2026, 11, 14, 9, 0), "weekends")
     assert at("every morning at 7") == (dt.datetime(2026, 11, 13, 7, 0), "daily")
-
-
-def test_alarm_mode_reads_bare_hour_as_morning():
-    assert at("7", alarm=True)[0] == dt.datetime(2026, 11, 13, 7, 0)
+    assert at("every weekday at 6:45 am") == (dt.datetime(2026, 11, 13, 6, 45), "weekdays")
 
 
 def test_market_is_not_march():
-    when, _ = at("go to the market at 5")
-    assert when == dt.datetime(2026, 11, 12, 17, 0)
+    assert at("go to the market at 5")[0] == dt.datetime(2026, 11, 12, 17, 0)
 
 
 def test_no_time():
