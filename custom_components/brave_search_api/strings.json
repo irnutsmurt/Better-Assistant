@@ -162,12 +162,14 @@
         "data": {
           "snooze_minutes": "Snooze length",
           "snooze_limit": "Snooze limit per alarm",
-          "snooze_enabled": "Snoozing"
+          "snooze_enabled": "Snoozing",
+          "alarm_speaker": "Default alarm speaker"
         },
         "data_description": {
           "snooze_minutes": "Used for \"snooze\". You can also say \"set the snooze to 10 minutes\".",
           "snooze_limit": "Leave empty for no limit, or 1-10. 0 turns snoozing off. By voice: \"limit snoozes to 3\", \"no snooze limit\", \"no snoozing\".",
-          "snooze_enabled": "Off: the alarm rings until you stop it."
+          "snooze_enabled": "Off: the alarm rings until you stop it.",
+          "alarm_speaker": "Leave empty to ring on the speaker you asked from (all voice speakers when set from the app). You can also say \"set an alarm for 7 in the bedroom\" or \"... everywhere\"."
         }
       }
     }

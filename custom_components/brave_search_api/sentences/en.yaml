@@ -39,6 +39,13 @@ intents:
           - "(set|create|make) (an|a|my|the) {text} alarm"
           - "(set|create|make) (an|a|my|the) alarm {text}"
           - "wake me [up] {text}"
+  AlarmMove:
+    data:
+      - sentences:
+          - "move [my|the] alarm to {text}"
+          - "(ring|play|sound) [my|the] alarm {text}"
+          - "(make|have) [my|the] alarm ring {text}"
+          - "change [my|the] alarm to ring {text}"
   AlarmQuery:
     data:
       - sentences:

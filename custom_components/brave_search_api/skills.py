@@ -14,14 +14,15 @@ from typing import Any
 from homeassistant.components import conversation
 from homeassistant.const import EVENT_CALL_SERVICE, STATE_HOME
 from homeassistant.core import Context, Event, EventStateChangedData, HomeAssistant, callback
-from homeassistant.helpers import entity_registry as er, intent
+from homeassistant.helpers import area_registry as ar, device_registry as dr, entity_registry as er, intent
 from homeassistant.helpers.event import async_track_point_in_time, async_track_state_change_event
 from homeassistant.helpers.network import NoURLAvailableError, get_url
 from homeassistant.util import dt as dt_util
 
-from .const import ALARM_URL, DEFAULTS, OPT_SNOOZE, OPT_SNOOZE_ENABLED, OPT_SNOOZE_LIMIT, RING_MINUTES
+from .const import ALARM_URL, DEFAULTS, OPT_ALARM_SPEAKER, OPT_SNOOZE, OPT_SNOOZE_ENABLED, OPT_SNOOZE_LIMIT, RING_MINUTES
 from .core import intents as sentences
 from .core.features import (
+    ALL_SPEAKERS,
     Stopwatch,
     best_note,
     describe_snooze,
@@ -30,12 +31,15 @@ from .core.features import (
     next_alarm,
     note_from,
     parse_reminder,
+    resolve_speaker,
     resolve_person,
     say_alarm,
     say_duration,
+    say_where,
     snooze_decision,
     snooze_length_reply,
     snooze_limit_reply,
+    split_alarm_place,
     sentence,
 )
 from .core.intents import TIMER_INTENTS, Match
@@ -44,7 +48,6 @@ from .discovery import effective_section
 
 _LOGGER = logging.getLogger(__name__)
 
-APP_ALARM = "app"                  # alarms asked for from the app or a typed chat (no voice speaker)
 STOP_SERVICES = {"media_stop", "media_pause", "turn_off", "volume_mute", "clear_playlist"}
 HOW_TO_ADD_ZONE = ("I don't know a place called {place}. Add it as a zone in Settings, Areas, labels and "
                    "zones, Zones, then ask me again.")
@@ -64,7 +67,9 @@ class Skills:
         self._person_unsub: Callable[[], None] | None = None
         self._own_contexts: set[str] = set()
         self._snoozed_until: dict[str, dt.datetime] = {}
-        self._snooze_count: dict[str, int] = {}              # snoozes taken for the alarm now ringing
+        self._snooze_count: dict[str, int] = {}              # alarm key -> snoozes taken while ringing
+        self._ring_targets: dict[str, Any] = {}              # alarm key -> targets it is ringing on
+        self._ring_meta: dict[str, dict] = {}
 
     # ------------------------------------------------------------ lifecycle
     async def async_start(self) -> None:
@@ -72,8 +77,8 @@ class Skills:
         self._unsubs.append(self.store.async_add_listener(self._reconcile))
         for uid in list(self.store.data["reminders"]):
             self._schedule_reminder(uid)
-        for sat in list(self.store.data["alarms"]):
-            self._schedule_alarm(sat)
+        for key in list(self._alarms()):
+            self._schedule_alarm(key)
         self._track_people()
 
     @callback
@@ -404,47 +409,169 @@ class Skills:
                 cancel()
 
     # ------------------------------------------------------------ alarms
-    def _alarm_target(self, user_input) -> str:
-        """The asking voice speaker, or APP_ALARM when asked from the app / a typed chat."""
-        return self.satellite_for(user_input) or APP_ALARM
+    # An alarm record: {"targets": "all" | [satellite ids], "hour", "minute", "repeat", "next",
+    # "person", "origin": the satellite it was set from (None = app / typed chat)}.
+    # Key: "all", or the satellite ids joined with "+". A speaker's new alarm replaces the alarm with
+    # the same key; an "all" alarm is its own record and is only replaced by another "all" alarm.
+
+    def speakers_info(self) -> list[dict]:
+        """Voice satellites with every name they can be called by (for resolve_speaker)."""
+        ents, devs, areas = er.async_get(self.hass), dr.async_get(self.hass), ar.async_get(self.hass)
+        sats = self.satellites() or [s.entity_id for s in self.hass.states.async_all("assist_satellite")]
+        out = []
+        for sat in sats:
+            state = self.hass.states.get(sat)
+            reg = ents.async_get(sat)
+            dev = devs.async_get(reg.device_id) if reg and reg.device_id else None
+            area_id = (reg.area_id if reg else None) or (dev.area_id if dev else None)
+            area = areas.async_get_area(area_id) if area_id else None
+            names = [state.name if state else sat.split(".", 1)[1].replace("_", " ")]
+            if dev:
+                names += [n for n in (dev.name_by_user, dev.name) if n]
+            if reg:
+                names += [a for a in reg.aliases if isinstance(a, str)]
+            out.append({"entity_id": sat, "name": names[0], "names": names,
+                        "area": area.name if area else None, "area_aliases": list(area.aliases) if area else []})
+        return out
+
+    def _names(self) -> dict[str, str]:
+        return {s["entity_id"]: s["name"] for s in self.speakers_info()}
+
+    @staticmethod
+    def _key(targets) -> str:
+        return ALL_SPEAKERS if targets == ALL_SPEAKERS else "+".join(sorted(targets))
+
+    def _alarms(self) -> dict[str, dict]:
+        alarms = self.store.data["alarms"]
+        for key in list(alarms):                       # records from before targets existed
+            a = alarms[key]
+            if "targets" not in a:
+                a["targets"] = ALL_SPEAKERS if key == "app" else [key]
+                a.setdefault("origin", None if key == "app" else key)
+                alarms[self._key(a["targets"])] = alarms.pop(key)
+        return alarms
+
+    def _sats_of(self, targets) -> list[str]:
+        if targets == ALL_SPEAKERS:
+            return [s["entity_id"] for s in self.speakers_info()]
+        return list(targets)
+
+    def _rings_on(self, targets, sat: str | None) -> bool:
+        return sat is None or targets == ALL_SPEAKERS or sat in targets
+
+    def _default_targets(self, user_input):
+        option = self.entry.options.get(OPT_ALARM_SPEAKER)
+        if option:
+            return ALL_SPEAKERS if option == ALL_SPEAKERS else [option]
+        sat = self.satellite_for(user_input)
+        return [sat] if sat else ALL_SPEAKERS
+
+    def _where(self, targets) -> str:
+        return say_where(targets, self._names())
+
+    def _place_targets(self, place: str | None, user_input):
+        """(targets, None) or (None, what to say)."""
+        if place is None:
+            return self._default_targets(user_input), None
+        if place == ALL_SPEAKERS:
+            return ALL_SPEAKERS, None
+        ids, question = resolve_speaker(place, self.speakers_info())
+        if ids:
+            return ids, None
+        return None, question or f"I couldn't find a voice speaker called {place}."
 
     async def _h_alarm_set(self, slots: dict, user_input) -> str:
-        sat = self._alarm_target(user_input)
+        when_text, place = split_alarm_place(slots.get("text", ""))
+        targets, problem = self._place_targets(place, user_input)
+        if problem:
+            return problem
         now = dt_util.now()
-        at, repeat = parse(slots.get("text", ""), now.replace(tzinfo=None), alarm=True)
+        at, repeat = parse(when_text, now.replace(tzinfo=None), alarm=True)
         if not at:
             return "Sorry, I didn't catch the time for the alarm."
         at = at.replace(tzinfo=now.tzinfo, second=0, microsecond=0)
-        self.store.data["alarms"][sat] = {"hour": at.hour, "minute": at.minute, "repeat": repeat,
-                                          "next": at.isoformat(), "person": self.speaker_person(user_input)}
+        key = self._key(targets)
+        alarms = self._alarms()
+        replaced = key in alarms
+        alarms[key] = {"targets": targets, "hour": at.hour, "minute": at.minute, "repeat": repeat,
+                       "next": at.isoformat(), "person": self.speaker_person(user_input),
+                       "origin": self.satellite_for(user_input)}
         self.store.changed()
-        self._schedule_alarm(sat)
-        return f"Your alarm is set for {say_alarm(at.replace(tzinfo=None), repeat, now.replace(tzinfo=None))}."
+        self._schedule_alarm(key)
+        said = say_alarm(at.replace(tzinfo=None), repeat, now.replace(tzinfo=None))
+        return f"Your alarm is set for {said} {self._where(targets)}." + (
+            " That replaces the one that was there." if replaced else "")
+
+    def _mine(self, user_input) -> dict[str, dict]:
+        sat = self.satellite_for(user_input)
+        return {k: a for k, a in self._alarms().items() if self._rings_on(a["targets"], sat)}
 
     async def _h_alarm_query(self, slots: dict, user_input) -> str:
-        sat = self._alarm_target(user_input)
-        alarm = self.store.data["alarms"].get(sat or "")
-        if f"snooze:{sat}" in self._timers and sat in self._snoozed_until:
-            until = self._snoozed_until[sat]
-            return f"Your alarm is snoozed until {fmt_time(dt_util.as_local(until))}."
-        if not alarm:
-            return "You don't have an alarm set."
-        at = dt_util.parse_datetime(alarm["next"])
+        sat = self.satellite_for(user_input)
         now = dt_util.now()
-        return f"Your alarm is set for {say_alarm(at.replace(tzinfo=None), alarm['repeat'], now.replace(tzinfo=None))}."
+        lines = []
+        for key, until in self._snoozed_until.items():
+            if f"snooze:{key}" in self._timers and self._rings_on(self._ring_targets.get(key, []), sat):
+                lines.append(f"Your alarm is snoozed until {fmt_time(dt_util.as_local(until))}.")
+        for alarm in self._mine(user_input).values():
+            at = dt_util.parse_datetime(alarm["next"])
+            said = say_alarm(dt_util.as_local(at).replace(tzinfo=None), alarm["repeat"], now.replace(tzinfo=None))
+            lines.append(f"{said} {self._where(alarm['targets'])}")
+        if not lines:
+            return "You don't have an alarm set."
+        snoozed = [x for x in lines if x.startswith("Your alarm is snoozed")]
+        rest = [x for x in lines if x not in snoozed]
+        if not rest:
+            return " ".join(snoozed)
+        body = (f"Your alarm is set for {rest[0]}." if len(rest) == 1 else
+                f"You have {len(rest)} alarms: " + "; ".join(rest) + ".")
+        return " ".join(snoozed + [body])
 
     async def _h_alarm_cancel(self, slots: dict, user_input) -> str:
-        sat = self._alarm_target(user_input)
-        self._snooze_count.pop(sat, None)
-        if sat in self._ringing:
+        if self._ringing_for(user_input):
             return await self._h_alarm_stop(slots, user_input)
-        if sat not in self.store.data["alarms"]:
+        mine = self._mine(user_input)
+        if not mine:
             return "You don't have an alarm set."
-        self.store.data["alarms"].pop(sat)
+        for key in mine:
+            self._alarms().pop(key, None)
+            self._snooze_count.pop(key, None)
+            if (cancel := self._timers.pop(f"alarm:{key}", None)):
+                cancel()
         self.store.changed()
-        if (cancel := self._timers.pop(f"alarm:{sat}", None)):
+        return "Okay, your alarm is cancelled." if len(mine) == 1 else f"Okay, I cancelled {len(mine)} alarms."
+
+    async def _h_alarm_move(self, slots: dict, user_input) -> str:
+        _rest, place = split_alarm_place("x " + (slots.get("text") or "").strip())
+        if place is None:
+            place = re.sub(r"^(?:to |on |in )?(?:the )?", "", (slots.get("text") or "").strip().lower()) or None
+        if not place:
+            return "Where should the alarm ring?"
+        targets, problem = self._place_targets(place, user_input)
+        if problem:
+            return problem
+        mine = self._mine(user_input)
+        sat = self.satellite_for(user_input)
+        if sat and sat in mine:
+            old_key = sat
+        elif len(mine) == 1:
+            old_key = next(iter(mine))
+        elif not mine:
+            return "You don't have an alarm set."
+        else:
+            return "You have more than one alarm. Ask from the speaker whose alarm you want to move."
+        alarms = self._alarms()
+        alarm = alarms.pop(old_key)
+        if (cancel := self._timers.pop(f"alarm:{old_key}", None)):
             cancel()
-        return "Okay, your alarm is cancelled."
+        alarm["targets"] = targets
+        new_key = self._key(targets)
+        replaced = new_key in alarms and new_key != old_key
+        alarms[new_key] = alarm
+        self.store.changed()
+        self._schedule_alarm(new_key)
+        return f"Okay, your alarm will ring {self._where(targets)}." + (
+            " That replaces the alarm that was there." if replaced else "")
 
     def snooze_default(self) -> int:
         return int(self.entry.options.get(OPT_SNOOZE, DEFAULTS[OPT_SNOOZE]))
@@ -483,50 +610,61 @@ class Skills:
         n = self.snooze_default()
         return f"Snooze is {n} minute{'s' if n != 1 else ''}."
 
+    def _ringing_for(self, user_input) -> list[str]:
+        """Ringing alarm keys that this speaker can stop or snooze (any of them from the app)."""
+        sat = self.satellite_for(user_input)
+        return [k for k in self._ringing if self._rings_on(self._ring_targets.get(k, []), sat)]
+
     async def _h_alarm_snooze(self, slots: dict, user_input) -> str:
-        sat = self._alarm_target(user_input)
-        if sat not in self._ringing:
+        keys = self._ringing_for(user_input)
+        if not keys:
             return "There's no alarm going off right now."
-        used = self._snooze_count.get(sat, 0)
-        minutes, reply = snooze_decision(slots.get("minutes"), self.snooze_default(), self.snooze_limit(), used)
-        if minutes is None:
-            return reply                                      # keeps ringing
-        self._snooze_count[sat] = used + 1
-        self._stop_ringing(sat)
-        when = dt_util.now() + dt.timedelta(minutes=minutes)
+        reply = ""
+        for key in keys:
+            used = self._snooze_count.get(key, 0)
+            minutes, reply = snooze_decision(slots.get("minutes"), self.snooze_default(), self.snooze_limit(), used)
+            if minutes is None:
+                return reply                                  # keeps ringing
+            self._snooze_count[key] = used + 1
+            self._stop_ringing(key)
+            when = dt_util.now() + dt.timedelta(minutes=minutes)
 
-        @callback
-        def _again(_now: dt.datetime) -> None:
-            self._start_ringing(sat, fresh=False)
+            @callback
+            def _again(_now: dt.datetime, key: str = key) -> None:
+                self._start_ringing(key, fresh=False)
 
-        self._timers[f"snooze:{sat}"] = async_track_point_in_time(self.hass, _again, when)
-        self._snoozed_until[sat] = when
+            self._timers[f"snooze:{key}"] = async_track_point_in_time(self.hass, _again, when)
+            self._snoozed_until[key] = when
         return reply
 
     async def _h_alarm_stop(self, slots: dict, user_input) -> str:
-        sat = self._alarm_target(user_input)
-        self._snooze_count.pop(sat, None)
-        if (cancel := self._timers.pop(f"snooze:{sat}", None)):
-            cancel()
-            if sat not in self._ringing:
-                return "OK, I've turned off the snoozed alarm."
-        if sat not in self._ringing:
-            return "There's no alarm going off right now."
-        self._stop_ringing(sat)
+        sat = self.satellite_for(user_input)
+        snoozed = [k for k in list(self._snoozed_until)
+                   if f"snooze:{k}" in self._timers and self._rings_on(self._ring_targets.get(k, []), sat)]
+        ringing = self._ringing_for(user_input)
+        for key in snoozed:
+            if (cancel := self._timers.pop(f"snooze:{key}", None)):
+                cancel()
+            self._snooze_count.pop(key, None)
+        if not ringing:
+            return "OK, I've turned off the snoozed alarm." if snoozed else "There's no alarm going off right now."
+        for key in ringing:
+            self._snooze_count.pop(key, None)
+            self._stop_ringing(key)
         return "Alarm off. Good morning!" if dt_util.now().hour < 12 else "Alarm off."
 
     @callback
-    def _schedule_alarm(self, sat: str) -> None:
-        if (cancel := self._timers.pop(f"alarm:{sat}", None)):
+    def _schedule_alarm(self, key: str) -> None:
+        if (cancel := self._timers.pop(f"alarm:{key}", None)):
             cancel()
-        alarm = self.store.data["alarms"].get(sat)
+        alarm = self._alarms().get(key)
         if not alarm:
             return
         at = dt_util.parse_datetime(alarm["next"])
         now = dt_util.now()
         if at is None or at < now - dt.timedelta(minutes=RING_MINUTES):
             if alarm["repeat"] == "once":                     # missed while Home Assistant was off
-                self.store.data["alarms"].pop(sat, None)
+                self._alarms().pop(key, None)
                 self.store.changed()
                 return
             at = next_alarm(alarm["hour"], alarm["minute"], alarm["repeat"], now)
@@ -535,70 +673,76 @@ class Skills:
 
         @callback
         def _fire(_now: dt.datetime) -> None:
-            self._timers.pop(f"alarm:{sat}", None)
-            self._start_ringing(sat)
-            current = self.store.data["alarms"].get(sat)
+            self._timers.pop(f"alarm:{key}", None)
+            current = self._alarms().get(key)
             if not current:
                 return
+            self._ring_targets[key] = current["targets"]
+            self._ring_meta[key] = {"person": current.get("person"), "origin": current.get("origin")}
+            self._start_ringing(key)
             if current["repeat"] == "once":
-                self.store.data["alarms"].pop(sat, None)
+                self._alarms().pop(key, None)
             else:
                 current["next"] = next_alarm(current["hour"], current["minute"], current["repeat"],
                                              dt_util.now()).isoformat()
-                self._schedule_alarm(sat)
+                self._schedule_alarm(key)
             self.store.changed()
 
-        self._timers[f"alarm:{sat}"] = async_track_point_in_time(self.hass, _fire, max(at, now))
+        self._timers[f"alarm:{key}"] = async_track_point_in_time(self.hass, _fire, max(at, now))
 
     @callback
-    def _start_ringing(self, sat: str, fresh: bool = True) -> None:
-        self._timers.pop(f"snooze:{sat}", None)
+    def _start_ringing(self, key: str, fresh: bool = True) -> None:
+        self._timers.pop(f"snooze:{key}", None)
         if fresh:
-            self._snooze_count.pop(sat, None)                # a new alarm, not the end of a snooze
-        if sat in self._ringing:
+            self._snooze_count.pop(key, None)                # a new alarm, not the end of a snooze
+        if key not in self._ring_targets:                    # e.g. started directly
+            alarm = self._alarms().get(key)
+            self._ring_targets[key] = alarm["targets"] if alarm else (ALL_SPEAKERS if key == ALL_SPEAKERS
+                                                                     else key.split("+"))
+        if key in self._ringing:
             return
-        self._ringing[sat] = self.hass.async_create_background_task(self._ring(sat), f"brave alarm {sat}")
+        self._ringing[key] = self.hass.async_create_background_task(self._ring(key), f"brave alarm {key}")
 
     @callback
-    def _stop_ringing(self, sat: str) -> None:
-        task = self._ringing.pop(sat, None)
+    def _stop_ringing(self, key: str) -> None:
+        task = self._ringing.pop(key, None)
         if task:
             task.cancel()
-        player = self.media_player_for(sat)
-        if player:
-            ctx = Context()
-            self._own_contexts.add(ctx.id)
-            self.hass.async_create_task(self._call("media_player", "media_stop", {"entity_id": player}, ctx))
+        for sat in self._sats_of(self._ring_targets.get(key, [])):
+            player = self.media_player_for(sat)
+            if player:
+                ctx = Context()
+                self._own_contexts.add(ctx.id)
+                self.hass.async_create_task(self._call("media_player", "media_stop", {"entity_id": player}, ctx))
 
-    async def _ring_app(self) -> None:
-        """An alarm set from the app: announce on every voice speaker, phone and a notification."""
-        alarm = self.store.data["alarms"].get(APP_ALARM) or {}
-        if self.satellites():
-            await self.announce(self.satellites(), "Wake up! This is your alarm.")
-        await self.notify(alarm.get("person"), "Alarm", "Your alarm is going off.")
-        await self._call("persistent_notification", "create", {
-            "title": "Alarm", "message": f"Alarm at {dt_util.now().strftime('%H:%M')}.",
-            "notification_id": "brave_search_api_alarm"})
-
-    async def _ring(self, sat: str) -> None:
-        if sat == APP_ALARM:
+    def _tone_url(self) -> str | None:
+        for kwargs in ({"allow_external": False}, {}):
             try:
-                await self._ring_app()
-                await asyncio.sleep(RING_MINUTES * 60)       # counts as ringing: snooze / stop work
-            finally:
-                self._ringing.pop(sat, None)
-            return
-        player = self.media_player_for(sat)
-        try:
-            base = get_url(self.hass, allow_external=False)
-        except NoURLAvailableError:
-            try:
-                base = get_url(self.hass)
+                return get_url(self.hass, **kwargs) + ALARM_URL
             except NoURLAvailableError:
-                base = None
+                continue
+        return None
+
+    async def _ring(self, key: str) -> None:
+        """Ring on every target speaker through its own media player until stopped, snoozed or
+        10 minutes pass. A stop from outside on any of those players stops it everywhere."""
+        targets = self._ring_targets.get(key, [])
+        sats = self._sats_of(targets)
+        meta = self._ring_meta.get(key, {})
         try:
-            if not player or not base:
-                await self.announce([sat], "Wake up! This is your alarm.")
+            if meta.get("origin") is None:                   # set from the app: phone + notification too
+                await self.notify(meta.get("person"), "Alarm", "Your alarm is going off.")
+                await self._call("persistent_notification", "create", {
+                    "title": "Alarm", "message": f"Alarm at {dt_util.now().strftime('%H:%M')}.",
+                    "notification_id": "brave_search_api_alarm"})
+            url = self._tone_url()
+            players = {sat: self.media_player_for(sat) for sat in sats}
+            silent = [sat for sat, player in players.items() if not player or not url]
+            if silent:
+                await self.announce(silent, "Wake up! This is your alarm.")
+            players = [p for p in players.values() if p and url]
+            if not players:
+                await asyncio.sleep(RING_MINUTES * 60)       # still "ringing", so snooze / stop work
                 return
             stopped = asyncio.Event()
             ours = self._own_contexts                         # our own replays and stops
@@ -612,7 +756,7 @@ class Skills:
                     return
                 ids = (data.get("service_data") or {}).get("entity_id")
                 ids = [ids] if isinstance(ids, str) else list(ids or [])
-                if not ids or player in ids:                  # stopped by someone else (e.g. "stop")
+                if not ids or any(p in ids for p in players):  # stopped by someone else (e.g. "stop")
                     stopped.set()
 
             @callback
@@ -622,18 +766,20 @@ class Skills:
                     stopped.set()                             # the tone never pauses or turns off itself
 
             unsubs = [self.hass.bus.async_listen(EVENT_CALL_SERVICE, _service),
-                      async_track_state_change_event(self.hass, [player], _state)]
+                      async_track_state_change_event(self.hass, players, _state)]
             try:
                 end = dt_util.now() + dt.timedelta(minutes=RING_MINUTES)
                 while dt_util.now() < end and not stopped.is_set():
-                    ctx = Context()
-                    ours.add(ctx.id)
                     if len(ours) > 500:
                         ours.clear()
+                    calls = []
+                    for player in players:
+                        ctx = Context()
                         ours.add(ctx.id)
-                    await self._call("media_player", "play_media", {
-                        "entity_id": player, "media_content_id": base + ALARM_URL,
-                        "media_content_type": "music", "announce": True}, ctx)
+                        calls.append(self._call("media_player", "play_media", {
+                            "entity_id": player, "media_content_id": url,
+                            "media_content_type": "music", "announce": True}, ctx))
+                    await asyncio.gather(*calls)
                     try:
                         await asyncio.wait_for(stopped.wait(), 4)
                     except TimeoutError:
@@ -642,13 +788,17 @@ class Skills:
                 for unsub in unsubs:
                     unsub()
             if stopped.is_set():
-                _LOGGER.debug("Alarm on %s stopped from outside", sat)
-                if (cancel := self._timers.pop(f"snooze:{sat}", None)):
+                _LOGGER.debug("Alarm %s stopped from outside", key)
+                for other in players:                         # stop it on the other speakers too
+                    ctx = Context()
+                    ours.add(ctx.id)
+                    self.hass.async_create_task(self._call("media_player", "media_stop", {"entity_id": other}, ctx))
+                if (cancel := self._timers.pop(f"snooze:{key}", None)):
                     cancel()
-                self._snooze_count.pop(sat, None)
+                self._snooze_count.pop(key, None)
         finally:
-            if self._ringing.get(sat) is asyncio.current_task():
-                self._ringing.pop(sat, None)
+            if self._ringing.get(key) is asyncio.current_task():
+                self._ringing.pop(key, None)
 
     # ------------------------------------------------------------ notes
     def _notes(self) -> list[dict[str, Any]]:

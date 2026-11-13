@@ -18,6 +18,10 @@ from homeassistant.helpers.selector import (
     NumberSelector,
     NumberSelectorConfig,
     NumberSelectorMode,
+    SelectOptionDict,
+    SelectSelector,
+    SelectSelectorConfig,
+    SelectSelectorMode,
     TextSelector,
     TextSelectorConfig,
     TextSelectorType,
@@ -36,6 +40,7 @@ from .const import (
     OPT_OVERRIDES,
     OPT_QUESTION_GUARD,
     OPT_SNOOZE,
+    OPT_ALARM_SPEAKER,
     OPT_SNOOZE_ENABLED,
     OPT_SNOOZE_LIMIT,
     OPT_SPEAK_SOURCE,
@@ -149,12 +154,20 @@ class BraveSearchApiOptionsFlow(OptionsFlow):
         })
         return self.async_show_form(step_id="behaviour", data_schema=schema)
 
+    def _speaker_options(self) -> list[SelectOptionDict]:
+        """'All voice speakers' plus every voice satellite (assist_satellite only)."""
+        opts = [SelectOptionDict(value="all", label="All voice speakers")]
+        for state in sorted(self.hass.states.async_all("assist_satellite"), key=lambda s: s.name.lower()):
+            opts.append(SelectOptionDict(value=state.entity_id, label=state.name))
+        return opts
+
     async def async_step_alarms(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is not None:
             enabled, limit = snooze_from_page(user_input.get(OPT_SNOOZE_ENABLED, True),
                                               user_input.get(OPT_SNOOZE_LIMIT))   # 0 = snoozing off
             return self._save({OPT_SNOOZE: int(user_input[OPT_SNOOZE]), OPT_SNOOZE_ENABLED: enabled,
-                               OPT_SNOOZE_LIMIT: limit})
+                               OPT_SNOOZE_LIMIT: limit,
+                               OPT_ALARM_SPEAKER: user_input.get(OPT_ALARM_SPEAKER) or None})
         schema = vol.Schema({
             vol.Required(OPT_SNOOZE, default=self._opt(OPT_SNOOZE)): NumberSelector(
                 NumberSelectorConfig(min=1, max=30, step=1, unit_of_measurement="min",
@@ -162,6 +175,9 @@ class BraveSearchApiOptionsFlow(OptionsFlow):
             vol.Required(OPT_SNOOZE_ENABLED, default=self._opt(OPT_SNOOZE_ENABLED)): BooleanSelector(),
             vol.Optional(OPT_SNOOZE_LIMIT, description={"suggested_value": self._opt(OPT_SNOOZE_LIMIT)}):
                 NumberSelector(NumberSelectorConfig(min=0, max=10, step=1, mode=NumberSelectorMode.BOX)),
+            # empty = the speaker you asked from
+            vol.Optional(OPT_ALARM_SPEAKER, description={"suggested_value": self._opt(OPT_ALARM_SPEAKER)}):
+                SelectSelector(SelectSelectorConfig(options=self._speaker_options(), mode=SelectSelectorMode.DROPDOWN)),
         })
         return self.async_show_form(step_id="alarms", data_schema=schema)
 

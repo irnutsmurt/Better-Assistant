@@ -172,3 +172,16 @@ def test_snooze_limit_other(text, intent):
 ])
 def test_snooze_on_off_vs_limit(text, intent, slots):
     assert m(text) == (intent, slots)
+
+
+@pytest.mark.parametrize("text,intent,rest", [
+    ("set an alarm for 7 in the kitchen", "AlarmSet", "7 in the kitchen"),
+    ("set an alarm for 7 on the bedroom speaker", "AlarmSet", "7 on the bedroom speaker"),
+    ("set an alarm for 7 everywhere", "AlarmSet", "7 everywhere"),
+    ("wake me up at 6 in the kitchen", "AlarmSet", "at 6 in the kitchen"),
+    ("move my alarm to the kitchen", "AlarmMove", "the kitchen"),
+    ("ring my alarm everywhere", "AlarmMove", "everywhere"),
+    ("ring my alarm on all speakers", "AlarmMove", "on all speakers"),
+])
+def test_alarm_speaker_sentences(text, intent, rest):
+    assert m(text) == (intent, {"text": rest})

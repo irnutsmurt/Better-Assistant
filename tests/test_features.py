@@ -131,3 +131,69 @@ def test_settings_page_snooze_fields():
     assert snooze_from_page(True, 25) == (True, 10)
     assert snooze_length_reply(45) == (30, "Okay, snooze is now 30 minutes (the longest snooze is 30 minutes).")
     assert snooze_length_reply(10) == (10, "Okay, snooze is now 10 minutes.")
+
+
+# ---------------------------------------------------------------- alarm speakers
+from core.features import ALL_SPEAKERS, resolve_speaker, say_where, split_alarm_place  # noqa: E402
+from core.timeparse import parse  # noqa: E402
+
+SPEAKERS = [
+    {"entity_id": "assist_satellite.bed1", "name": "Bedroom speaker", "names": ["Bedroom speaker", "Voice PE 1"],
+     "area": "Upstairs", "area_aliases": []},
+    {"entity_id": "assist_satellite.bed2", "name": "Bedroom hub", "names": ["Bedroom hub"], "area": "Upstairs",
+     "area_aliases": []},
+    {"entity_id": "assist_satellite.kit", "name": "Kitchen speaker", "names": ["Kitchen speaker", "Chef"],
+     "area": "Kitchen", "area_aliases": ["cookhouse"]},
+]
+
+
+@pytest.mark.parametrize("text,when,place", [
+    ("7 in the kitchen", "7", "kitchen"),
+    ("7 on the bedroom speaker", "7", "bedroom speaker"),
+    ("7 on all speakers", "7", ALL_SPEAKERS),
+    ("7 everywhere", "7", ALL_SPEAKERS),
+    ("7 on every speaker", "7", ALL_SPEAKERS),
+    ("at 6 in the kitchen", "at 6", "kitchen"),
+    ("the kitchen for 7", "for 7", "kitchen"),
+    ("everywhere for 7", "for 7", ALL_SPEAKERS),
+    ("tomorrow at 7 in the bedroom", "tomorrow at 7", "bedroom"),
+    ("7 in the morning", "7 in the morning", None),        # time words are not places
+    ("6:30 on monday", "6:30 on monday", None),
+    ("in 20 minutes", "in 20 minutes", None),
+    ("every weekday at 6:45", "every weekday at 6:45", None),
+    ("the 20th at 7", "the 20th at 7", None),
+])
+def test_split_alarm_place(text, when, place):
+    assert split_alarm_place(text) == (when, place)
+
+
+def test_speaker_phrase_is_stripped_before_time_parsing():
+    now = dt.datetime(2026, 11, 12, 18, 28)
+    when, place = split_alarm_place("7 in the kitchen")
+    assert place == "kitchen" and parse(when, now, alarm=True)[0] == dt.datetime(2026, 11, 12, 19, 0)
+    when, place = split_alarm_place("6 in the morning on the bedroom speaker")
+    assert place == "bedroom speaker" and parse(when, now, alarm=True)[0] == dt.datetime(2026, 11, 13, 6, 0)
+
+
+@pytest.mark.parametrize("spoken,expected", [
+    ("the bedroom speaker", (["assist_satellite.bed1"], None)),
+    ("bedroom hub", (["assist_satellite.bed2"], None)),
+    ("voice pe 1", (["assist_satellite.bed1"], None)),          # device name
+    ("chef", (["assist_satellite.kit"], None)),                  # alias
+    ("kitchen", (["assist_satellite.kit"], None)),               # area
+    ("cookhouse", (["assist_satellite.kit"], None)),             # area alias
+    ("upstairs", (["assist_satellite.bed1", "assist_satellite.bed2"], None)),   # bare area: all its speakers
+    ("bedroom", (None, "Did you mean the bedroom speaker or the bedroom hub?")),
+    ("garage", (None, None)),
+    ("all", (["assist_satellite.bed1", "assist_satellite.bed2", "assist_satellite.kit"], None)),
+])
+def test_resolve_speaker(spoken, expected):
+    assert resolve_speaker(spoken, SPEAKERS) == expected
+
+
+def test_say_where():
+    names = {s["entity_id"]: s["name"] for s in SPEAKERS}
+    assert say_where(ALL_SPEAKERS, names) == "on all speakers"
+    assert say_where(["assist_satellite.bed1"], names) == "on the bedroom speaker"
+    assert say_where(["assist_satellite.bed1", "assist_satellite.bed2"], names) == \
+        "on the bedroom speaker and the bedroom hub"

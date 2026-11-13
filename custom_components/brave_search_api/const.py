@@ -16,6 +16,7 @@ OPT_COMPOUND = "compound_commands"
 OPT_MAX_PARTS = "max_compound_parts"
 OPT_OVERRIDES = "overrides"
 OPT_SNOOZE = "snooze_minutes"
+OPT_ALARM_SPEAKER = "alarm_speaker"        # None = the speaker asked from, "all", or a satellite entity id
 OPT_SNOOZE_ENABLED = "snooze_enabled"      # False: no snoozing at all
 OPT_SNOOZE_LIMIT = "snooze_limit"          # 1-10 snoozes per alarm, or None for unlimited
 

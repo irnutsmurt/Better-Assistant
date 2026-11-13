@@ -255,3 +255,71 @@ def snooze_from_page(enabled: bool, raw_limit) -> tuple[bool, int | None]:
     if limit == 0:
         return False, None
     return bool(enabled), limit
+
+
+# ------------------------------------------------------------------ which speaker an alarm rings on
+ALL_SPEAKERS = "all"
+_ALL = r"(?:everywhere|all over the house|on all (?:the |my )?speakers|on every speaker|in every room|on all of them)"
+_NOT_PLACE = re.compile(
+    r"^(?:the )?(?:morning|afternoon|evening|night|weekdays?|weekends?|day|week|"
+    r"monday|tuesday|wednesday|thursday|friday|saturday|sunday|january|february|march|april|may|june|july|"
+    r"august|september|october|november|december|tomorrow|today|tonight|\d|an? \w+ (?:hour|minute)|"
+    r"(?:a|an|one|two|three|four|five|six|seven|eight|nine|ten|twenty|thirty|half|\d+) ?(?:hour|minute|min|hr|sec))", re.I)
+
+
+def split_alarm_place(text: str) -> tuple[str, str | None]:
+    """'7 in the kitchen' -> ('7', 'kitchen'); 'everywhere for 7' -> ('for 7', 'all');
+    'the bedroom speaker at 6' -> ('at 6', 'bedroom speaker'). Time words ('in the morning', 'on monday',
+    'in 20 minutes') are never taken as a place."""
+    t = re.sub(r"\s+", " ", text.strip(" ,.?!"))
+    m = re.search(rf"[ ,]+{_ALL}$", t, re.I) or re.match(rf"^{_ALL}[ ,]+", t, re.I)
+    if m:
+        return (t[:m.start()] if m.start() else t[m.end():]).strip(" ,"), ALL_SPEAKERS
+    # the last " on/in ..." that isn't a time ("6 in the morning on the bedroom speaker")
+    for m in reversed(list(re.finditer(r"[ ,]+(?:on|in) (?:the )?(?=[a-z])", t, re.I))):
+        place = t[m.end():]
+        if re.fullmatch(r"[a-z][\w' -]*", place, re.I) and not re.search(r"\b(?:on|in)\b", place, re.I):
+            if not _NOT_PLACE.match(place):
+                return t[:m.start()].strip(" ,"), place.strip().lower()
+            break
+    m = re.match(r"^(?:(?:on|in) )?(?:the )?(?P<place>[a-z][\w' -]*?)(?P<rest> (?:for|at) .+)$", t, re.I)
+    if m and (t.lower().startswith(("on ", "in ", "the "))) and not _NOT_PLACE.match(m.group("place")):
+        return m.group("rest").strip(), m.group("place").strip().lower()
+    return t, None
+
+
+def resolve_speaker(spoken: str, speakers: list[dict]) -> tuple[list[str] | None, str | None]:
+    """Spoken place -> (satellite entity ids, None), (None, 'Did you mean ...?') or (None, None).
+    speakers: [{"entity_id", "name", "names": [satellite/device names + aliases], "area": area name,
+    "area_aliases": [...]}]. Exact satellite/device names and aliases first, then an area name (all of
+    that area's satellites), then names that start with the spoken words."""
+    full = spoken.strip().lower().removeprefix("the ").strip()
+    p = re.sub(r"\s+(?:speaker|satellite|room)$", "", full).strip()
+    if p == ALL_SPEAKERS:
+        return [s["entity_id"] for s in speakers], None
+
+    def low(n):
+        return (n or "").strip().lower()
+
+    exact = [s for s in speakers if any(low(n) == full for n in s["names"])]      # the whole name
+    if len(exact) == 1:
+        return [exact[0]["entity_id"]], None
+    if not exact:
+        area = [s for s in speakers if p and (low(s.get("area")) == p or p in map(low, s.get("area_aliases") or []))]
+        if area:                                       # a bare area name: that area's speakers
+            return [s["entity_id"] for s in area], None
+        exact = [s for s in speakers if any(low(n) == p or low(n).startswith(p + " ") for n in s["names"])]
+        if len(exact) == 1:
+            return [exact[0]["entity_id"]], None
+    if not exact:
+        return None, None
+    names = [f"the {s['name'].lower()}" for s in exact]
+    return None, "Did you mean " + ", ".join(names[:-1]) + " or " + names[-1] + "?"
+
+
+def say_where(targets, names: dict[str, str]) -> str:
+    """'on the bedroom speaker' / 'on all speakers' / 'on the kitchen speaker and the den speaker'."""
+    if targets == ALL_SPEAKERS:
+        return "on all speakers"
+    said = [f"the {names.get(t, t).lower()}" for t in targets]
+    return "on " + (said[0] if len(said) == 1 else ", ".join(said[:-1]) + " and " + said[-1])
