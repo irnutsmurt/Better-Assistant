@@ -187,3 +187,57 @@ def resolve_person(spoken: str, people: list[tuple[str, str, list[str]]]) -> tup
         return None, None
     names = [full for eid, full, _ in people if eid in ids]
     return None, "Did you mean " + ", ".join(names[:-1]) + " or " + names[-1] + "?"
+
+
+# ------------------------------------------------------------------ snooze rules
+MAX_SNOOZE = 30
+MAX_SNOOZE_LIMIT = 10
+
+
+def _mins(n: int) -> str:
+    return f"{n} minute{'s' if n != 1 else ''}"
+
+
+def snooze_decision(requested: int | None, default: int, limit: int | None, used: int) -> tuple[int | None, str]:
+    """(minutes to snooze or None to refuse, what to say). limit None = unlimited, 0 = no snoozing,
+    n = n snoozes per alarm; `used` = snoozes already taken for this ringing alarm."""
+    if limit == 0:
+        return None, "Snoozing is turned off. Time to get up!"
+    if limit is not None and used >= limit:
+        return None, "That was your last snooze. Time to get up!"
+    minutes = int(requested or default)
+    capped = minutes > MAX_SNOOZE
+    minutes = max(1, min(MAX_SNOOZE, minutes))
+    reply = f"Okay, {minutes} more minute{'s' if minutes != 1 else ''}"
+    reply += f" (the longest snooze is {MAX_SNOOZE} minutes)." if capped else "."
+    if limit is not None:
+        left = limit - used - 1
+        reply += " That was your last snooze." if left == 0 else f" You have {left} snooze{'s' if left != 1 else ''} left."
+    return minutes, reply
+
+
+def snooze_length_reply(requested: int) -> tuple[int, str]:
+    minutes = max(1, min(MAX_SNOOZE, int(requested)))
+    note = f" (the longest snooze is {MAX_SNOOZE} minutes)" if requested > MAX_SNOOZE else ""
+    return minutes, f"Okay, snooze is now {_mins(minutes)}{note}."
+
+
+def snooze_limit_reply(requested: int | None) -> tuple[int | None, str]:
+    """Voice: a number (0 = no snoozing), or None for 'no snooze limit'."""
+    if requested is None:
+        return None, "Okay, there's no snooze limit. You can snooze as often as you like."
+    n = max(0, int(requested))
+    if n == 0:
+        return 0, "Okay, no snoozing. The alarm will ring until you stop it."
+    capped = n > MAX_SNOOZE_LIMIT
+    n = min(n, MAX_SNOOZE_LIMIT)
+    note = f" (the most is {MAX_SNOOZE_LIMIT})" if capped else ""
+    return n, f"Okay, you can snooze {n} time{'s' if n != 1 else ''} per alarm{note}."
+
+
+def describe_snooze(limit: int | None, default: int) -> str:
+    if limit is None:
+        return f"There's no snooze limit. Each snooze is {_mins(default)}."
+    if limit == 0:
+        return "Snoozing is turned off. The alarm rings until you stop it."
+    return f"You can snooze {limit} time{'s' if limit != 1 else ''} per alarm, {_mins(default)} each."

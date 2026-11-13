@@ -128,6 +128,36 @@ def test_timer_phrases_beat_snooze(text):
     assert m(text)[0] == "HassIncreaseTimer"
 
 
-@pytest.mark.parametrize("text", ["17 more minutes", "snooze for 45 minutes", "lots more minutes"])
+@pytest.mark.parametrize("text", ["17 more minutes", "give me 45 more minutes", "lots more minutes"])
 def test_snooze_numbers_are_explicit(text):
     assert m(text)[0] != "AlarmSnooze"
+
+
+@pytest.mark.parametrize("text,minutes", [
+    ("snooze for 45 minutes", 45), ("snooze for 17 minutes", 17), ("snooze it for twenty two minutes", 22),
+])
+def test_snooze_for_any_number(text, minutes):
+    assert m(text) == ("AlarmSnooze", {"minutes": minutes})
+
+
+def test_set_snooze_any_number():
+    assert m("set the snooze to 45 minutes") == ("AlarmSnoozeSet", {"minutes": 45})
+    assert m("set the snooze to 17 minutes") == ("AlarmSnoozeSet", {"minutes": 17})
+
+
+@pytest.mark.parametrize("text,count", [
+    ("limit snoozes to 3", 3), ("set the snooze limit to 3", 3), ("only allow 2 snoozes", 2),
+    ("only allow one snooze", 1), ("limit snoozes to 15", 15), ("set the snooze limit to 0", 0),
+    ("no snoozing", 0), ("turn off snoozing", 0),
+])
+def test_snooze_limit_set(text, count):
+    assert m(text) == ("SnoozeLimitSet", {"count": count})
+
+
+@pytest.mark.parametrize("text,intent", [
+    ("no snooze limit", "SnoozeLimitClear"), ("unlimited snoozes", "SnoozeLimitClear"),
+    ("remove the snooze limit", "SnoozeLimitClear"),
+    ("how many snoozes do I get", "SnoozeLimitQuery"), ("what's the snooze limit", "SnoozeLimitQuery"),
+])
+def test_snooze_limit_other(text, intent):
+    assert m(text)[0] == intent

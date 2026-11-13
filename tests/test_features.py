@@ -87,3 +87,36 @@ def test_resolve_person():
     assert resolve_person("Sam Lee", PEOPLE) == ("person.sam_lee", None)
     assert resolve_person("sam", PEOPLE) == (None, "Did you mean Sam Smith or Sam Lee?")
     assert resolve_person("bob", PEOPLE) == (None, None)
+
+
+# ---------------------------------------------------------------- snooze rules
+from core.features import describe_snooze, snooze_decision, snooze_length_reply, snooze_limit_reply  # noqa: E402
+
+
+def test_snooze_unlimited_and_cap():
+    assert snooze_decision(None, 5, None, 7) == (5, "Okay, 5 more minutes.")
+    assert snooze_decision(45, 5, None, 0) == (30, "Okay, 30 more minutes (the longest snooze is 30 minutes).")
+    assert snooze_decision(1, 5, None, 0) == (1, "Okay, 1 more minute.")
+
+
+def test_snooze_with_limit_counts_down_then_refuses():
+    assert snooze_decision(None, 5, 2, 0) == (5, "Okay, 5 more minutes. You have 1 snooze left.")
+    assert snooze_decision(None, 5, 2, 1) == (5, "Okay, 5 more minutes. That was your last snooze.")
+    assert snooze_decision(None, 5, 2, 2) == (None, "That was your last snooze. Time to get up!")
+    assert snooze_decision(None, 5, 3, 0)[1].endswith("You have 2 snoozes left.")
+
+
+def test_no_snoozing_is_not_unlimited():
+    assert snooze_decision(None, 5, 0, 0)[0] is None
+    assert snooze_limit_reply(0) == (0, "Okay, no snoozing. The alarm will ring until you stop it.")
+    assert snooze_limit_reply(None)[0] is None
+    assert describe_snooze(None, 5) == "There's no snooze limit. Each snooze is 5 minutes."
+    assert describe_snooze(0, 5).startswith("Snoozing is turned off")
+    assert describe_snooze(3, 5) == "You can snooze 3 times per alarm, 5 minutes each."
+
+
+def test_limit_and_length_caps():
+    assert snooze_limit_reply(15) == (10, "Okay, you can snooze 10 times per alarm (the most is 10).")
+    assert snooze_limit_reply(1) == (1, "Okay, you can snooze 1 time per alarm.")
+    assert snooze_length_reply(45) == (30, "Okay, snooze is now 30 minutes (the longest snooze is 30 minutes).")
+    assert snooze_length_reply(10) == (10, "Okay, snooze is now 10 minutes.")

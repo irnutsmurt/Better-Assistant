@@ -54,18 +54,42 @@ intents:
     data:
       - sentences:
           - "snooze [it|the alarm|my alarm|alarm]"
-          - "snooze [it|the alarm|my alarm] for {snooze_minutes:minutes} [more] minute[s]"
+          - "snooze [it|the alarm|my alarm] for {any_minutes:minutes} [more] minute[s]"
           - "[just|give me|ok|okay] {snooze_minutes:minutes} more minute[s] [please]"
           - "(just|give me) {snooze_minutes:minutes} more minute[s] [please]"
   AlarmSnoozeSet:
     data:
       - sentences:
-          - "(set|change|make) [the|my] snooze [time|length] (to|for) {snooze_minutes:minutes} minute[s]"
+          - "(set|change|make) [the|my] snooze [time|length] (to|for) {any_minutes:minutes} minute[s]"
   AlarmSnoozeQuery:
     data:
       - sentences:
           - "how long is [the|my] snooze [time]"
           - "what('s| is) [the|my] snooze [time|length] [set to]"
+  SnoozeLimitSet:
+    data:
+      - sentences:
+          - "limit [the|my] snoozes to {limit_count:count} [snooze[s]|time[s]]"
+          - "(set|change|make) [the|my] snooze limit (to|at) {limit_count:count} [snooze[s]|time[s]]"
+          - "only (allow|let me have|give me) {limit_count:count} snooze[s]"
+      - sentences:
+          - "no snoozing"
+          - "(turn off|disable) snoozing"
+          - "don't let me snooze"
+        slots:
+          count: 0
+  SnoozeLimitClear:
+    data:
+      - sentences:
+          - "no snooze limit"
+          - "unlimited snoozes"
+          - "(remove|clear|turn off) [the|my] snooze limit"
+  SnoozeLimitQuery:
+    data:
+      - sentences:
+          - "how many snoozes do i (get|have)"
+          - "how many times can i snooze"
+          - "what('s| is) [the|my] snooze limit"
   AlarmStop:
     data:
       - sentences:
@@ -134,6 +158,11 @@ lists:
   name:
     wildcard: true
   # Explicit numbers only: an open wildcard here would steal "add 5 more minutes" from the timer intents.
+  # "snooze for N minutes" / "set the snooze to N minutes": any number (capped at 30 when used).
+  any_minutes:
+    range: {from: 1, to: 999}
+  limit_count:
+    range: {from: 0, to: 99}
   snooze_minutes:
     values:
       - in: "1"

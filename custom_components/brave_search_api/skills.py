@@ -19,11 +19,12 @@ from homeassistant.helpers.event import async_track_point_in_time, async_track_s
 from homeassistant.helpers.network import NoURLAvailableError, get_url
 from homeassistant.util import dt as dt_util
 
-from .const import ALARM_URL, DEFAULTS, OPT_SNOOZE, RING_MINUTES
+from .const import ALARM_URL, DEFAULTS, OPT_SNOOZE, OPT_SNOOZE_LIMIT, RING_MINUTES
 from .core import intents as sentences
 from .core.features import (
     Stopwatch,
     best_note,
+    describe_snooze,
     flip_pronouns,
     next_alarm,
     note_from,
@@ -31,6 +32,9 @@ from .core.features import (
     resolve_person,
     say_alarm,
     say_duration,
+    snooze_decision,
+    snooze_length_reply,
+    snooze_limit_reply,
     sentence,
 )
 from .core.intents import TIMER_INTENTS, Match
@@ -59,6 +63,7 @@ class Skills:
         self._person_unsub: Callable[[], None] | None = None
         self._own_contexts: set[str] = set()
         self._snoozed_until: dict[str, dt.datetime] = {}
+        self._snooze_count: dict[str, int] = {}              # snoozes taken for the alarm now ringing
 
     # ------------------------------------------------------------ lifecycle
     async def async_start(self) -> None:
@@ -429,6 +434,7 @@ class Skills:
 
     async def _h_alarm_cancel(self, slots: dict, user_input) -> str:
         sat = self._alarm_target(user_input)
+        self._snooze_count.pop(sat, None)
         if sat in self._ringing:
             return await self._h_alarm_stop(slots, user_input)
         if sat not in self.store.data["alarms"]:
@@ -442,10 +448,29 @@ class Skills:
     def snooze_default(self) -> int:
         return int(self.entry.options.get(OPT_SNOOZE, DEFAULTS[OPT_SNOOZE]))
 
+    def snooze_limit(self) -> int | None:
+        return self.entry.options.get(OPT_SNOOZE_LIMIT, DEFAULTS[OPT_SNOOZE_LIMIT])
+
+    def _save_option(self, key: str, value) -> None:
+        self.hass.config_entries.async_update_entry(self.entry, options={**self.entry.options, key: value})
+
     async def _h_alarm_snooze_set(self, slots: dict, user_input) -> str:
-        minutes = max(1, min(30, int(slots.get("minutes") or self.snooze_default())))
-        self.hass.config_entries.async_update_entry(self.entry, options={**self.entry.options, OPT_SNOOZE: minutes})
-        return f"Okay, snooze is now {minutes} minute{'s' if minutes != 1 else ''}."
+        minutes, reply = snooze_length_reply(int(slots.get("minutes") or self.snooze_default()))
+        self._save_option(OPT_SNOOZE, minutes)
+        return reply
+
+    async def _h_snooze_limit_set(self, slots: dict, user_input) -> str:
+        limit, reply = snooze_limit_reply(int(slots.get("count", 0)))
+        self._save_option(OPT_SNOOZE_LIMIT, limit)
+        return reply
+
+    async def _h_snooze_limit_clear(self, slots: dict, user_input) -> str:
+        limit, reply = snooze_limit_reply(None)
+        self._save_option(OPT_SNOOZE_LIMIT, limit)
+        return reply
+
+    async def _h_snooze_limit_query(self, slots: dict, user_input) -> str:
+        return describe_snooze(self.snooze_limit(), self.snooze_default())
 
     async def _h_alarm_snooze_query(self, slots: dict, user_input) -> str:
         n = self.snooze_default()
@@ -455,20 +480,25 @@ class Skills:
         sat = self._alarm_target(user_input)
         if sat not in self._ringing:
             return "There's no alarm going off right now."
-        minutes = int(slots.get("minutes") or self.snooze_default())
+        used = self._snooze_count.get(sat, 0)
+        minutes, reply = snooze_decision(slots.get("minutes"), self.snooze_default(), self.snooze_limit(), used)
+        if minutes is None:
+            return reply                                      # keeps ringing
+        self._snooze_count[sat] = used + 1
         self._stop_ringing(sat)
         when = dt_util.now() + dt.timedelta(minutes=minutes)
 
         @callback
         def _again(_now: dt.datetime) -> None:
-            self._start_ringing(sat)
+            self._start_ringing(sat, fresh=False)
 
         self._timers[f"snooze:{sat}"] = async_track_point_in_time(self.hass, _again, when)
         self._snoozed_until[sat] = when
-        return f"Okay, snoozing for {minutes} minute{'s' if minutes != 1 else ''}."
+        return reply
 
     async def _h_alarm_stop(self, slots: dict, user_input) -> str:
         sat = self._alarm_target(user_input)
+        self._snooze_count.pop(sat, None)
         if (cancel := self._timers.pop(f"snooze:{sat}", None)):
             cancel()
             if sat not in self._ringing:
@@ -514,8 +544,10 @@ class Skills:
         self._timers[f"alarm:{sat}"] = async_track_point_in_time(self.hass, _fire, max(at, now))
 
     @callback
-    def _start_ringing(self, sat: str) -> None:
+    def _start_ringing(self, sat: str, fresh: bool = True) -> None:
         self._timers.pop(f"snooze:{sat}", None)
+        if fresh:
+            self._snooze_count.pop(sat, None)                # a new alarm, not the end of a snooze
         if sat in self._ringing:
             return
         self._ringing[sat] = self.hass.async_create_background_task(self._ring(sat), f"brave alarm {sat}")
@@ -606,6 +638,7 @@ class Skills:
                 _LOGGER.debug("Alarm on %s stopped from outside", sat)
                 if (cancel := self._timers.pop(f"snooze:{sat}", None)):
                     cancel()
+                self._snooze_count.pop(sat, None)
         finally:
             if self._ringing.get(sat) is asyncio.current_task():
                 self._ringing.pop(sat, None)

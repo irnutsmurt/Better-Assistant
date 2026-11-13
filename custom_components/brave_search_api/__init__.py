@@ -15,7 +15,7 @@ from homeassistant.helpers.start import async_at_started
 
 from homeassistant.components.http import StaticPathConfig
 
-from .const import ALARM_URL, DOMAIN, HISTORY_SIZE, OPT_SNOOZE
+from .const import ALARM_URL, DOMAIN, HISTORY_SIZE, OPT_SNOOZE, OPT_SNOOZE_LIMIT
 from .discovery import async_detect
 from .store import BraveStore
 
@@ -68,9 +68,9 @@ async def _async_register_tone(hass: HomeAssistant) -> None:
 
 
 async def _async_update_listener(hass: HomeAssistant, entry: BraveConfigEntry) -> None:
-    """Reload on option changes, except the snooze length (read live, so a ringing alarm survives)."""
-    old = {k: v for k, v in entry.runtime_data.options.items() if k != OPT_SNOOZE}
-    new = {k: v for k, v in entry.options.items() if k != OPT_SNOOZE}
+    """Reload on option changes, except snooze length and limit (read live, so a ringing alarm survives)."""
+    old = {k: v for k, v in entry.runtime_data.options.items() if k not in (OPT_SNOOZE, OPT_SNOOZE_LIMIT)}
+    new = {k: v for k, v in entry.options.items() if k not in (OPT_SNOOZE, OPT_SNOOZE_LIMIT)}
     entry.runtime_data.options = dict(entry.options)
     if old != new:
         await hass.config_entries.async_reload(entry.entry_id)
