@@ -40,8 +40,10 @@ class AutoDetect:
             await self.async_run()
         else:
             async def _started(_event: Event) -> None:
+                self._unsubs.remove(unsub)               # fired: HA drops it, so don't cancel it on unload
                 await self.async_run()
-            self._unsubs.append(self.hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STARTED, _started))
+            unsub = self.hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STARTED, _started)
+            self._unsubs.append(unsub)
         for event in (er.EVENT_ENTITY_REGISTRY_UPDATED, dr.EVENT_DEVICE_REGISTRY_UPDATED,
                       ar.EVENT_AREA_REGISTRY_UPDATED):
             self._unsubs.append(self.hass.bus.async_listen(event, self._registry_changed))
