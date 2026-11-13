@@ -405,17 +405,40 @@ def say_lights_on(found: list[tuple[str, list[str]]], only_room: str | None = No
     return f"{head}: {'; '.join(parts)}."
 
 
-def say_tv(name: str, state: str, title: str | None, series: str | None, app: str | None,
-           source: str | None) -> str:
-    """The TV's state as a sentence: "The living room TV is playing Bluey on Disney Plus."."""
+def app_label(app: str | None) -> str | None:
+    """"com.google.android.youtube.tv" -> "YouTube"; a plain name is kept."""
+    if not app:
+        return None
+    if "." not in app or " " in app:
+        return app
+    for name, pkg in APP_PACKAGES.items():
+        if pkg == app:
+            return {"youtube": "YouTube", "youtube tv": "YouTube TV", "hbo max": "HBO Max"}.get(name, name.title())
+    return None                                            # an unknown package name isn't worth saying
+
+
+IDLE = ("idle", "on", "standby", "paused")
+
+
+def say_tv(name: str, readings: list[dict]) -> str:
+    """What's on a TV, from every media player that is that TV (Cast, Android TV, the maker's own...):
+    the one that knows the title wins. readings: {state, title, artist, series, app, source}."""
     tv = name if name.lower().startswith("the ") else f"the {name}"
-    if state in ("off", "standby", "unavailable", "unknown"):
-        return f"{tv[0].upper()}{tv[1:]} is off." if state != "unavailable" else f"I can't reach {tv}."
-    what = f"{series}: {title}" if series and title and series != title else title or series
-    where = app or source
-    if what and where and what != where:
-        return f"{tv[0].upper()}{tv[1:]} is playing {what} on {where}."
-    if what or where:
-        verb = "playing" if what else "on"
-        return f"{tv[0].upper()}{tv[1:]} is {verb} {what or where}."
-    return f"{tv[0].upper()}{tv[1:]} is on, but it isn't saying what's playing."
+    cap = tv[0].upper() + tv[1:]
+    live = [r for r in readings if r.get("state") not in ("off", "unavailable", "unknown", None)]
+    if not live:
+        return f"{cap} is off." if readings else f"I can't reach {tv}."
+    titled = [r for r in live if r.get("title")]
+    titled.sort(key=lambda r: (r.get("state") != "playing", r.get("state") != "paused"))
+    app = next((a for r in titled + live if (a := app_label(r.get("app")))), None)
+    if titled:
+        r = titled[0]
+        what = f"{r['series']}: {r['title']}" if r.get("series") and r["series"] != r["title"] else r["title"]
+        if r.get("artist"):
+            what += f" by {r['artist']}"
+        verb = "has" if r.get("state") == "paused" else "is playing"
+        tail = " paused" if r.get("state") == "paused" else ""
+        return f"{cap} {verb} {what}{tail}{f' on {app}' if app else ''}."
+    if any(r.get("state") == "playing" for r in live) and app:
+        return f"{cap} is playing something on {app}, but it isn't saying what."
+    return f"There's nothing playing on {tv}." + (f" {app} is open." if app else "")

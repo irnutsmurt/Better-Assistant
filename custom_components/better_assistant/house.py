@@ -698,14 +698,42 @@ class HouseSkills:
         await self._call("media_player", "select_source", {"entity_id": tv, "source": source})
         return f"Okay, switching the {self._friendly(tv).lower()} to {source}."
 
+    def _tv_siblings(self, tv: str) -> list[str]:
+        """Every media player that is this TV. One TV often shows up several times (Cast, Android TV,
+        the maker's own integration, Music Assistant) on separate devices; they share the device name."""
+        ents, devs = er.async_get(self.hass), dr.async_get(self.hass)
+
+        def key(entity_id: str) -> str:
+            reg = ents.async_get(entity_id)
+            dev = devs.async_get(reg.device_id) if reg and reg.device_id else None
+            name = (dev.name_by_user or dev.name) if dev else self._friendly(entity_id)
+            return re.sub(r"[^a-z0-9]+", " ", (name or "").lower()).strip()
+
+        mine = key(tv)
+        found = [tv]
+        for st in self.hass.states.async_all("media_player"):
+            if st.entity_id != tv and mine and key(st.entity_id) == mine:
+                found.append(st.entity_id)
+        return found
+
+    def _tv_spoken(self, tv: str) -> str:
+        area = self._area_name(self._entity_area(tv))
+        return f"{area} TV" if area else self._friendly(tv)
+
     async def _h_tv_whats_on(self, slots, user_input) -> str:
         tv = self._tv_for(slots, user_input)
         if not tv:
             return "I couldn't find a TV."
-        st = self.hass.states.get(tv)
-        a = st.attributes if st else {}
-        return say_tv(self._friendly(tv), st.state if st else "unavailable", a.get("media_title"),
-                      a.get("media_series_title"), a.get("app_name"), a.get("source"))
+        readings = []
+        for e in self._tv_siblings(tv):
+            st = self.hass.states.get(e)
+            if st is None:
+                continue
+            a = st.attributes
+            readings.append({"state": st.state, "title": a.get("media_title"), "series": a.get("media_series_title"),
+                             "artist": a.get("media_artist") or a.get("media_channel"),
+                             "app": a.get("app_name") or a.get("app_id"), "source": a.get("source")})
+        return say_tv(self._tv_spoken(tv).lower().replace(" tv", " TV"), readings)
 
     async def _h_tv_app(self, slots, user_input) -> str:
         app = slots.get("app")
