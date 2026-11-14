@@ -49,10 +49,18 @@ intents:
           - "(set|create|make) (an|a|my|the) {text} alarm"
           - "(set|create|make) (an|a|my|the) alarm {text}"
           - "wake me [up] {text}"
+  # a new time ("change my alarm to 9:50", "from 9 to 9:50", "push it back 10 minutes") or, with a
+  # place instead of a time, a new speaker ("move my alarm to the kitchen")
+  AlarmChange:
+    data:
+      - sentences:
+          - "[can you] [please] (change|move|update|reset|switch|reschedule|adjust|push|bump|shift|fix) [my|the] alarm[s] [time] {text}"
+          - "[can you] [please] (change|move|update|reset|switch|reschedule|adjust|push|bump|shift|fix) [my|the] {old} alarm {text}"
+          - "[can you] [please] (change|move|update|reset|adjust|fix) the time (of|for|on) [my|the] alarm {text}"
+          - "[can you] [please] (make|have) [my|the] alarm {text}"
   AlarmMove:
     data:
       - sentences:
-          - "move [my|the] alarm to {text}"
           - "(ring|play|sound) [my|the] alarm {text}"
           - "(make|have) [my|the] alarm ring {text}"
           - "change [my|the] alarm to ring {text}"
@@ -176,6 +184,8 @@ lists:
   text:
     wildcard: true
   name:
+    wildcard: true
+  old:
     wildcard: true
   # Explicit numbers only: an open wildcard here would steal "add 5 more minutes" from the timer intents.
   # "snooze for N minutes" / "set the snooze to N minutes": any number (capped at 30 when used).

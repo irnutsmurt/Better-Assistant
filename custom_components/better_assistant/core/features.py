@@ -5,6 +5,7 @@ from __future__ import annotations
 import datetime as dt
 import re
 from dataclasses import dataclass, field
+from typing import Any
 
 from .timeparse import fmt_time, parse, say_when
 
@@ -136,6 +137,75 @@ def next_alarm(hour: int, minute: int, repeat: str, after: dt.datetime) -> dt.da
             return cand
         cand += dt.timedelta(days=1)
     return cand
+
+
+_UNITS = r"(?:hours?|hrs?|minutes?|mins?)"
+_AMOUNT = r"(\d+|an?|half an?)"
+_SHIFT_DIR = {"later": 1, "back": 1, "earlier": -1, "up": -1, "sooner": -1}
+_TIME_WORDS = re.compile(r"\d|\b(?:noon|midnight|midday|morning|tonight|tomorrow|weekdays?|weekends?|every|daily|"
+                         r"monday|tuesday|wednesday|thursday|friday|saturday|sunday|one|two|three|four|five|six|"
+                         r"seven|eight|nine|ten|eleven|twelve)\b")
+_DAY_OR_HALF = re.compile(r"\b(?:am|pm|a\.m\.|p\.m\.|noon|midnight|midday|morning|afternoon|evening|tonight|night|"
+                          r"today|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday|every|daily|"
+                          r"weekdays?|weekends?)\b|\d(?:am|pm)\b")
+
+
+def _minutes(amount: str, unit: str) -> int:
+    n = 30 if amount.startswith("half") else 1 if amount in ("a", "an") else int(amount)
+    return n * 60 if unit.startswith("h") and not amount.startswith("half") else n
+
+
+def alarm_change(text: str) -> tuple[str | None, Any, str | None]:
+    """What a change-the-alarm request asks for (the words after "change my alarm"):
+      'to 9:50' / 'from 9 to 9:50' / 'for 9:50 instead'  -> ("time", "9:50", "9" or None)
+      '10 minutes later' / 'back half an hour' / 'an hour earlier' -> ("shift", +10 / +30 / -60, None)
+      'to the kitchen' / 'to ring everywhere'          -> ("place", "the kitchen" / "everywhere", None)
+      anything else                                    -> (None, None, None)"""
+    from .timeparse import words_to_digits  # noqa: PLC0415
+    t = re.sub(r"\s+", " ", text.lower().strip(" ,.?!"))
+    t = re.sub(r"\b(?:instead|please|actually|then)\b", "", t)
+    t = re.sub(r"^(?:time |go off |be )+", "", re.sub(r"\s+", " ", t).strip(" ,"))
+    t = words_to_digits(re.sub(r"\b(?:a )?half (?:an )?hour\b", "30 minutes", t))
+    m = re.match(rf"^(?:to |so it |so that it )?(?:ring|go off|sound|play)s? (.+)$", t)
+    if m and not _TIME_WORDS.search(m.group(1)):
+        return "place", m.group(1).strip(), None
+    m = (re.match(rf"^(?:by )?{_AMOUNT} ?({_UNITS}) (later|back|earlier|up|sooner)$", t)
+         or re.match(rf"^(later|back|earlier|up|sooner) (?:by )?{_AMOUNT} ?({_UNITS})$", t))
+    if m:
+        if m.group(1) in _SHIFT_DIR:
+            direction, amount, unit = m.group(1), m.group(2), m.group(3)
+        else:
+            amount, unit, direction = m.groups()
+        return "shift", _SHIFT_DIR[direction] * _minutes(amount, unit), None
+    old = None
+    t = re.sub(r"^to (?=from )", "", t)                 # "change alarm to from 9 to 9:50" (speech-to-text)
+    m = re.match(r"^from (.+?) (?:to|until|till) (.+)$", t)
+    if m:
+        old, t = m.group(1).strip(), m.group(2).strip()
+    else:
+        t = re.sub(r"^(?:to|for|at|until|till) ", "", t)
+    if not t:
+        return None, None, None
+    if _TIME_WORDS.search(t):
+        return "time", t, old
+    if re.match(r"^(?:on |in )?(?:the |my )?[a-z]", t):
+        return "place", t, None
+    return None, None, None
+
+
+def says_half_of_day(text: str) -> bool:
+    """True when a time says which half of the day or which day it is ("9:50 am", "tomorrow at 7")."""
+    return bool(_DAY_OR_HALF.search(text.lower()))
+
+
+def retime(old: dt.datetime, hour: int, minute: int, now: dt.datetime, ambiguous: bool) -> dt.datetime:
+    """A new clock time for an alarm, on the occurrence closest to the old one ("change my 7 AM alarm
+    tomorrow to 7:30" stays tomorrow morning). ambiguous: no AM/PM said, so 9:50 may be either."""
+    hours = [hour % 12, hour % 12 + 12] if ambiguous else [hour]
+    cands = [old.replace(hour=h, minute=minute, second=0, microsecond=0) + dt.timedelta(days=d)
+             for h in hours for d in (-1, 0, 1)]
+    later = [c for c in cands if c > now] or [c + dt.timedelta(days=1) for c in cands]
+    return min(later, key=lambda c: (abs(c - old), c))
 
 
 def say_alarm(at: dt.datetime, repeat: str, now: dt.datetime) -> str:

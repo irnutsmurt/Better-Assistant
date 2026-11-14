@@ -24,6 +24,7 @@ from .core import intents as sentences
 from .core.features import (
     ALL_SPEAKERS,
     Stopwatch,
+    alarm_change,
     best_note,
     describe_snooze,
     effective_limit,
@@ -33,9 +34,11 @@ from .core.features import (
     parse_reminder,
     resolve_speaker,
     resolve_person,
+    retime,
     say_alarm,
     say_duration,
     say_where,
+    says_half_of_day,
     snooze_decision,
     snooze_length_reply,
     snooze_limit_reply,
@@ -531,6 +534,9 @@ class Skills(HouseSkills, SecuritySkills):
         return None, question or f"I couldn't find a voice speaker called {place}."
 
     async def _h_alarm_set(self, slots: dict, user_input) -> str:
+        kind, _value, old = alarm_change(slots.get("text", ""))
+        if kind == "shift" or (kind == "time" and old):     # "set my alarm 10 minutes later" / "from 9 to 9:50"
+            return await self._h_alarm_change(slots, user_input)
         when_text, place = split_alarm_place(slots.get("text", ""))
         targets, problem = self._place_targets(place, user_input)
         if problem:
@@ -590,6 +596,64 @@ class Skills(HouseSkills, SecuritySkills):
                 cancel()
         self.store.changed()
         return "Okay, your alarm is cancelled." if len(mine) == 1 else f"Okay, I cancelled {len(mine)} alarms."
+
+    async def _h_alarm_change(self, slots: dict, user_input) -> str:
+        """"Change my alarm to 9:50", "from 9 to 9:50", "push it back 10 minutes", or a new speaker."""
+        kind, value, old = alarm_change(slots.get("text") or "")
+        if old is None and slots.get("old") and re.search(r"\d", slots["old"]):
+            old = slots["old"]                               # "change my 9 AM alarm to 9:50"
+        if kind == "place":
+            return await self._h_alarm_move({"text": value}, user_input)
+        if kind is None:
+            return "What time should your alarm be?"
+        now = dt_util.now()
+        local = now.replace(tzinfo=None)
+        mine = self._mine(user_input)
+        if kind == "time" and not mine:
+            reply = await self._h_alarm_set({"text": value}, user_input)
+            return reply if reply.startswith("Sorry") else "You didn't have an alarm, so I set one. " + reply
+        if not mine:
+            return "You don't have an alarm set."
+        key = self._pick_alarm(mine, old, user_input)
+        if key is None:
+            return ("You have more than one alarm. Which one should I change? "
+                    "For example, say change my 7 AM alarm to 7:30.")
+        alarm = self._alarms()[key]
+        was = dt_util.as_local(dt_util.parse_datetime(alarm["next"])).replace(tzinfo=None)
+        repeat = alarm["repeat"]
+        if kind == "shift":
+            at = was + dt.timedelta(minutes=value)
+            if repeat == "once" and at <= local:
+                return "That time has already passed, so I left your alarm as it was."
+        else:
+            parsed, new_repeat = parse(value, local, alarm=True)
+            if not parsed:
+                return "Sorry, I didn't catch the new time for your alarm."
+            if new_repeat != "once":
+                repeat = new_repeat
+            at = parsed if says_half_of_day(value) else retime(was, parsed.hour, parsed.minute, local, True)
+        if repeat != "once":
+            at = next_alarm(at.hour, at.minute, repeat, local)
+        alarm.update(hour=at.hour, minute=at.minute, repeat=repeat,
+                     next=at.replace(tzinfo=now.tzinfo).isoformat())
+        self._snooze_count.pop(key, None)
+        self.store.changed()
+        self._schedule_alarm(key)
+        return f"Okay, your alarm is now set for {say_alarm(at, repeat, local)}."
+
+    def _pick_alarm(self, mine: dict[str, dict], old: str | None, user_input) -> str | None:
+        """Which alarm a change means: the one at the time said ("from 9"), this speaker's, or the only one."""
+        if old and len(mine) > 1:
+            said, _ = parse(old, dt_util.now().replace(tzinfo=None), alarm=True)
+            if said:
+                hits = [k for k, a in mine.items()
+                        if a["minute"] == said.minute and a["hour"] % 12 == said.hour % 12]
+                if len(hits) == 1:
+                    return hits[0]
+        sat = self.satellite_for(user_input)
+        if sat and sat in mine:
+            return sat
+        return next(iter(mine)) if len(mine) == 1 else None
 
     async def _h_alarm_move(self, slots: dict, user_input) -> str:
         _rest, place = split_alarm_place("x " + (slots.get("text") or "").strip())

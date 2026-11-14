@@ -179,7 +179,7 @@ def test_snooze_on_off_vs_limit(text, intent, slots):
     ("set an alarm for 7 on the bedroom speaker", "AlarmSet", "7 on the bedroom speaker"),
     ("set an alarm for 7 everywhere", "AlarmSet", "7 everywhere"),
     ("wake me up at 6 in the kitchen", "AlarmSet", "at 6 in the kitchen"),
-    ("move my alarm to the kitchen", "AlarmMove", "the kitchen"),
+    ("move my alarm to the kitchen", "AlarmChange", "to the kitchen"),
     ("ring my alarm everywhere", "AlarmMove", "everywhere"),
     ("ring my alarm on all speakers", "AlarmMove", "on all speakers"),
 ])

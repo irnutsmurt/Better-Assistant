@@ -73,6 +73,9 @@ def clean(t):
     t = re.sub(r"\b(hours?) and a half\b", r"\1 and 30 minutes", t)
     t = re.sub(r"\b([ap])\.?\s?m\.?", r"\1m", t)          # a.m. / p. m. -> am / pm
     t = t.replace("o'clock", "").replace("oclock", "")
+    # speech-to-text writes "9.50" for nine fifty (not "in 1.50 hours")
+    t = re.sub(r"\b(\d{1,2})\.([0-5]\d)(?:\b|(?=[ap]m))(?!\s?(?:hours?|hrs?|minutes?|mins?|seconds?|secs?|percent|%))",
+               r"\1:\2", t)
     t = re.sub(r"\s+", " ", t)
     t = words_to_digits(t).strip()
     # half past 6 / quarter past 6 / quarter to 7 / 20 past 6 / 10 to 7  ->  6:30, 6:15, 6:45, 6:20, 6:50
