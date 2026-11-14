@@ -244,3 +244,36 @@ async def test_voice_match_covers_every_assistant_with_its_own_engine(hass, monk
     await vt.async_cover_pipelines(hass, entry, False)
     assert pipes["p1"].stt_engine == "stt.faster_whisper" and pipes["p3"].stt_engine == "stt.home_assistant_cloud"
     assert pipes["p2"].stt_engine == "stt.better_assistant_speech_to_text" and store.data["vm_covered"] == {}
+
+
+async def test_label_or_delete_many_recordings_at_once(hass, monkeypatch):
+    root = vmf.voice_dir(hass)
+    a = put(root, "test", "unknown", "20261114T010000Z_1", ROB)
+    b = put(root, "test", "unknown", "20261114T010100Z_2", ROB)
+    c = put(root, "test", "unknown", "20261114T010200Z_3", LEILA)
+    m = matcher(hass)
+    entry = types.SimpleNamespace(options={}, runtime_data=types.SimpleNamespace(matcher=m, trainer=object(), skills=object()))
+    monkeypatch.setattr(voice_panel, "_entry", lambda h: entry)
+
+    class Conn:
+        user, refresh_token_id, out, err = types.SimpleNamespace(id="u-admin", is_admin=True), None, None, None
+        def send_result(self, i, r=None): self.out = r
+        def send_error(self, i, code, text): self.err = (code, text)
+
+    conn = Conn()
+    voice_panel.ws_clip_action(hass, conn, {"id": 1, "action": "assign", "person": "person.rob",
+                                            "clips": ["test~unknown~20261114T010000Z_1", "test~unknown~20261114T010100Z_2"]})
+    for _ in range(200):
+        if conn.out is not None or conn.err:
+            break
+        await asyncio.sleep(0.01)
+    assert conn.err is None and not a.exists() and not b.exists()
+    assert (root / "test" / "rob" / "20261114T010000Z_1.wav").exists() and (root / "test" / "rob" / "20261114T010100Z_2.wav").exists()
+    conn = Conn()
+    voice_panel.ws_clip_action(hass, conn, {"id": 2, "action": "delete",
+                                            "clips": ["test~unknown~20261114T010200Z_3", "test~rob~20261114T010000Z_1"]})
+    for _ in range(200):
+        if conn.out is not None or conn.err:
+            break
+        await asyncio.sleep(0.01)
+    assert conn.err is None and not c.exists() and not (root / "test" / "rob" / "20261114T010000Z_1.wav").exists()

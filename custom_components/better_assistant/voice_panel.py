@@ -187,7 +187,8 @@ async def ws_clips(hass: HomeAssistant, connection: websocket_api.ActiveConnecti
 
 @websocket_api.websocket_command({vol.Required("type"): "better_assistant/voice/clip_action",
                                   vol.Required("action"): vol.In(["assign", "delete", "delete_person"]),
-                                  vol.Optional("clip"): str, vol.Optional("person"): str})
+                                  vol.Optional("clip"): str, vol.Optional("clips"): [str],
+                                  vol.Optional("person"): str})
 @websocket_api.async_response
 async def ws_clip_action(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
     """assign a clip to a person (or "other"), delete a clip, or delete everything of one person."""
@@ -210,22 +211,31 @@ async def ws_clip_action(hass: HomeAssistant, connection: websocket_api.ActiveCo
                 if vmf.read_meta(w).get("person") == person:
                     vmf.delete_clip(w)
             return None
-        wav = vmf.clip_path(root, msg.get("clip", ""))
-        if wav is None:
-            return "That recording is gone."
-        meta = vmf.read_meta(wav)
-        if not _may_see(hass, user, meta):
-            return "You can't change that recording."
-        if msg["action"] == "delete":
-            vmf.delete_clip(wav)
-            return None
-        if not person:
+        ids = list(msg.get("clips") or []) + ([msg["clip"]] if msg.get("clip") else [])
+        if not ids:
+            return "Pick a recording."
+        if msg["action"] == "assign" and not person:
             return "Pick a person."
-        label = wav.parent.parent.name
-        new_label = vmf.OTHER if person == vmf.OTHER else (TRAIN if label == TRAIN else TEST)
-        meta.update(person=person, confirmed=person)
-        vmf.write_meta(wav, meta)
-        vmf.move_clip(root, wav, new_label, person)
+        problems = []
+        for cid in ids:                                 # one or many ("these were all Rob")
+            wav = vmf.clip_path(root, cid)
+            if wav is None:
+                problems.append("That recording is gone.")
+                continue
+            meta = vmf.read_meta(wav)
+            if not _may_see(hass, user, meta):
+                problems.append("You can't change that recording.")
+                continue
+            if msg["action"] == "delete":
+                vmf.delete_clip(wav)
+                continue
+            label = wav.parent.parent.name
+            new_label = vmf.OTHER if person == vmf.OTHER else (TRAIN if label == TRAIN else TEST)
+            meta.update(person=person, confirmed=person)
+            vmf.write_meta(wav, meta)
+            vmf.move_clip(root, wav, new_label, person)
+        if problems and len(problems) == len(ids):
+            return problems[0]
         return None
 
     problem = await hass.async_add_executor_job(act)

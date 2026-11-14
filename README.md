@@ -284,7 +284,9 @@ once from this project's GitHub repository and checked against a checksum. Nothi
 - **"Who am I?"** (or "do you recognise my voice") answers with who voice match heard: "You sound like
   Rob.", "I'm not sure…" or "I don't recognise your voice."
 - **Recordings tab:** what your speakers heard and who voice match thought it was, with **Play**,
-  **That was…** (a person, or "Someone else / the TV") and **Delete**. Labelling a recording teaches voice
+  **That was…** (a person, or "Someone else / the TV") and **Delete**, one at a time or ticked together
+  ("Select all shown" works with the filters: by person, not sure who, not labelled yet, training, someone
+  else; sorted newest, oldest or weakest match first). Labelling a recording teaches voice
   match. Administrators see everyone's recordings; other users only their own and unassigned ones.
   Unlabelled everyday recordings are deleted after 14 days. **Delete voice** forgets a person entirely.
 - **Turn off voice match** on the same card stops it listening for voices and recording everyday

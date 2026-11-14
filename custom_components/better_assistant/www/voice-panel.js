@@ -61,6 +61,12 @@ const CSS = `
            color: var(--primary-text-color); border: 1px solid var(--divider-color); }
   .filters { display: flex; gap: 8px; margin-bottom: 4px; align-items: center; flex-wrap: wrap; }
   .count { color: var(--secondary-text-color); font-size: 13px; margin-left: auto; }
+  .bulk { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 8px 0; font-size: 14px; }
+  .bulk.on { position: sticky; top: 0; z-index: 1; background: var(--card-background-color);
+             border-bottom: 1px solid var(--primary-color); }
+  .pickall { color: var(--secondary-text-color); display: flex; gap: 6px; align-items: center; margin-right: 8px; }
+  .clip.picked { background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.08); }
+  input.pick { width: 18px; height: 18px; margin: 0 4px 0 0; align-self: center; }
   .empty { color: var(--secondary-text-color); padding: 12px 0; }
 `;
 
@@ -70,7 +76,7 @@ class BetterAssistantVoicePanel extends HTMLElement {
     this.attachShadow({ mode: "open" });
     this._view = null; this._error = ""; this._busy = false;
     this._tab = "training"; this._clips = null; this._loading = false;
-    this._people = []; this._filter = "all"; this._sort = "newest";
+    this._people = []; this._filter = "all"; this._sort = "newest"; this._picked = new Set();
   }
 
   set hass(hass) {
@@ -120,11 +126,13 @@ class BetterAssistantVoicePanel extends HTMLElement {
   }
 
   async _clipAction(action, id, person) {
-    if (action === "delete" && !confirm("Delete this recording?")) return;
+    const many = Array.isArray(id);
+    if (action === "delete" && !confirm(many ? `Delete ${id.length} recordings?` : "Delete this recording?")) return;
     if (action === "delete_person" && !confirm("Delete every recording of this voice? Voice match will forget them.")) return;
     try {
       await this._hass.callWS({ type: "better_assistant/voice/clip_action", action,
-                                ...(id ? { clip: id } : {}), ...(person ? { person } : {}) });
+                                ...(many ? { clips: id } : id ? { clip: id } : {}), ...(person ? { person } : {}) });
+      if (many) this._picked.clear();
     } catch (err) { this._error = err.message || String(err); }
     this._clips = null; this._render();
   }
@@ -239,6 +247,19 @@ class BetterAssistantVoicePanel extends HTMLElement {
     return clips;
   }
 
+  _bulk(clips, opts) {
+    // keep only picks that still exist; "Select all" means the ones shown
+    const ids = new Set(this._clips.map((c) => c.id));
+    for (const id of [...this._picked]) if (!ids.has(id)) this._picked.delete(id);
+    const n = this._picked.size;
+    const all = clips.length && clips.every((c) => this._picked.has(c.id));
+    const pickAll = `<label class="pickall"><input type="checkbox" data-pick-all="1" ${all ? "checked" : ""}> Select all shown</label>`;
+    if (!n) return `<div class="bulk">${pickAll}</div>`;
+    return `<div class="bulk on">${pickAll}<b>${n} selected:</b>
+      <select data-bulk-assign="1"><option value="">That was…</option>${opts}<option value="other">Someone else / the TV</option></select>
+      <button class="small danger" data-bulk-delete="1">Delete</button><button class="small" data-bulk-clear="1">Clear</button></div>`;
+  }
+
   _recordings() {
     if (this._clips === null) { this._loadClips(); return `<div class="card"><p class="lead">Loading…</p></div>`; }
     const clips = this._shown();
@@ -262,7 +283,9 @@ class BetterAssistantVoicePanel extends HTMLElement {
       const meta = [this._when(c.when), c.speaker, c.seconds ? `${c.seconds}s` : "",
                     c.match && typeof c.match.score === "number" ? `match ${Math.round(c.match.score * 100)}` : ""]
         .filter(Boolean).join(" · ");
-      return `<div class="clip"><div class="line1"><span class="heard">“${this._esc(c.transcript || "…")}”</span>${this._chip(c)}</div>
+      const on = this._picked.has(c.id) ? "checked" : "";
+      return `<div class="clip ${on ? "picked" : ""}"><div class="line1"><input type="checkbox" class="pick" data-pick="${this._esc(c.id)}" ${on}>
+        <span class="heard">“${this._esc(c.transcript || "…")}”</span>${this._chip(c)}</div>
         <div class="meta">${this._esc(meta)}</div>
         <div class="acts"><button class="small" data-play="${this._esc(c.url)}">▶ Play</button>
           <select data-assign="${this._esc(c.id)}"><option value="">That was…</option>${opts}
@@ -273,6 +296,7 @@ class BetterAssistantVoicePanel extends HTMLElement {
       <p class="lead">What your speakers heard and who voice match thought it was. Fix a mistake with
         "That was…" and voice match learns from it. Everyday recordings are deleted after 14 days unless you label them.</p>
       <div class="filters">${filters}</div>
+      ${this._bulk(clips, opts)}
       ${rows}</div>`;
   }
 
@@ -295,6 +319,13 @@ class BetterAssistantVoicePanel extends HTMLElement {
       this.shadowRoot.addEventListener("change", (ev) => {
         const d = ev.target.dataset || {};
         if (d.assign && ev.target.value) this._clipAction("assign", d.assign, ev.target.value);
+        else if (d.pick) { ev.target.checked ? this._picked.add(d.pick) : this._picked.delete(d.pick); this._render(); }
+        else if (d.pickAll) {
+          const shown = this._shown().map((c) => c.id);
+          shown.forEach((id) => (ev.target.checked ? this._picked.add(id) : this._picked.delete(id)));
+          this._render();
+        }
+        else if (d.bulkAssign && ev.target.value) this._clipAction("assign", [...this._picked], ev.target.value);
         else if (d.filterSelect) { this._filter = ev.target.value; this._render(); }
         else if (d.sortSelect) { this._sort = ev.target.value; this._render(); }
       });
@@ -319,6 +350,8 @@ class BetterAssistantVoicePanel extends HTMLElement {
       });
     }
     else if (d.delete) this._clipAction("delete", d.delete);
+    else if (d.bulkDelete) this._clipAction("delete", [...this._picked]);
+    else if (d.bulkClear) { this._picked.clear(); this._render(); }
     else if (d.delPerson) this._clipAction("delete_person", null, d.p);
   }
 
