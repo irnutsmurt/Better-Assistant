@@ -69,7 +69,7 @@ class BetterAssistantVoicePanel extends HTMLElement {
     this.attachShadow({ mode: "open" });
     this._view = null; this._error = ""; this._busy = false;
     this._tab = "training"; this._clips = null; this._loading = false;
-    this._people = []; this._filter = "all"; this._audio = null;
+    this._people = []; this._filter = "all";
   }
 
   set hass(hass) {
@@ -248,7 +248,7 @@ class BetterAssistantVoicePanel extends HTMLElement {
       this.shadowRoot.innerHTML = `<style>${CSS}</style>
         <div class="top"><ha-menu-button></ha-menu-button><span class="title">Voice training</span></div>
         <div class="tabs"><button class="tab" data-tab="training">Training</button><button class="tab" data-tab="recordings">Recordings</button></div>
-        <div class="wrap"></div>`;
+        <div class="wrap"></div><audio class="player" preload="none"></audio>`;
       this._menu = this.shadowRoot.querySelector("ha-menu-button");
       this._menu.hass = this._hass; this._menu.narrow = this._narrow;
       this.shadowRoot.addEventListener("click", (ev) => this._click(ev));
@@ -269,9 +269,13 @@ class BetterAssistantVoicePanel extends HTMLElement {
     else if (d.a) this._act(d.a);
     else if (d.filter) { this._filter = d.filter; this._render(); }
     else if (d.play) {
-      if (this._audio) this._audio.pause();
-      this._audio = new Audio(d.play);
-      this._audio.play().catch((e) => { this._error = `Couldn't play it: ${e}`; this._render(); });
+      // one player kept outside the part that redraws, so moving or deleting doesn't cut it off
+      const player = this.shadowRoot.querySelector("audio.player");
+      player.pause(); player.src = d.play;
+      player.play().catch((e) => {
+        if (e && e.name === "AbortError") return;           // interrupted by the next Play: not a problem
+        this._error = `Couldn't play it: ${e}`; this._render();
+      });
     }
     else if (d.delete) this._clipAction("delete", d.delete);
     else if (d.delPerson) this._clipAction("delete_person", null, d.p);
