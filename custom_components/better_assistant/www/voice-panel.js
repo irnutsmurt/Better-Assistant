@@ -59,7 +59,8 @@ const CSS = `
   .clip .acts { display: flex; gap: 8px; align-items: center; margin-top: 8px; flex-wrap: wrap; }
   select { font: inherit; font-size: 13px; padding: 5px 8px; border-radius: 10px; background: var(--card-background-color);
            color: var(--primary-text-color); border: 1px solid var(--divider-color); }
-  .filters { display: flex; gap: 8px; margin-bottom: 4px; }
+  .filters { display: flex; gap: 8px; margin-bottom: 4px; align-items: center; flex-wrap: wrap; }
+  .count { color: var(--secondary-text-color); font-size: 13px; margin-left: auto; }
   .empty { color: var(--secondary-text-color); padding: 12px 0; }
 `;
 
@@ -69,7 +70,7 @@ class BetterAssistantVoicePanel extends HTMLElement {
     this.attachShadow({ mode: "open" });
     this._view = null; this._error = ""; this._busy = false;
     this._tab = "training"; this._clips = null; this._loading = false;
-    this._people = []; this._filter = "all";
+    this._people = []; this._filter = "all"; this._sort = "newest";
   }
 
   set hass(hass) {
@@ -214,25 +215,64 @@ class BetterAssistantVoicePanel extends HTMLElement {
     return `<span class="chip">Not checked</span>`;
   }
 
+  _who(c) {
+    // the person a recording belongs to: labelled / training first, then who it sounded like
+    if (c.label === "other") return "other";
+    if (c.confirmed || c.label === "train") return c.person;
+    return c.match && c.match.person ? c.match.person : null;
+  }
+
+  _shown() {
+    const f = this._filter;
+    const keep = (c) => {
+      if (f === "all") return true;
+      if (f === "unsure") return c.label === "test" && !c.confirmed && !(c.match && c.match.person);
+      if (f === "unlabelled") return c.label === "test" && !c.confirmed;
+      if (f === "train") return c.label === "train";
+      if (f === "other") return c.label === "other";
+      return this._who(c) === f;                            // a person
+    };
+    const score = (c) => (c.match && typeof c.match.score === "number" ? c.match.score : 2);
+    const clips = this._clips.filter(keep);
+    if (this._sort === "oldest") clips.reverse();
+    else if (this._sort === "weakest") clips.sort((a, b) => score(a) - score(b));
+    return clips;
+  }
+
   _recordings() {
     if (this._clips === null) { this._loadClips(); return `<div class="card"><p class="lead">Loading…</p></div>`; }
-    const unsure = (c) => c.label === "test" && !c.confirmed && !(c.match && c.match.person);
-    const clips = this._clips.filter((c) => this._filter === "all" || unsure(c));
+    const clips = this._shown();
     const opts = this._people.map((p) => `<option value="${this._esc(p.person)}">${this._esc(p.name)}</option>`).join("");
+    const sel = (v) => (this._filter === v ? "selected" : "");
+    const filters = `<select data-filter-select="1">
+        <option value="all" ${sel("all")}>All recordings</option>
+        <option value="unsure" ${sel("unsure")}>Not sure who</option>
+        <option value="unlabelled" ${sel("unlabelled")}>Not labelled yet</option>
+        <option value="train" ${sel("train")}>Training</option>
+        <option value="other" ${sel("other")}>Someone else / the TV</option>
+        ${this._people.map((p) => `<option value="${this._esc(p.person)}" ${sel(p.person)}>${this._esc(p.name)}</option>`).join("")}
+      </select>
+      <select data-sort-select="1">
+        <option value="newest" ${this._sort === "newest" ? "selected" : ""}>Newest first</option>
+        <option value="oldest" ${this._sort === "oldest" ? "selected" : ""}>Oldest first</option>
+        <option value="weakest" ${this._sort === "weakest" ? "selected" : ""}>Weakest match first</option>
+      </select>
+      <span class="count">${clips.length} of ${this._clips.length}</span>`;
     const rows = clips.map((c) => {
-      const meta = [this._when(c.when), c.speaker, c.seconds ? `${c.seconds}s` : ""].filter(Boolean).join(" · ");
+      const meta = [this._when(c.when), c.speaker, c.seconds ? `${c.seconds}s` : "",
+                    c.match && typeof c.match.score === "number" ? `match ${Math.round(c.match.score * 100)}` : ""]
+        .filter(Boolean).join(" · ");
       return `<div class="clip"><div class="line1"><span class="heard">“${this._esc(c.transcript || "…")}”</span>${this._chip(c)}</div>
         <div class="meta">${this._esc(meta)}</div>
         <div class="acts"><button class="small" data-play="${this._esc(c.url)}">▶ Play</button>
           <select data-assign="${this._esc(c.id)}"><option value="">That was…</option>${opts}
             <option value="other">Someone else / the TV</option></select>
           <button class="small danger" data-delete="${this._esc(c.id)}">Delete</button></div></div>`;
-    }).join("") || `<p class="empty">${this._filter === "all" ? "No recordings yet." : "Nothing to check."}</p>`;
+    }).join("") || `<p class="empty">${this._filter === "all" ? "No recordings yet." : "Nothing here."}</p>`;
     return `<div class="card"><h3>Recordings</h3>
       <p class="lead">What your speakers heard and who voice match thought it was. Fix a mistake with
         "That was…" and voice match learns from it. Everyday recordings are deleted after 14 days unless you label them.</p>
-      <div class="filters"><button class="small ${this._filter === "all" ? "picked" : ""}" data-filter="all">All</button>
-        <button class="small ${this._filter === "unsure" ? "picked" : ""}" data-filter="unsure">Not sure who</button></div>
+      <div class="filters">${filters}</div>
       ${rows}</div>`;
   }
 
@@ -253,8 +293,10 @@ class BetterAssistantVoicePanel extends HTMLElement {
       this._menu.hass = this._hass; this._menu.narrow = this._narrow;
       this.shadowRoot.addEventListener("click", (ev) => this._click(ev));
       this.shadowRoot.addEventListener("change", (ev) => {
-        const id = ev.target.dataset && ev.target.dataset.assign;
-        if (id && ev.target.value) this._clipAction("assign", id, ev.target.value);
+        const d = ev.target.dataset || {};
+        if (d.assign && ev.target.value) this._clipAction("assign", d.assign, ev.target.value);
+        else if (d.filterSelect) { this._filter = ev.target.value; this._render(); }
+        else if (d.sortSelect) { this._sort = ev.target.value; this._render(); }
       });
     }
     this.shadowRoot.querySelectorAll(".tab").forEach((t) => t.classList.toggle("on", t.dataset.tab === this._tab));
@@ -267,7 +309,6 @@ class BetterAssistantVoicePanel extends HTMLElement {
     const d = b.dataset;
     if (d.tab) { this._tab = d.tab; if (d.tab === "recordings") this._clips = null; this._error = ""; this._render(); }
     else if (d.a) this._act(d.a);
-    else if (d.filter) { this._filter = d.filter; this._render(); }
     else if (d.play) {
       // one player kept outside the part that redraws, so moving or deleting doesn't cut it off
       const player = this.shadowRoot.querySelector("audio.player");
