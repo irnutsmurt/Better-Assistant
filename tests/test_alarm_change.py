@@ -98,6 +98,7 @@ def _skills(alarms):
 
 
 def _alarm(hour, minute, repeat="once", days=0):
+    pytest.importorskip("homeassistant")
     from homeassistant.util import dt as dt_util
     now = dt_util.now()
     at = (now + dt.timedelta(days=days or 1)).replace(hour=hour, minute=minute, second=0, microsecond=0)
