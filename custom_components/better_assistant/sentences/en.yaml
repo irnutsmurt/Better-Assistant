@@ -49,6 +49,22 @@ intents:
           - "(set|create|make) (an|a|my|the) {text} alarm"
           - "(set|create|make) (an|a|my|the) alarm {text}"
           - "wake me [up] {text}"
+      - sentences:
+          - "(set|create|make) (a|an|my) music alarm [for|at|in] {text}"
+        slots:
+          music: "default"
+  # what alarms play: "change my wake-up music to jazz", "make my alarm play my morning playlist"
+  AlarmMusic:
+    data:
+      - sentences:
+          - "[please] (change|set|switch|make|update) [my|the] (alarm|alarms|wake up|wake-up|wakeup) (music|sound|song|tone|ringtone) (to|for) {text}"
+          - "[please] (make|have) [my|the] alarm[s] play {text}"
+          - "[please] use {text} (for|as) [my|the] (alarm|alarms|wake up music|wake-up music|alarm sound)"
+      - sentences:
+          - "[please] (what|which) (music|song|sound) (does|will) my alarm play"
+          - "what's my (wake up|wake-up|alarm) (music|sound)"
+        slots:
+          query: "yes"
   # a new time ("change my alarm to 9:50", "from 9 to 9:50", "push it back 10 minutes") or, with a
   # place instead of a time, a new speaker ("move my alarm to the kitchen")
   AlarmChange:

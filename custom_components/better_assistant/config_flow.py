@@ -47,6 +47,7 @@ from .const import (
     OPT_QUESTION_GUARD,
     OPT_SETTINGS,
     OPT_SNOOZE,
+    OPT_ALARM_MUSIC,
     OPT_ALARM_SPEAKER,
     OPT_SNOOZE_ENABLED,
     OPT_SNOOZE_LIMIT,
@@ -222,7 +223,8 @@ class BetterAssistantOptionsFlow(VoiceSetupMixin, OptionsFlow):
                                               user_input.get(OPT_SNOOZE_LIMIT))   # 0 = snoozing off
             return self._save({OPT_SNOOZE: int(user_input[OPT_SNOOZE]), OPT_SNOOZE_ENABLED: enabled,
                                OPT_SNOOZE_LIMIT: limit,
-                               OPT_ALARM_SPEAKER: user_input.get(OPT_ALARM_SPEAKER) or None})
+                               OPT_ALARM_SPEAKER: user_input.get(OPT_ALARM_SPEAKER) or None,
+                               OPT_ALARM_MUSIC: (user_input.get(OPT_ALARM_MUSIC) or "").strip()})
         schema = vol.Schema({
             vol.Required(OPT_SNOOZE, default=self._opt(OPT_SNOOZE)): NumberSelector(
                 NumberSelectorConfig(min=1, max=30, step=1, unit_of_measurement="min",
@@ -233,6 +235,8 @@ class BetterAssistantOptionsFlow(VoiceSetupMixin, OptionsFlow):
             # empty = the speaker you asked from
             vol.Optional(OPT_ALARM_SPEAKER, description={"suggested_value": self._opt(OPT_ALARM_SPEAKER)}):
                 SelectSelector(SelectSelectorConfig(options=self._speaker_options(), mode=SelectSelectorMode.DROPDOWN)),
+            # empty = the bundled tone; anything you'd say after "play" (needs Music Assistant)
+            vol.Optional(OPT_ALARM_MUSIC, description={"suggested_value": self._opt(OPT_ALARM_MUSIC)}): TextSelector(),
         })
         return self.async_show_form(step_id="alarms", data_schema=schema)
 

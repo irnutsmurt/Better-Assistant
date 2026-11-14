@@ -160,13 +160,17 @@ def alarm_change(text: str) -> tuple[str | None, Any, str | None]:
       'to 9:50' / 'from 9 to 9:50' / 'for 9:50 instead'  -> ("time", "9:50", "9" or None)
       '10 minutes later' / 'back half an hour' / 'an hour earlier' -> ("shift", +10 / +30 / -60, None)
       'to the kitchen' / 'to ring everywhere'          -> ("place", "the kitchen" / "everywhere", None)
+      'to play jazz'                                   -> ("music", "jazz", None)
       anything else                                    -> (None, None, None)"""
     from .timeparse import words_to_digits  # noqa: PLC0415
     t = re.sub(r"\s+", " ", text.lower().strip(" ,.?!"))
     t = re.sub(r"\b(?:instead|please|actually|then)\b", "", t)
     t = re.sub(r"^(?:time |go off |be )+", "", re.sub(r"\s+", " ", t).strip(" ,"))
     t = words_to_digits(re.sub(r"\b(?:a )?half (?:an )?hour\b", "30 minutes", t))
-    m = re.match(rf"^(?:to |so it |so that it )?(?:ring|go off|sound|play)s? (.+)$", t)
+    m = re.match(r"^(?:to |so it |so that it )?plays? (.+)$", t)
+    if m:
+        return "music", m.group(1).strip(), None             # "change my alarm to play jazz"
+    m = re.match(rf"^(?:to |so it |so that it )?(?:ring|go off|sound)s? (.+)$", t)
     if m and not _TIME_WORDS.search(m.group(1)):
         return "place", m.group(1).strip(), None
     m = (re.match(rf"^(?:by )?{_AMOUNT} ?({_UNITS}) (later|back|earlier|up|sooner)$", t)
@@ -191,6 +195,48 @@ def alarm_change(text: str) -> tuple[str | None, Any, str | None]:
     if re.match(r"^(?:on |in )?(?:the |my )?[a-z]", t):
         return "place", t, None
     return None, None, None
+
+
+DEFAULT_MUSIC = "default"          # "with music": the wake-up music from the options (else what played last)
+TONE = "tone"                      # "with the normal sound": the bundled tone even when wake-up music is set
+_GENERIC_MUSIC = re.compile(r"^(?:some |my |the )?(?:music|songs|tunes)$")
+_TONE_WORDS = re.compile(r"^(?:the )?(?:normal |regular |usual |default )?(?:tone|beep|beeps|alarm sound|sound|ringtone)$")
+_WHEN_START = r"(?:at|for|in|on|tomorrow|tonight|today|every|daily|this|next|noon|midnight|\d)\b"
+
+
+def split_alarm_music(text: str) -> tuple[str, str | None]:
+    """What to wake up to, taken out of an alarm request:
+      'to taylor swift at 7'            -> ('at 7', 'taylor swift')    ("wake me up to Taylor Swift at 7")
+      'for 7 with my morning playlist'  -> ('for 7', 'my morning playlist')
+      'for 7 playing jazz'              -> ('for 7', 'jazz')
+      'at 7 with music'                 -> ('at 7', 'default')
+      'for 7 with the normal tone'      -> ('for 7', 'tone')
+      'for 7'                           -> ('for 7', None)"""
+    t = re.sub(r"\s+", " ", text.strip(" ,.?!"))
+    music = None
+    m = re.match(rf"^(?:up )?to (?!{_WHEN_START})(?P<music>.+?) (?P<when>{_WHEN_START}.*)$", t, re.I)
+    if m and not re.search(r"\d|\b(?:o'clock|am|pm)\b", m.group("music"), re.I):
+        t, music = m.group("when"), m.group("music")
+    else:
+        m = re.search(r"(?:^|,? )(?:with|playing|and play|to the sound of|to music by|to the music of) (?P<music>.+)$",
+                      t, re.I)
+        if m:
+            t, music = t[:m.start()].strip(" ,"), m.group("music")
+            later = re.match(r"^(?P<music>.+?),? (?P<when>(?:(?:at|for|on|tomorrow|tonight|every|daily)\b.*?\d.*|"
+                             r"(?:at )?(?:noon|midnight)\b.*|(?:tomorrow|tonight)\b.*))$", music, re.I)
+            if later:                                   # "wake me up with jazz at 7"
+                music, t = later.group("music"), f"{t} {later.group('when')}".strip()
+    if music is None:
+        return t, None
+    rest, place = split_alarm_place("x " + music)      # "with jazz in the kitchen": the place stays with the time
+    if place:
+        music, t = rest[2:], f"{t} {'everywhere' if place == ALL_SPEAKERS else 'in the ' + place}"
+    music = music.strip(" ,").lower()
+    if _GENERIC_MUSIC.match(music):
+        return t, DEFAULT_MUSIC
+    if _TONE_WORDS.match(music):
+        return t, TONE
+    return t, music
 
 
 def says_half_of_day(text: str) -> bool:

@@ -139,6 +139,10 @@ def classify(snap: Snapshot, outdoor_areas: list[str] | None = None) -> dict[str
     for s in h.of("assist_satellite"):
         here = next((p.entity_id for p in ma_players if s.device_id and p.device_id == s.device_id), None)
         own = h.by_device.get(s.device_id or "", [])
+        # Music Assistant often puts its player on its own device with the speaker's name and no area
+        name = (h.device(s).name if h.device(s) else "").strip().lower()
+        here = here or next((p.entity_id for p in ma_players if name and h.device(p)
+                             and (h.device(p).name or "").strip().lower() == name), None)
         here = here or next((p.entity_id for p in ma_players if h.area(p) and h.area(p) == h.area(s)), None)
         satellites.append({"entity_id": s.entity_id, "device_id": s.device_id, "area_id": h.area(s),
                            "here_player": here,

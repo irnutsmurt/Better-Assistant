@@ -65,6 +65,13 @@ def test_satellite_and_here_player(house):
     assert {"entity_id": "media_player.living_speaker", "area_id": "living"} in d["music_players"]
 
 
+def test_here_player_by_device_name(house):
+    """Music Assistant's player for a voice speaker: its own device, same name, no area."""
+    house.devices["ma9"] = Device("ma9", name=house.devices["sat1"].name)
+    house.entities.append(Entity("media_player.voice_box_music", platform="music_assistant", device_id="ma9"))
+    assert classify(house)["satellites"][0]["here_player"] == "media_player.voice_box_music"
+
+
 def test_here_player_falls_back_to_same_area(house):
     assert classify(house)["satellites"][0]["here_player"] == "media_player.living_speaker"
     house.devices["ma1"].area_id = "bedroom"

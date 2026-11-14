@@ -17,6 +17,7 @@ OPT_MAX_PARTS = "max_compound_parts"
 OPT_OVERRIDES = "overrides"
 OPT_SNOOZE = "snooze_minutes"
 OPT_ALARM_SPEAKER = "alarm_speaker"        # None = the speaker asked from, "all", or a satellite entity id
+OPT_ALARM_MUSIC = "alarm_music"            # what alarms play through Music Assistant ("" = the bundled tone)
 OPT_SNOOZE_ENABLED = "snooze_enabled"      # False: no snoozing at all
 OPT_SNOOZE_LIMIT = "snooze_limit"          # 1-10 snoozes per alarm, or None for unlimited
 OPT_VOICE_PENDING = "voice_pending"        # voice setup chosen during first setup, carried out once loaded

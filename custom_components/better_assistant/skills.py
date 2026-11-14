@@ -19,10 +19,12 @@ from homeassistant.helpers.event import async_track_point_in_time, async_track_s
 from homeassistant.helpers.network import NoURLAvailableError, get_url
 from homeassistant.util import dt as dt_util
 
-from .const import ALARM_URL, DEFAULTS, OPT_ALARM_SPEAKER, OPT_SNOOZE, OPT_SNOOZE_ENABLED, OPT_SNOOZE_LIMIT, RING_MINUTES
+from .const import ALARM_URL, DEFAULTS, OPT_ALARM_MUSIC, OPT_ALARM_SPEAKER, OPT_SNOOZE, OPT_SNOOZE_ENABLED, OPT_SNOOZE_LIMIT, RING_MINUTES
 from .core import intents as sentences
 from .core.features import (
     ALL_SPEAKERS,
+    DEFAULT_MUSIC,
+    TONE,
     Stopwatch,
     alarm_change,
     best_note,
@@ -42,10 +44,12 @@ from .core.features import (
     snooze_decision,
     snooze_length_reply,
     snooze_limit_reply,
+    split_alarm_music,
     split_alarm_place,
     sentence,
 )
 from .core.intents import TIMER_INTENTS, Match
+from .core.music import parse_music_query
 from .core.timeparse import fmt_time, parse, say_when
 from .discovery import effective_section
 from .house import GUEST_REPLY, HouseSkills
@@ -76,6 +80,7 @@ class Skills(HouseSkills, SecuritySkills):
         self._snooze_count: dict[str, int] = {}              # alarm key -> snoozes taken while ringing
         self._ring_targets: dict[str, Any] = {}              # alarm key -> targets it is ringing on
         self._ring_meta: dict[str, dict] = {}
+        self._ring_music: dict[str, list[str]] = {}          # alarm key -> Music Assistant players playing it
         self.followup = False                                # ask the speaker to keep listening
 
     # ------------------------------------------------------------ lifecycle
@@ -537,7 +542,9 @@ class Skills(HouseSkills, SecuritySkills):
         kind, _value, old = alarm_change(slots.get("text", ""))
         if kind == "shift" or (kind == "time" and old):     # "set my alarm 10 minutes later" / "from 9 to 9:50"
             return await self._h_alarm_change(slots, user_input)
-        when_text, place = split_alarm_place(slots.get("text", ""))
+        rest, music = split_alarm_music(slots.get("text", ""))
+        music = music or slots.get("music")                 # "set a music alarm for 7"
+        when_text, place = split_alarm_place(rest)
         targets, problem = self._place_targets(place, user_input)
         if problem:
             return problem
@@ -552,11 +559,52 @@ class Skills(HouseSkills, SecuritySkills):
         alarms[key] = {"targets": targets, "hour": at.hour, "minute": at.minute, "repeat": repeat,
                        "next": at.isoformat(), "person": self.speaker_person(user_input),
                        "origin": self.satellite_for(user_input)}
+        if music:
+            alarms[key]["music"] = music
         self.store.changed()
         self._schedule_alarm(key)
         said = say_alarm(at.replace(tzinfo=None), repeat, now.replace(tzinfo=None))
-        return f"Your alarm is set for {said} {self._where(targets)}." + (
+        return f"Your alarm is set for {said} {self._where(targets)}." + self._say_music(music) + (
             " That replaces the one that was there." if replaced else "")
+
+    def _wake_music(self, music: str | None) -> str | None:
+        """What an alarm plays: None = the tone, "" = whatever played last, else a request ("jazz")."""
+        default = (self.entry.options.get(OPT_ALARM_MUSIC) or "").strip()
+        if music == TONE:
+            return None
+        if music == DEFAULT_MUSIC:
+            return default
+        return music or default or None
+
+    def _say_music(self, music: str | None) -> str:
+        if not music or music == TONE:
+            return ""
+        if not self._ma_ready():
+            return " Music Assistant isn't set up, so it will ring with the alarm tone."
+        play = self._wake_music(music)
+        return f" It will play {flip_pronouns(play)}." if play else " It will play your music."
+
+    async def _h_alarm_music(self, slots: dict, user_input) -> str:
+        """"Change my wake-up music to jazz": the default for every alarm, and this speaker's alarms now."""
+        if slots.get("query"):
+            play = self._wake_music(None)
+            mine = [a.get("music") for a in self._mine(user_input).values() if a.get("music")]
+            if mine and mine[0] not in (TONE, DEFAULT_MUSIC):
+                return f"Your alarm will play {flip_pronouns(mine[0])}."
+            return f"Your alarms play {flip_pronouns(play)}." if play else "Your alarms ring with the alarm tone."
+        _rest, music = split_alarm_music("with " + (slots.get("text") or "").strip())
+        if not music or music == DEFAULT_MUSIC:
+            return "What should your alarm play? For example, say change my wake-up music to my morning playlist."
+        value = "" if music == TONE else music
+        self.hass.config_entries.async_update_entry(self.entry, options={**self.entry.options, OPT_ALARM_MUSIC: value})
+        for alarm in self._mine(user_input).values():
+            alarm.pop("music", None)
+        self.store.changed()
+        if not value:
+            return "Okay, your alarms will ring with the alarm tone."
+        if not self._ma_ready():
+            return f"Okay, I'll remember {flip_pronouns(value)}, but Music Assistant isn't set up, so alarms will ring with the tone."
+        return f"Okay, your alarms will play {flip_pronouns(value)}."
 
     def _mine(self, user_input) -> dict[str, dict]:
         sat = self.satellite_for(user_input)
@@ -604,6 +652,8 @@ class Skills(HouseSkills, SecuritySkills):
             old = slots["old"]                               # "change my 9 AM alarm to 9:50"
         if kind == "place":
             return await self._h_alarm_move({"text": value}, user_input)
+        if kind == "music":
+            return await self._h_alarm_music({"text": value}, user_input)
         if kind is None:
             return "What time should your alarm be?"
         now = dt_util.now()
@@ -792,7 +842,8 @@ class Skills(HouseSkills, SecuritySkills):
             if not current:
                 return
             self._ring_targets[key] = current["targets"]
-            self._ring_meta[key] = {"person": current.get("person"), "origin": current.get("origin")}
+            self._ring_meta[key] = {"person": current.get("person"), "origin": current.get("origin"),
+                                    "music": current.get("music")}
             self._start_ringing(key)
             if current["repeat"] == "once":
                 self._alarms().pop(key, None)
@@ -822,8 +873,8 @@ class Skills(HouseSkills, SecuritySkills):
         task = self._ringing.pop(key, None)
         if task:
             task.cancel()
-        for sat in self._sats_of(self._ring_targets.get(key, [])):
-            player = self.media_player_for(sat)
+        music = self._ring_music.pop(key, [])
+        for player in music + [self.media_player_for(sat) for sat in self._sats_of(self._ring_targets.get(key, []))]:
             if player:
                 ctx = Context()
                 self._own_contexts.add(ctx.id)
@@ -837,6 +888,83 @@ class Skills(HouseSkills, SecuritySkills):
                 continue
         return None
 
+    def _music_player_for(self, sat: str) -> str | None:
+        """The Music Assistant player on (or in the same room as) a voice speaker."""
+        for s in self.store.detected.get("satellites") or []:
+            if s.get("entity_id") == sat and s.get("here_player"):
+                return s["here_player"]
+        area = self._entity_area(sat)
+        return next((p for p in self._ma_players() if area and self._entity_area(p) == area), None)
+
+    async def _ring_with_music(self, key: str, players: list[str], play: str, sats: list[str]) -> bool:
+        """Wake up to music through Music Assistant. False if it didn't start (the tone rings instead);
+        True once it was stopped, snoozed or played for RING_MINUTES."""
+        ours = self._own_contexts
+        ctx = Context()
+        ours.add(ctx.id)
+        req = parse_music_query(play) if play else None
+        if req and req.name:
+            data: dict[str, Any] = {"entity_id": players, "media_id": req.name, "enqueue": "replace",
+                                    "radio_mode": req.radio or req.media_type not in ("playlist", "album")}
+            if req.media_type:
+                data["media_type"] = req.media_type
+            await self._call("music_assistant", "play_media", data, ctx)
+        else:
+            await self._call("media_player", "media_play", {"entity_id": players}, ctx)
+        self._ring_music[key] = players
+        for _ in range(20):                                   # streaming services can take a few seconds
+            if any((st := self.hass.states.get(p)) and st.state == "playing" for p in players):
+                break
+            await asyncio.sleep(1)
+        else:
+            _LOGGER.warning("Alarm music %r didn't start on %s; ringing the tone instead", play, players)
+            self._ring_music.pop(key, None)
+            stop = Context()
+            ours.add(stop.id)
+            await self._call("media_player", "media_stop", {"entity_id": players}, stop)
+            return False
+        watched = players + [p for p in (self.media_player_for(s) for s in sats) if p]
+        stopped = asyncio.Event()
+        settled = self.hass.loop.time() + 5                   # a new queue can blink idle while it starts
+
+        @callback
+        def _service(event: Event) -> None:
+            data = event.data
+            if data.get("domain") != "media_player" or data.get("service") not in STOP_SERVICES \
+                    or event.context.id in ours:
+                return
+            ids = (data.get("service_data") or {}).get("entity_id")
+            ids = [ids] if isinstance(ids, str) else list(ids or [])
+            if not ids or any(p in ids for p in watched):
+                stopped.set()
+
+        @callback
+        def _state(event: Event[EventStateChangedData]) -> None:
+            new = event.data["new_state"]
+            if new and new.state in ("paused", "off", "idle") and new.context.id not in ours \
+                    and self.hass.loop.time() >= settled:
+                stopped.set()
+
+        unsubs = [self.hass.bus.async_listen(EVENT_CALL_SERVICE, _service),
+                  async_track_state_change_event(self.hass, players, _state)]
+        try:
+            try:
+                await asyncio.wait_for(stopped.wait(), RING_MINUTES * 60)
+            except TimeoutError:
+                pass
+        finally:
+            for unsub in unsubs:
+                unsub()
+        if self._ring_music.pop(key, None):                   # stopped from outside or timed out
+            stop = Context()
+            ours.add(stop.id)
+            await self._call("media_player", "media_stop", {"entity_id": players}, stop)
+            if stopped.is_set():
+                if (cancel := self._timers.pop(f"snooze:{key}", None)):
+                    cancel()
+                self._snooze_count.pop(key, None)
+        return True
+
     async def _ring(self, key: str) -> None:
         """Ring on every target speaker through its own media player until stopped, snoozed or
         10 minutes pass. A stop from outside on any of those players stops it everywhere."""
@@ -849,6 +977,11 @@ class Skills(HouseSkills, SecuritySkills):
                 await self._call("persistent_notification", "create", {
                     "title": "Alarm", "message": f"Alarm at {dt_util.now().strftime('%H:%M')}.",
                     "notification_id": "better_assistant_alarm"})
+            play = self._wake_music(meta.get("music"))
+            if play is not None and self._ma_ready():
+                music = list(dict.fromkeys(p for p in (self._music_player_for(s) for s in sats) if p))
+                if music and await self._ring_with_music(key, music, play, sats):
+                    return
             url = self._tone_url()
             players = {sat: self.media_player_for(sat) for sat in sats}
             silent = [sat for sat, player in players.items() if not player or not url]
