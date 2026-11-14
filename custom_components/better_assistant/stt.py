@@ -15,10 +15,11 @@ from typing import Any
 
 from homeassistant.components import stt
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import BetterAssistantConfigEntry
-from .const import OPT_VM_ENABLED, OPT_VT_ENABLED
+from .const import DOMAIN, OPT_VM_ENABLED, OPT_VT_ENABLED
 from .core.voicetrain import NOTHING_HEARD, TEST, TRAIN, CaptureSlot, is_stop, matches_phrase, max_bytes, too_short
 from .sensor import device_info
 from .voice_setup import pipeline_select
@@ -29,23 +30,48 @@ _LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(hass: HomeAssistant, entry: BetterAssistantConfigEntry,
                             async_add_entities: AddConfigEntryEntitiesCallback) -> None:
-    async_add_entities([PassThroughSTT(entry)])
+    """The original pass-through (wraps the engine picked in settings), plus one per speech-to-text
+    engine in the house. Home Assistant doesn't tell an engine which assistant it's working for, so each
+    assistant gets the pass-through for its own engine and nothing about how it hears changes."""
+    entities = [PassThroughSTT(entry)]
+    if entry.options.get(OPT_VT_ENABLED):              # only for voice training / voice match
+        entities += [PassThroughSTT(entry, engine, name) for engine, name in other_engines(hass)]
+    async_add_entities(entities)
+
+
+def other_engines(hass: HomeAssistant) -> list[tuple[str, str]]:
+    """(entity id, name) of every speech-to-text entity that isn't ours, from the registry (so engines
+    that load after us are included)."""
+    out = []
+    for e in er.async_get(hass).entities.values():
+        if e.domain == "stt" and e.platform != DOMAIN and not e.disabled_by:
+            out.append((e.entity_id, e.name or e.original_name or e.entity_id.split(".", 1)[1].replace("_", " ")))
+    return sorted(out)
+
+
+def wrapper_unique_id(entry_id: str, engine: str) -> str:
+    return f"{entry_id}_stt_via_{engine}"
 
 
 class PassThroughSTT(stt.SpeechToTextEntity):
     _attr_has_entity_name = True
-    _attr_translation_key = "speech_to_text"
     _attr_icon = "mdi:microphone-message"
 
-    def __init__(self, entry: BetterAssistantConfigEntry) -> None:
+    def __init__(self, entry: BetterAssistantConfigEntry, engine: str | None = None, name: str | None = None) -> None:
         self._entry = entry
-        self._attr_unique_id = f"{entry.entry_id}_stt"
+        self._fixed = engine
+        if engine:
+            self._attr_unique_id = wrapper_unique_id(entry.entry_id, engine)
+            self._attr_name = f"via {name}"
+        else:
+            self._attr_unique_id = f"{entry.entry_id}_stt"
+            self._attr_translation_key = "speech_to_text"
         self._attr_device_info = device_info(entry)
 
     # ------------------------------------------------------------ the engine underneath
     def _engine(self):
         """The wrapped entity (or legacy provider), or None."""
-        engine_id = hub(self.hass).engine or underlying_engine(self.hass, dict(self._entry.options))
+        engine_id = self._fixed or hub(self.hass).engine or underlying_engine(self.hass, dict(self._entry.options))
         if not engine_id or engine_id == self.entity_id:
             return None
         return stt.async_get_speech_to_text_engine(self.hass, engine_id)

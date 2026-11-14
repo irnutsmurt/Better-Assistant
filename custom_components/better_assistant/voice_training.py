@@ -106,6 +106,41 @@ def our_stt(hass: HomeAssistant, entry_id: str) -> str:
         or "stt.better_assistant_speech_to_text"
 
 
+def wrapper_for(hass: HomeAssistant, entry_id: str, engine: str | None) -> str | None:
+    """Our pass-through for that engine (stt.better_assistant_via_...), if there is one."""
+    if not engine:
+        return None
+    return er.async_get(hass).async_get_entity_id("stt", DOMAIN, f"{entry_id}_stt_via_{engine}")
+
+
+def is_ours(hass: HomeAssistant, engine: str | None) -> bool:
+    reg = er.async_get(hass).async_get(engine) if engine else None
+    return bool(reg and reg.platform == DOMAIN)
+
+
+async def async_cover_pipelines(hass: HomeAssistant, entry, on: bool) -> None:
+    """Voice match on: every assistant's speech-to-text goes through our pass-through for its own engine
+    (so it hears exactly as before, and voice match hears it too). Off: put each one back."""
+    from homeassistant.components import assist_pipeline  # noqa: PLC0415
+    store = entry.runtime_data.store
+    covered: dict[str, str] = store.data.setdefault("vm_covered", {})
+    found = {pid: engine for pid, _n, engine in pipelines(hass)}
+    if on:
+        for pid, engine in found.items():
+            wrapper = None if is_ours(hass, engine) else wrapper_for(hass, entry.entry_id, engine)
+            if wrapper:
+                covered[pid] = engine
+                await assist_pipeline.async_update_pipeline(
+                    hass, assist_pipeline.async_get_pipeline(hass, pid), stt_engine=wrapper)
+    else:
+        for pid, engine in list(covered.items()):
+            if pid in found and is_ours(hass, found[pid]) and found[pid] != our_stt(hass, entry.entry_id):
+                await assist_pipeline.async_update_pipeline(
+                    hass, assist_pipeline.async_get_pipeline(hass, pid), stt_engine=engine)
+            covered.pop(pid, None)
+    await store.async_flush()
+
+
 @callback
 def stt_engines(hass: HomeAssistant) -> list[tuple[str, str]]:
     """(entity id, platform) of every speech-to-text entity."""
@@ -263,16 +298,19 @@ class VoiceTrainer:
             # a session cut short by a restart left it switched: its real settings are the saved ones
             engine, prefer_local = (saved[0], bool(saved[1])) if saved else \
                 (pipeline.stt_engine, pipeline.prefer_local_intents)
-            if engine == ours and not prefer_local:
+            if is_ours(self.hass, engine) and not prefer_local:
                 return
-            if engine != ours:
+            # record through our pass-through for this assistant's own engine (it hears exactly as before)
+            target = engine if is_ours(self.hass, engine) else wrapper_for(self.hass, self.entry.entry_id, engine)
+            if not target:                             # no matching pass-through: the main one, borrowing the engine
+                target = ours
                 hub(self.hass).engine = engine
             session.borrowed = (pipeline.id, engine, prefer_local)
             store.data["vt_borrowed"][pipeline.id] = [engine, prefer_local]
             await store.async_flush()                  # put back after a restart, too
             # Home Assistant's own commands go first when local intents are preferred, so "set a timer
             # for ten minutes" would set a timer instead of reaching the trainer
-            await assist_pipeline.async_update_pipeline(self.hass, pipeline, stt_engine=ours,
+            await assist_pipeline.async_update_pipeline(self.hass, pipeline, stt_engine=target,
                                                         prefer_local_intents=False)
         except Exception:  # noqa: BLE001 - train anyway; the clip just isn't saved
             _LOGGER.warning("Voice training: couldn't record on this speaker's assistant", exc_info=True)

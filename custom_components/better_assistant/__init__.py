@@ -76,6 +76,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: BetterAssistantConfigEnt
     entry.async_on_unload(auto.async_stop)
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    if entry.options.get(OPT_VT_ENABLED) or store.data.get("vm_covered"):
+        from .voice_training import async_cover_pipelines  # noqa: PLC0415 - voice match hears every assistant
+
+        on = bool(entry.options.get(OPT_VT_ENABLED) and entry.options.get(OPT_VM_ENABLED))
+        entry.async_create_background_task(hass, async_cover_pipelines(hass, entry, on), f"{DOMAIN}_voice_cover")
     if entry.options.get(OPT_VT_ENABLED):                   # the Voice training page in the sidebar
         from .voice_panel import async_remove_panel, async_setup_panel  # noqa: PLC0415
 

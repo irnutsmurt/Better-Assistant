@@ -209,3 +209,38 @@ async def test_turning_voice_match_off_deletes_unlabelled_everyday_recordings(ha
     assert vmf.delete_everyday(root) == 1
     assert train.exists() and labelled.exists() and not loose.exists()
     assert not loose.with_suffix(".json").exists() and not loose.with_name(loose.stem + ".emb.npy").exists()
+
+
+async def test_voice_match_covers_every_assistant_with_its_own_engine(hass, monkeypatch):
+    from homeassistant.components import assist_pipeline
+    from homeassistant.helpers import entity_registry as er
+    from custom_components.better_assistant import voice_training as vt
+    from custom_components.better_assistant.store import BetterAssistantStore
+    reg = er.async_get(hass)
+    reg.async_get_or_create("stt", "wyoming", "w1", suggested_object_id="faster_whisper")
+    reg.async_get_or_create("stt", "cloud", "c1", suggested_object_id="home_assistant_cloud")
+    reg.async_get_or_create("stt", "better_assistant", "e_stt", suggested_object_id="better_assistant_speech_to_text")
+    reg.async_get_or_create("stt", "better_assistant", "e_stt_via_stt.faster_whisper",
+                            suggested_object_id="better_assistant_via_faster_whisper")
+    reg.async_get_or_create("stt", "better_assistant", "e_stt_via_stt.home_assistant_cloud",
+                            suggested_object_id="better_assistant_via_home_assistant_cloud")
+    pipes = {"p1": types.SimpleNamespace(id="p1", name="Better Assistant", stt_engine="stt.faster_whisper"),
+             "p2": types.SimpleNamespace(id="p2", name="Ask anything", stt_engine="stt.better_assistant_speech_to_text"),
+             "p3": types.SimpleNamespace(id="p3", name="Cloud", stt_engine="stt.home_assistant_cloud")}
+
+    async def update(hass, pipeline, **changes):
+        pipeline.stt_engine = changes["stt_engine"]
+    monkeypatch.setattr(assist_pipeline, "async_get_pipeline", lambda hass, pid=None: pipes[pid])
+    monkeypatch.setattr(assist_pipeline, "async_update_pipeline", update)
+    monkeypatch.setattr(vt, "pipelines", lambda hass: [(p.id, p.name, p.stt_engine) for p in pipes.values()])
+    store = BetterAssistantStore(hass, "e")
+    await store.async_load()
+    entry = types.SimpleNamespace(entry_id="e", runtime_data=types.SimpleNamespace(store=store))
+
+    await vt.async_cover_pipelines(hass, entry, True)
+    assert pipes["p1"].stt_engine == "stt.better_assistant_via_faster_whisper"
+    assert pipes["p3"].stt_engine == "stt.better_assistant_via_home_assistant_cloud"
+    assert pipes["p2"].stt_engine == "stt.better_assistant_speech_to_text"          # already ours: left alone
+    await vt.async_cover_pipelines(hass, entry, False)
+    assert pipes["p1"].stt_engine == "stt.faster_whisper" and pipes["p3"].stt_engine == "stt.home_assistant_cloud"
+    assert pipes["p2"].stt_engine == "stt.better_assistant_speech_to_text" and store.data["vm_covered"] == {}

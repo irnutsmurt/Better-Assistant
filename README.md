@@ -271,6 +271,10 @@ voice match** on the Voice training page (or under Configure > Voice training). 
 with numpy, which Home Assistant already has; the speaker model (TitaNet-S, about 19 MB) is downloaded
 once from this project's GitHub repository and checked against a checksum. Nothing is sent anywhere.
 
+- **Every assistant:** while voice match is on, each voice assistant's speech-to-text goes through a
+  Better Assistant pass-through for its own engine ("Better Assistant via faster-whisper", "... via Home
+  Assistant Cloud"), so it hears exactly as before and voice match hears it too. Turning voice match off
+  puts every assistant back.
 - **Self-checking:** after each training session every clip is compared with the others and ones that
   don't sound like the rest (the TV, someone else, the speaker hearing itself) are left out. The
   threshold for each person is set automatically between how their own clips score and how a bundled
