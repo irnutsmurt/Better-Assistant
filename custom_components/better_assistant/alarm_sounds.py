@@ -2,7 +2,9 @@
 nobody has to type a name and get it wrong. Saying it still works ("wake me up to Taylor Swift at 7").
 
 Values (stored in the wake-up music setting, and per alarm):
-  ""                      the alarm sound (the speaker's own alarm on a Voice PE, else the bundled tone)
+  ""                      the alarm sound (the speaker's own alarm on a Voice PE, else the bundled tone). The
+                          only choice a Voice PE stops on a plain "stop": its firmware listens for that word
+                          only while its own alarm rings. Music needs the wake word first, or the button.
   "last"                  whatever played last on that speaker (Music Assistant resumes it)
   "ma:<type>:<uri>|<name>" an item in your Music Assistant library: a playlist, a favourite artist (as a
                           radio of music like them) or a favourite radio station
@@ -51,7 +53,7 @@ def describe(value: str | None) -> str:
 def label(value: str | None) -> str:
     """How the drop-down shows it."""
     if not value:
-        return "Alarm sound"
+        return "Alarm sound (just say \"stop\")"
     if value == LAST:
         return "Whatever played last"
     ma = parse_ma(value)

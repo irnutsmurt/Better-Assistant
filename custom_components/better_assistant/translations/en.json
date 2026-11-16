@@ -349,7 +349,7 @@
           "snooze_limit": "Leave empty for no limit, or 1-10. 0 turns snoozing off. By voice: \"limit snoozes to 3\", \"no snooze limit\", \"no snoozing\".",
           "snooze_enabled": "Off: the alarm rings until you stop it.",
           "alarm_speaker": "Leave empty to ring on the speaker you asked from (all voice speakers when set from the app). You can also say \"set an alarm for 7 in the bedroom\" or \"... everywhere\".",
-          "alarm_music": "The alarm sound, or one of your Music Assistant playlists and favourites. By voice: \"wake me up to Taylor Swift at 7\", \"change my wake-up music to jazz\"."
+          "alarm_music": "The alarm sound, or one of your Music Assistant playlists and favourites. Only the alarm sound stops when you just say \"stop\"; music stops with your wake word first (\"Hey Jarvis, stop\") or the speaker's button. By voice: \"wake me up to Taylor Swift at 7\", \"change my wake-up music to jazz\"."
         }
       },
       "health": {

@@ -21,7 +21,7 @@ from homeassistant.helpers.network import NoURLAvailableError, get_url
 from homeassistant.util import dt as dt_util
 
 from .const import (ALARM_SECONDS, ALARM_URL, DEFAULTS, DOMAIN, OPT_ALARM_MUSIC, OPT_ALARM_SPEAKER, OPT_SNOOZE,
-                    OPT_SNOOZE_ENABLED, OPT_SNOOZE_LIMIT, RING_MINUTES, SNOOZE_GRACE)
+                    OPT_SNOOZE_ENABLED, OPT_SNOOZE_LIMIT, RAMP_FROM, RAMP_SECONDS, RING_MINUTES, SNOOZE_GRACE)
 from .core import intents as sentences
 from .core.features import (
     ALL_SPEAKERS,
@@ -1109,6 +1109,9 @@ class Skills(HouseSkills, SecuritySkills):
         ours = self._own_contexts
         ctx = Context()
         ours.add(ctx.id)
+        originals = {p: st.attributes["volume_level"] for p in players
+                     if (st := self.hass.states.get(p)) and st.attributes.get("volume_level")}
+        await self._set_volumes({p: v * RAMP_FROM for p, v in originals.items()})   # gentle start
         library = parse_ma(play)
         req = parse_music_query(play) if play and play != LAST and not library else None
         if library:                                          # picked from the library: play exactly that
@@ -1135,6 +1138,7 @@ class Skills(HouseSkills, SecuritySkills):
             stop = Context()
             ours.add(stop.id)
             await self._call("media_player", "media_stop", {"entity_id": players}, stop)
+            await self._set_volumes(originals)
             return False
         watched = players + [p for p in (self.media_player_for(s) for s in sats) if p]
         stopped = asyncio.Event()
@@ -1144,6 +1148,7 @@ class Skills(HouseSkills, SecuritySkills):
             return player in players and state in ("paused", "off", "idle") and self.hass.loop.time() >= settled
 
         unwatch = self._watch_stop(watched, sats, stopped, quiet_early)
+        ramp = self.hass.async_create_background_task(self._ramp_up(originals), f"better_assistant alarm ramp {key}")
         try:
             try:
                 await asyncio.wait_for(stopped.wait(), RING_MINUTES * 60)
@@ -1151,6 +1156,8 @@ class Skills(HouseSkills, SecuritySkills):
                 pass
         finally:
             unwatch()
+            ramp.cancel()
+            self.hass.async_create_task(self._set_volumes(originals))   # back to how it was
         if self._ring_music.pop(key, None):                   # stopped from outside or timed out
             stop = Context()
             ours.add(stop.id)
@@ -1158,6 +1165,21 @@ class Skills(HouseSkills, SecuritySkills):
             if stopped.is_set():
                 self._stopped_outside(key, [])
         return True
+
+    async def _set_volumes(self, levels: dict[str, float]) -> None:
+        for player, level in levels.items():
+            ctx = Context()
+            self._own_contexts.add(ctx.id)
+            await self._call("media_player", "volume_set", {"entity_id": player,
+                                                            "volume_level": round(max(0.05, min(1.0, level)), 2)}, ctx)
+
+    async def _ramp_up(self, originals: dict[str, float]) -> None:
+        """Music alarms start quiet and rise to the speaker's usual volume over RAMP_SECONDS: kinder to
+        wake up to, and the speaker hears its wake word ("Hey Jarvis, stop") easily while it's quiet."""
+        steps = 12
+        for i in range(1, steps + 1):
+            await asyncio.sleep(RAMP_SECONDS / steps)
+            await self._set_volumes({p: v * (RAMP_FROM + (1 - RAMP_FROM) * i / steps) for p, v in originals.items()})
 
     @callback
     def _watch_stop(self, players: list[str], sats: list[str], stopped: asyncio.Event,

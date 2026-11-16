@@ -293,7 +293,7 @@ def test_sound_values():
     v = ma_value("playlist", "library://playlist/9", "Liked Music (YouTube Music)")
     assert parse_ma(v) == ("playlist", "library://playlist/9", "Liked Music (YouTube Music)")
     assert label(v) == "Playlist: Liked Music (YouTube Music)" and describe(v) == "your Liked Music (YouTube Music) playlist"
-    assert label("") == "Alarm sound" and label("last") == "Whatever played last"
+    assert label("") == 'Alarm sound (just say "stop")' and label("last") == "Whatever played last"
     assert describe(ma_value("artist", "spotify://artist/1", "Queen")) == "music like Queen"
     assert label("jazz") == "jazz (asked for by voice)" and parse_ma("jazz") is None
 
@@ -301,7 +301,7 @@ def test_sound_values():
 async def test_choices_come_from_the_music_assistant_library(hass):
     from homeassistant.config_entries import ConfigEntry, ConfigEntryState
     from custom_components.better_assistant.alarm_sounds import async_choices
-    assert await async_choices(hass) == [{"value": "", "label": "Alarm sound"}]          # no Music Assistant
+    assert await async_choices(hass) == [{"value": "", "label": 'Alarm sound (just say "stop")'}]   # no Music Assistant
     entry = ConfigEntry(version=1, minor_version=1, domain="music_assistant", title="MA", data={}, source="user",
                         options={}, unique_id=None, discovery_keys={}, subentries_data=None)
     hass.config_entries._entries[entry.entry_id] = entry
@@ -315,7 +315,7 @@ async def test_choices_come_from_the_music_assistant_library(hass):
     from homeassistant.core import SupportsResponse
     hass.services.async_register("music_assistant", "get_library", get_library, supports_response=SupportsResponse.ONLY)
     got = await async_choices(hass, "jazz")
-    assert [c["label"] for c in got] == ["Alarm sound", "Whatever played last", "Playlist: Liked Music",
+    assert [c["label"] for c in got] == ['Alarm sound (just say "stop")', "Whatever played last", "Playlist: Liked Music",
                                          "Music like Queen", "jazz (asked for by voice)"]
 
 
@@ -329,3 +329,24 @@ async def test_a_picked_playlist_plays_exactly_that(hass):
     name, data = s.calls[0]
     assert (data["media_id"], data["media_type"], data["radio_mode"]) == ("library://playlist/9", "playlist", False)
     task.cancel()
+
+
+
+async def test_music_alarms_start_quiet_and_put_the_volume_back(hass, monkeypatch):
+    from custom_components.better_assistant import skills as skills_module
+    monkeypatch.setattr(skills_module, "RAMP_SECONDS", 0.24)
+    s = skills(hass)
+    hass.states.async_set(MA, "idle", {"volume_level": 0.8})
+    volumes = []
+
+    async def volume_set(call):
+        volumes.append(call.data["volume_level"])
+
+    hass.services.async_register("media_player", "volume_set", volume_set)
+    task = asyncio.ensure_future(s._ring_with_music("k", [MA], "jazz", [SAT]))
+    await asyncio.sleep(0.6)
+    assert volumes[0] == 0.2 and volumes[-1] == 0.8                # a quarter, then up to the usual 80%
+    assert volumes == sorted(volumes)
+    task.cancel()
+    await asyncio.sleep(0.05)
+    assert volumes[-1] == 0.8                                       # left as it was

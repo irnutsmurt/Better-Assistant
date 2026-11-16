@@ -104,5 +104,7 @@ LISTS = {"reminders": "Reminders", "notes": "Notes", "messages": "Messages"}
 
 ALARM_URL = "/better_assistant/alarm-60s.mp3"      # the tone, a minute long, played again each minute
 ALARM_SECONDS = 60
+RAMP_SECONDS = 60                                   # music alarms rise from quiet to the usual volume over this
+RAMP_FROM = 0.25                                    # ... starting at this share of it
 SNOOZE_GRACE = 60                                   # seconds after the speaker stops an alarm that "snooze" still works
 RING_MINUTES = 10

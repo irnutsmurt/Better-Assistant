@@ -426,6 +426,7 @@ const APP_CSS = `
   button.wide { width: 100%; padding: 12px; font-size: 16px; }
   button:disabled { opacity: .5; cursor: default; }
   .time { font-size: 30px; font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .sound-note { margin: -4px 0 0; font-size: 13px; color: var(--secondary-text-color); }
   .form { display: grid; gap: 12px; padding: 14px; margin: 8px 0 4px; border-radius: 14px;
           background: rgba(var(--rgb-primary-color, 3, 169, 244), .06); border: 1px solid var(--divider-color); }
   .form label, .field { display: grid; gap: 4px; font-size: 13px; color: var(--secondary-text-color); }
@@ -623,7 +624,7 @@ class BetterAssistantApp extends HTMLElement {
     // "" = whatever the wake-up setting says, "tone" = the alarm sound, else one of the library choices
     const setting = v.alarm_settings.music ? `Wake-up music (${this._esc(this._soundLabel(v.alarm_settings.music))})`
                                            : "Wake-up setting (alarm sound)";
-    const choices = [["", setting], ["tone", "Alarm sound"],
+    const choices = [["", setting], ["tone", "Alarm sound (just say \"stop\")"],
                      ...(v.sounds || []).filter((s) => s.value).map((s) => [s.value, s.label])];
     if (e.music && !choices.some(([k]) => k === e.music)) choices.push([e.music, this._soundLabel(e.music)]);
     const sounds = choices.map(([k, n]) => `<option value="${this._esc(k)}" ${e.music === k ? "selected" : ""}>${this._esc(n)}</option>`).join("");
@@ -634,6 +635,7 @@ class BetterAssistantApp extends HTMLElement {
         <label>Speaker<select data-f="target"><option value="all" ${e.target === "all" ? "selected" : ""}>All voice speakers</option>${speakers}</select></label>
       </div>
       <label>Sound<select data-f="music">${sounds}</select></label>
+      <p class="sound-note">Only the alarm sound stops on a plain "stop". Music stops with your wake word first ("Hey Jarvis, stop") or the speaker's button.</p>
       <div class="acts" style="justify-content:flex-start"><button class="primary" data-alarm-save="1">${e.key ? "Save" : "Add alarm"}</button>
         <button data-alarm-cancel="1">Cancel</button></div></div>`;
   }
@@ -674,7 +676,7 @@ class BetterAssistantApp extends HTMLElement {
       <div class="setting"><div class="main"><div class="name">Rings on</div><div class="sub">When you don't say where.</div></div>
         <select data-set="alarm_speaker" ${dis}>${where}</select></div>
       <div class="setting"><div class="main"><div class="name">Wake up to</div>
-        <div class="sub">${st.music_ready ? "Your playlists and favourites from Music Assistant, or the alarm sound." :
+        <div class="sub">${st.music_ready ? "The alarm sound stops when you just say \"stop\". Music stops with your wake word first (\"Hey Jarvis, stop\") or the speaker's button." :
           "Music needs Music Assistant. Until then alarms ring with the alarm sound."}</div></div>
         <select data-set="alarm_music" ${dis}>${(v.sounds || [{ value: "", label: "Alarm sound" }]).map((s) =>
           `<option value="${this._esc(s.value)}" ${st.music === s.value ? "selected" : ""}>${this._esc(s.label)}</option>`).join("")}</select></div></div>`;
