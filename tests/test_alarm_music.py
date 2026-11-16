@@ -72,7 +72,7 @@ def skills(hass, music_option="", starts=True):
     s.store = types.SimpleNamespace(detected={"satellites": [{"entity_id": SAT, "here_player": MA}]},
                                     data={"alarms": {}}, changed=lambda: None)
     s._own_contexts, s._timers, s._snooze_count, s._ring_music = set(), {}, {}, {}
-    s._ringing, s._ring_targets, s._ring_meta = {}, {}, {}
+    s._ringing, s._ring_targets, s._ring_meta, s._just_stopped, s._snoozed_until = {}, {}, {}, {}, {}
     s.media_player_for = lambda sat: TONE_PLAYER
     s.calls = []
     hass.states.async_set(MA, "idle")
@@ -237,3 +237,50 @@ async def test_no_restart_right_after_the_speakers_own_stop(hass):
     await asyncio.sleep(1.2)                                       # the loop ticks every second
     assert len([c for c in s.calls if c[0] == "tone"]) == 1
     await asyncio.wait_for(task, 3)
+
+
+
+# ------------------------------------------------------------------ the speaker's own timer alarm, and snooze
+async def test_rings_with_the_speakers_own_timer_and_stops_on_the_speaker(hass):
+    """A Voice PE rings its own timer sound (its on-device "stop" works for that); the alarm is over when
+    the speaker goes quiet, and "snooze" still works for a minute after."""
+    from unittest.mock import patch
+    s = skills(hass)
+    hass.states.async_set(SAT, "idle")
+    hass.states.async_set(TONE_PLAYER, "idle")
+    s._timer_device = lambda sat: "device-1"
+    s._ring_targets["k"] = [SAT]
+    started = []
+
+    async def start_timer(hass_, platform, intent_type, slots, **kw):
+        started.append((intent_type, slots, kw["device_id"]))
+        hass.loop.call_later(0.2, lambda: hass.states.async_set(TONE_PLAYER, "playing"))
+
+    with patch("custom_components.better_assistant.skills.intent.async_handle", start_timer):
+        task = asyncio.ensure_future(s._ring_native("k", [SAT]))
+        await asyncio.sleep(1.2)
+        assert started == [("HassStartTimer", {"seconds": {"value": 1}, "name": {"value": "alarm"}}, "device-1")]
+        assert not task.done()                                     # ringing
+        hass.states.async_set(TONE_PLAYER, "idle")                 # "stop", said to the speaker
+        assert await asyncio.wait_for(task, 4) is True
+    assert s._just_stopped_for(SAT) == ["k"]
+    s.snooze_default, s.snooze_limit = (lambda: 5), (lambda: None)
+    s._stop_ringing = lambda key: None
+    assert "5" in s._snooze(s._just_stopped_for(SAT), None) and f"snooze:k" in s._timers
+    assert s._just_stopped_for(SAT) == []
+    s._timers.pop("snooze:k")()
+
+
+async def test_falls_back_to_the_tone_when_the_speaker_doesnt_ring(hass):
+    from unittest.mock import patch
+    s = skills(hass)
+    hass.states.async_set(TONE_PLAYER, "idle")
+    s._timer_device = lambda sat: "device-1"
+
+    async def start_timer(*a, **kw):
+        pass
+
+    real_sleep = asyncio.sleep
+    with patch("custom_components.better_assistant.skills.intent.async_handle", start_timer), \
+            patch("custom_components.better_assistant.skills.asyncio.sleep", lambda *_: real_sleep(0)):
+        assert await s._ring_native("k", [SAT]) is False

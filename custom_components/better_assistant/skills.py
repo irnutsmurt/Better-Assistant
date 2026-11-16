@@ -20,7 +20,8 @@ from homeassistant.helpers.event import (async_track_point_in_time, async_track_
 from homeassistant.helpers.network import NoURLAvailableError, get_url
 from homeassistant.util import dt as dt_util
 
-from .const import ALARM_SECONDS, ALARM_URL, DEFAULTS, OPT_ALARM_MUSIC, OPT_ALARM_SPEAKER, OPT_SNOOZE, OPT_SNOOZE_ENABLED, OPT_SNOOZE_LIMIT, RING_MINUTES
+from .const import (ALARM_SECONDS, ALARM_URL, DEFAULTS, DOMAIN, OPT_ALARM_MUSIC, OPT_ALARM_SPEAKER, OPT_SNOOZE,
+                    OPT_SNOOZE_ENABLED, OPT_SNOOZE_LIMIT, RING_MINUTES, SNOOZE_GRACE)
 from .core import intents as sentences
 from .core.features import (
     ALL_SPEAKERS,
@@ -87,6 +88,7 @@ class Skills(HouseSkills, SecuritySkills):
         self._ring_targets: dict[str, Any] = {}              # alarm key -> targets it is ringing on
         self._ring_meta: dict[str, dict] = {}
         self._ring_music: dict[str, list[str]] = {}          # alarm key -> Music Assistant players playing it
+        self._just_stopped: dict[str, float] = {}             # alarm key -> when the speaker itself stopped it
         self.followup = False                                # ask the speaker to keep listening
 
     # ------------------------------------------------------------ lifecycle
@@ -98,12 +100,14 @@ class Skills(HouseSkills, SecuritySkills):
         for key in list(self._alarms()):
             self._schedule_alarm(key)
         self._track_people()
+        self._track_buttons()
         self.start_night_schedule()
         self.apply_door_hiding()
 
     @callback
     def on_detected(self) -> None:
         """Detection ran: refresh what was built from it at start-up."""
+        self._track_buttons()
         self.apply_door_hiding()
 
     @callback
@@ -112,6 +116,8 @@ class Skills(HouseSkills, SecuritySkills):
             unsub()
         if self._person_unsub:
             self._person_unsub()
+        if getattr(self, "_button_unsub", None):
+            self._button_unsub()
         for task in self._ringing.values():
             task.cancel()
         self._unsubs.clear()
@@ -867,6 +873,11 @@ class Skills(HouseSkills, SecuritySkills):
         if not (getattr(user_input, "satellite_id", None) or user_input.device_id):
             return None                                      # typed in the app: answer normally
         if not self._ringing_for(user_input):
+            if self._just_stopped_for(self.satellite_for(user_input)) and \
+                    re.search(r"\bsnooze|\bmore minutes?\b", text, re.I):
+                match = self.recognize(text)
+                return await self._h_alarm_snooze(match.slots if match and match.intent == "AlarmSnooze" else {},
+                                                  user_input)
             return None
         match = self.recognize(text)
         if match and match.intent == "AlarmSnooze":
@@ -880,14 +891,25 @@ class Skills(HouseSkills, SecuritySkills):
         sat = self.satellite_for(user_input)
         return [k for k in self._ringing if self._rings_on(self._ring_targets.get(k, []), sat)]
 
+    def _just_stopped_for(self, sat: str | None) -> list[str]:
+        """Alarms the speaker itself stopped in the last minute: "snooze" still works ("Hey Jarvis" or the
+        first press of a double-press can stop the ringing before the snooze arrives)."""
+        now = self.hass.loop.time()
+        return [k for k, t in self._just_stopped.items() if now - t <= SNOOZE_GRACE
+                and k not in self._ringing and self._rings_on(self._ring_targets.get(k, []), sat)]
+
     async def _h_alarm_snooze(self, slots: dict, user_input) -> str:
-        keys = self._ringing_for(user_input)
+        keys = self._ringing_for(user_input) or self._just_stopped_for(self.satellite_for(user_input))
         if not keys:
             return "There's no alarm going off right now."
+        return self._snooze(keys, slots.get("minutes"))
+
+    def _snooze(self, keys: list[str], asked: int | None) -> str:
         reply = ""
         for key in keys:
+            self._just_stopped.pop(key, None)
             used = self._snooze_count.get(key, 0)
-            minutes, reply = snooze_decision(slots.get("minutes"), self.snooze_default(), self.snooze_limit(), used)
+            minutes, reply = snooze_decision(asked, self.snooze_default(), self.snooze_limit(), used)
             if minutes is None:
                 return reply                                  # keeps ringing
             self._snooze_count[key] = used + 1
@@ -988,6 +1010,88 @@ class Skills(HouseSkills, SecuritySkills):
             except NoURLAvailableError:
                 continue
         return None
+
+    def _timer_device(self, sat: str) -> str | None:
+        """The voice speaker's device, if it rings Home Assistant timers itself (a Voice PE does)."""
+        from homeassistant.components.intent.timers import async_device_supports_timers  # noqa: PLC0415
+        entry = er.async_get(self.hass).async_get(sat)
+        device = entry.device_id if entry else None
+        try:
+            return device if device and async_device_supports_timers(self.hass, device) else None
+        except Exception:  # noqa: BLE001 - timers not set up
+            return None
+
+    async def _ring_native(self, key: str, sats: list[str]) -> bool:
+        """Ring with the speaker's own timer alarm (a one-second timer at the alarm time): the speaker's
+        on-device "stop" and its button work as they do for timers, which a tone played to it can't
+        match (the speaker can't hear "stop" over its own media). Ends when the speaker goes quiet or
+        after RING_MINUTES. False if it didn't start ringing (the tone is used instead)."""
+        players = [p for p in (self.media_player_for(s) for s in sats) if p]
+        if not players:
+            return False
+        ctx = Context()
+        self._own_contexts.add(ctx.id)
+        for sat in sats:
+            try:
+                await intent.async_handle(self.hass, DOMAIN, intent.INTENT_START_TIMER,
+                                          {"seconds": {"value": 1}, "name": {"value": "alarm"}}, context=ctx,
+                                          language=self.hass.config.language, device_id=self._timer_device(sat))
+            except Exception:  # noqa: BLE001
+                _LOGGER.warning("Couldn't start the alarm timer on %s; ringing the tone instead", sat, exc_info=True)
+                return False
+        for _ in range(20):                                   # the timer ends after a second, then it rings
+            if any((st := self.hass.states.get(p)) and st.state == "playing" for p in players):
+                break
+            await asyncio.sleep(0.5)
+        else:
+            return False
+        stopped = asyncio.Event()
+        unwatch = self._watch_stop(players, sats, stopped, lambda _p, state: state in ("idle", "paused", "off"))
+        try:
+            await asyncio.wait_for(stopped.wait(), RING_MINUTES * 60)
+        except TimeoutError:
+            stop = Context()
+            self._own_contexts.add(stop.id)
+            await self._call("media_player", "media_stop", {"entity_id": players}, stop)
+        finally:
+            unwatch()
+        if stopped.is_set():
+            self._stopped_outside(key, players)
+        return True
+
+    # ------------------------------------------------------------ the speaker's button
+    @callback
+    def _track_buttons(self) -> None:
+        """Double-press a voice speaker's button to snooze its alarm (a single press stops it, on the
+        speaker itself)."""
+        if getattr(self, "_button_unsub", None):
+            self._button_unsub()
+            self._button_unsub = None
+        ents = er.async_get(self.hass)
+        buttons: dict[str, str] = {}
+        for sat in self.satellites():
+            entry = ents.async_get(sat)
+            if not entry or not entry.device_id:
+                continue
+            for e in er.async_entries_for_device(ents, entry.device_id):
+                if e.domain == "event" and (e.original_device_class or e.device_class) == "button":
+                    buttons[e.entity_id] = sat
+        if not buttons:
+            return
+
+        @callback
+        def _pressed(event: Event[EventStateChangedData]) -> None:
+            new = event.data["new_state"]
+            if not new or new.attributes.get("event_type") != "double_press":
+                return
+            sat = buttons.get(event.data["entity_id"])
+            keys = [k for k in self._ringing if self._rings_on(self._ring_targets.get(k, []), sat)] \
+                or self._just_stopped_for(sat)
+            if keys:
+                reply = self._snooze(keys, None)
+                self.hass.async_create_task(self.announce([sat], reply))
+
+        self._button_unsub = async_track_state_change_event(self.hass, list(buttons), _pressed)
 
     def _music_player_for(self, sat: str) -> str | None:
         """The Music Assistant player on (or in the same room as) a voice speaker."""
@@ -1154,6 +1258,7 @@ class Skills(HouseSkills, SecuritySkills):
     @callback
     def _stopped_outside(self, key: str, players: list[str]) -> None:
         """Stopped on one speaker (or by Home Assistant's "stop"): quiet the others, forget the snooze."""
+        self._just_stopped[key] = self.hass.loop.time()
         for other in players:
             ctx = Context()
             self._own_contexts.add(ctx.id)
@@ -1179,6 +1284,8 @@ class Skills(HouseSkills, SecuritySkills):
                 music = list(dict.fromkeys(p for p in (self._music_player_for(s) for s in sats) if p))
                 if music and await self._ring_with_music(key, music, play, sats):
                     return
+            if sats and all(self._timer_device(s) for s in sats) and await self._ring_native(key, sats):
+                return
             url = self._tone_url()
             players = {sat: self.media_player_for(sat) for sat in sats}
             silent = [sat for sat, player in players.items() if not player or not url]
