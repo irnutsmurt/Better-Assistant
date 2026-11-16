@@ -26,6 +26,10 @@ from .core.features import (
     ALL_SPEAKERS,
     DEFAULT_MUSIC,
     TONE,
+    WHO_HEARD,
+    WHO_SIGNED_IN,
+    WHO_UNKNOWN,
+    WHO_UNSURE,
     Stopwatch,
     alarm_change,
     best_note,
@@ -45,6 +49,7 @@ from .core.features import (
     snooze_decision,
     snooze_length_reply,
     snooze_limit_reply,
+    vary,
     split_alarm_music,
     split_alarm_place,
     sentence,
@@ -270,7 +275,7 @@ class Skills(HouseSkills, SecuritySkills):
         user_id = user_input.context.user_id if user_input.context else None
         for state in self.hass.states.async_all("person"):
             if user_id and state.attributes.get("user_id") == user_id:
-                return f"You're {self.person_name(state.entity_id)}."
+                return self._who(WHO_SIGNED_IN, state.entity_id)
         if not (user_input.device_id or getattr(user_input, "satellite_id", None)):
             return "I can only tell who you are by your voice. Ask me on a voice speaker."
         opts = self.entry.options
@@ -283,10 +288,15 @@ class Skills(HouseSkills, SecuritySkills):
             return "Nobody has taught me their voice yet. You can in the Better Assistant app, on the Voice page."
         heard = matcher.recent()
         if heard and heard.person:
-            return f"You sound like {self.person_name(heard.person)}."
+            return self._who(WHO_HEARD, heard.person)
         if heard and heard.runner_up and heard.score >= 0.3:
-            return f"I'm not sure. You might be {self.person_name(heard.runner_up)}, but I'd rather not guess."
-        return "I don't recognise your voice. You can teach me in the Better Assistant app, on the Voice page."
+            return self._who(WHO_UNSURE, heard.runner_up)
+        return self._who(WHO_UNKNOWN)
+
+    def _who(self, lines: list[str], person: str | None = None) -> str:
+        """A "who am I?" answer, worded differently from the last one."""
+        self._last_who = vary(lines, getattr(self, "_last_who", None))
+        return self._last_who.format(name=self.person_name(person) if person else "")
 
     async def _h_unknown_person(self, slots: dict, user_input) -> str:
         name = (slots.get("name") or "").strip(" ,.")

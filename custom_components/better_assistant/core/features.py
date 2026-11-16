@@ -3,6 +3,7 @@ phrasing what to say back. No Home Assistant imports."""
 from __future__ import annotations
 
 import datetime as dt
+import random
 import re
 from dataclasses import dataclass, field
 from typing import Any
@@ -449,3 +450,37 @@ def say_where(targets, names: dict[str, str]) -> str:
         return "on all speakers"
     said = [f"the {names.get(t, t).lower()}" for t in targets]
     return "on " + (said[0] if len(said) == 1 else ", ".join(said[:-1]) + " and " + said[-1])
+
+
+# ------------------------------------------------------------------ "who am I?"
+# A few ways to say each answer, so it doesn't sound canned. {name} is the person's first name.
+WHO_HEARD = [                      # voice match recognised them
+    "You sound like {name}.",
+    "Oh, it's my favorite person, {name}!",
+    "Hmm, I don't know... I kid, of course I know who you are. It's {name}!",
+    "That voice? That's {name}.",
+    "It's {name}. I'd know that voice anywhere.",
+    "Hi {name}! Who else would it be?",
+    "{name}, of course. Did you think I'd forget?",
+]
+WHO_SIGNED_IN = [                  # typed in the app: known from the login, not the voice
+    "You're {name}.",
+    "It's {name}! You're signed in as you.",
+    "Hi {name}! That's who you're signed in as.",
+]
+WHO_UNSURE = [                     # close to someone, but not close enough
+    "I'm not sure. You might be {name}, but I'd rather not guess.",
+    "Hmm, you sound a bit like {name}, but I can't be sure. Try asking with a longer sentence.",
+    "I think it might be {name}, but don't hold me to it.",
+    "That was a bit quick for me. {name}, maybe?",
+]
+WHO_UNKNOWN = [                    # nobody it knows
+    "I don't recognise your voice. You can teach me in the Better Assistant app, on the Voice page.",
+    "I don't think we've met! You can teach me your voice in the Better Assistant app, on the Voice page.",
+    "Your voice is new to me. You can teach it to me in the Better Assistant app, on the Voice page.",
+]
+
+
+def vary(lines: list[str], last: str | None = None) -> str:
+    """One of the lines, never the same one twice in a row."""
+    return random.choice([line for line in lines if line != last] or lines)

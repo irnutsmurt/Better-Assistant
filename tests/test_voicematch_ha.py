@@ -174,6 +174,7 @@ async def test_skills_use_voice_match_when_no_one_is_signed_in(hass):
 async def test_who_am_i(hass):
     from homeassistant.components.conversation import ConversationInput
     from homeassistant.core import Context
+    from custom_components.better_assistant.core.features import WHO_SIGNED_IN, WHO_UNKNOWN, WHO_UNSURE
     from custom_components.better_assistant.core.intents import recognize
     from custom_components.better_assistant.skills import Skills
     for text in ("who am I", "do you know who I am", "do you recognise my voice", "who's talking"):
@@ -190,12 +191,15 @@ async def test_who_am_i(hass):
     assert await ask(ui()) == "Nobody has taught me their voice yet. You can in the Better Assistant app, on the Voice page."
     m.prints = [{"person": "person.rob"}]
     m._last = (vm.Match("person.rob", 0.62), time.time())
-    assert await ask(ui()) == "You sound like Rob."
+    heard = [await ask(ui()) for _ in range(30)]
+    assert all("Rob" in r for r in heard) and len(set(heard)) > 3        # worded differently each time
+    assert all(a != b for a, b in zip(heard, heard[1:]))                 # never the same twice in a row
     m._last = (vm.Match(None, 0.42, "person.leila"), time.time())
-    assert await ask(ui()) == "I'm not sure. You might be Leila, but I'd rather not guess."
+    unsure = await ask(ui())
+    assert unsure in [line.format(name="Leila") for line in WHO_UNSURE]
     m._last = (vm.Match(None, 0.05, "person.rob"), time.time())
-    assert await ask(ui()) == "I don't recognise your voice. You can teach me in the Better Assistant app, on the Voice page."
-    assert await ask(ui(user="u-leila", voice=False)) == "You're Leila."
+    assert await ask(ui()) in WHO_UNKNOWN
+    assert await ask(ui(user="u-leila", voice=False)) in [line.format(name="Leila") for line in WHO_SIGNED_IN]
     assert (await ask(ui(voice=False))).startswith("I can only tell who you are by your voice")
     m.entry.options = {"voice_training": True}
     assert (await ask(ui())).startswith("I don't know voices yet")
