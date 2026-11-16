@@ -281,3 +281,17 @@ async def test_label_or_delete_many_recordings_at_once(hass, monkeypatch):
             break
         await asyncio.sleep(0.01)
     assert conn.err is None and not c.exists() and not (root / "test" / "rob" / "20261114T010000Z_1.wav").exists()
+
+
+def test_skill_mixins_never_shadow_each_other():
+    """Skills, HouseSkills and SecuritySkills share one object: a method of the same name in two of them
+    silently replaces the other (a "who am I" helper once broke every bed command this way)."""
+    from custom_components.better_assistant.house import HouseSkills
+    from custom_components.better_assistant.security import SecuritySkills
+    from custom_components.better_assistant.skills import Skills
+
+    def own(cls):
+        return {n for n in vars(cls) if not (n.startswith("__") and n.endswith("__"))}
+    assert not own(Skills) & own(HouseSkills)
+    assert not own(Skills) & own(SecuritySkills)
+    assert not own(HouseSkills) & own(SecuritySkills)

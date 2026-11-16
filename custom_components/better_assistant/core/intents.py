@@ -11,6 +11,8 @@ from typing import Any
 import yaml
 from hassil import Intents, TextSlotList, recognize_best
 
+from .normalize import soften, tidy
+
 SENTENCES = Path(__file__).resolve().parent.parent / "sentences"
 TIMER_INTENTS = {"HassStartTimer", "HassIncreaseTimer", "HassDecreaseTimer"}
 
@@ -42,6 +44,9 @@ def _load_files(language: str) -> dict[str, Any]:
     merged: dict[str, Any] = {"language": language, "intents": {}, "lists": {}}
     for path in sorted(SENTENCES.glob(f"*{language}.yaml")):
         data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        for intent in (data.get("intents") or {}).values():
+            for block in intent.get("data") or []:
+                block["sentences"] = [soften(s) for s in block.get("sentences") or []]
         merged["intents"].update(data.get("intents") or {})
         merged["lists"].update(data.get("lists") or {})
     return merged
@@ -78,7 +83,10 @@ def recognize(text: str, people: list[str] | tuple[str, ...] = (), language: str
             slot_lists[name] = TextSlotList.from_tuples([(k, v) for k, v in values.items()] or [(_EMPTY, _EMPTY)])
         else:
             slot_lists[name] = TextSlotList.from_strings([v for v in values if v] or [_EMPTY])
-    result = recognize_best(t, load(language, frozenset(disabled)), slot_lists=slot_lists)
+    intents = load(language, frozenset(disabled))
+    result = recognize_best(t, intents, slot_lists=slot_lists)
+    if result is None and (tidied := tidy(t)) and tidied.lower() != t.lower():
+        result = recognize_best(tidied, intents, slot_lists=slot_lists)    # "hey um cancel my alarm please"
     if result is None:
         return None
     slots = {k: v.value for k, v in result.entities.items()}
