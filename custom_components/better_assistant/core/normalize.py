@@ -33,6 +33,8 @@ _REWRITES = [
     (re.compile(r"\b(?:telephone|mobile phone|mobile|cell ?phone|smartphone)\b", re.I), "phone"),
     (re.compile(r"\b(?:air condition(?:er|ing)?|aircon|a\.c\.|a c)\b", re.I), "ac"),
     (re.compile(r"\bheating\b", re.I), "heat"),
+    (re.compile(r"\bmore early\b", re.I), "earlier"),
+    (re.compile(r"\bmore late\b", re.I), "later"),
     (re.compile(r"\bwanna\b", re.I), "want to"),
     (re.compile(r"\bgonna\b", re.I), "going to"),
 ]

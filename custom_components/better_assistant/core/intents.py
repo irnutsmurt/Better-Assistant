@@ -47,7 +47,11 @@ def _load_files(language: str) -> dict[str, Any]:
         for intent in (data.get("intents") or {}).values():
             for block in intent.get("data") or []:
                 block["sentences"] = [soften(s) for s in block.get("sentences") or []]
-        merged["intents"].update(data.get("intents") or {})
+        for name, intent in (data.get("intents") or {}).items():
+            if name in merged["intents"]:              # casual_en.yaml adds wordings to an existing intent
+                merged["intents"][name]["data"] = merged["intents"][name]["data"] + (intent.get("data") or [])
+            else:
+                merged["intents"][name] = intent
         merged["lists"].update(data.get("lists") or {})
     return merged
 

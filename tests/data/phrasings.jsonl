@@ -1,0 +1,982 @@
+{"intent": "WhoAmI", "style": "casual", "text": "hey who am i"}
+{"intent": "WhoAmI", "style": "casual", "text": "um do you know who's talking right now"}
+{"intent": "WhoAmI", "style": "casual", "text": "can you tell me who you think i am"}
+{"intent": "WhoAmI", "style": "nonnative", "text": "who is speaking now"}
+{"intent": "WhoAmI", "style": "nonnative", "text": "you know who i am"}
+{"intent": "WhoAmI", "style": "nonnative", "text": "which person is talk to you"}
+{"intent": "WhoAmI", "style": "stt", "text": "who am i"}
+{"intent": "WhoAmI", "style": "stt", "text": "who am i talking to you as"}
+{"intent": "WhoAmI", "style": "terse", "text": "who am i"}
+{"intent": "WhoAmI", "style": "terse", "text": "who's this"}
+{"intent": "ReminderAdd", "style": "casual", "text": "hey can you remind me to take the bins out tonight at eight"}
+{"intent": "ReminderAdd", "style": "casual", "text": "could you please remind me to call my mum tomorrow at 6 pm"}
+{"intent": "ReminderAdd", "style": "casual", "text": "okay so remind me to pick up the dry cleaning at five thanks"}
+{"intent": "ReminderAdd", "style": "casual", "text": "remind me in twenty minutes to check the oven"}
+{"intent": "ReminderAdd", "style": "nonnative", "text": "remind me for buy milk tomorrow morning"}
+{"intent": "ReminderAdd", "style": "nonnative", "text": "you remind me take medicine at 9"}
+{"intent": "ReminderAdd", "style": "nonnative", "text": "please remember me to call doctor at three o'clock"}
+{"intent": "ReminderAdd", "style": "nonnative", "text": "make reminder for pay rent on friday"}
+{"intent": "ReminderAdd", "style": "stt", "text": "remind me to water the plants at 7 30 pm"}
+{"intent": "ReminderAdd", "style": "stt", "text": "me to feed the cat at six"}
+{"intent": "ReminderAdd", "style": "stt", "text": "remind me two call dad at 4 p.m."}
+{"intent": "ReminderAdd", "style": "terse", "text": "remind me to buy bread at 5"}
+{"intent": "ReminderAddFor", "style": "casual", "text": "hey can you remind sam to do his homework at 4"}
+{"intent": "ReminderAddFor", "style": "casual", "text": "could you remind alex to walk the dog after dinner please"}
+{"intent": "ReminderAddFor", "style": "casual", "text": "remind sam to take out the trash tonight at seven"}
+{"intent": "ReminderAddFor", "style": "nonnative", "text": "remind for alex to call grandma tomorrow"}
+{"intent": "ReminderAddFor", "style": "nonnative", "text": "you tell sam remember brush teeth at 8"}
+{"intent": "ReminderAddFor", "style": "nonnative", "text": "make reminder to alex for practice piano at five"}
+{"intent": "ReminderAddFor", "style": "stt", "text": "remind sam to feed the fish at 6 pm"}
+{"intent": "ReminderAddFor", "style": "stt", "text": "remind alex too take her medicine at 9 a.m."}
+{"intent": "ReminderAddFor", "style": "stt", "text": "mind sam to unload the dishwasher at 3 30"}
+{"intent": "ReminderAddFor", "style": "terse", "text": "remind alex homework at 4"}
+{"intent": "ReminderList", "style": "casual", "text": "hey what reminders do i have"}
+{"intent": "ReminderList", "style": "casual", "text": "um do i have any reminders set"}
+{"intent": "ReminderList", "style": "casual", "text": "can you tell me my reminders for today"}
+{"intent": "ReminderList", "style": "casual", "text": "what did i ask you to remind me about"}
+{"intent": "ReminderList", "style": "nonnative", "text": "which reminders i have"}
+{"intent": "ReminderList", "style": "nonnative", "text": "tell me all my reminder"}
+{"intent": "ReminderList", "style": "nonnative", "text": "what is my reminders"}
+{"intent": "ReminderList", "style": "stt", "text": "what are my reminders"}
+{"intent": "ReminderList", "style": "stt", "text": "reminders do i have"}
+{"intent": "ReminderList", "style": "stt", "text": "list my reminders"}
+{"intent": "ReminderList", "style": "terse", "text": "reminders?"}
+{"intent": "ReminderList", "style": "terse", "text": "my reminders"}
+{"intent": "ReminderCancelAll", "style": "casual", "text": "could you please delete all my reminders"}
+{"intent": "ReminderCancelAll", "style": "casual", "text": "okay just clear all of my reminders"}
+{"intent": "ReminderCancelAll", "style": "casual", "text": "um get rid of every reminder i've got"}
+{"intent": "ReminderCancelAll", "style": "nonnative", "text": "delete all reminder please"}
+{"intent": "ReminderCancelAll", "style": "nonnative", "text": "remove the all reminders"}
+{"intent": "ReminderCancelAll", "style": "nonnative", "text": "cancel every reminders"}
+{"intent": "ReminderCancelAll", "style": "stt", "text": "delete all my reminders"}
+{"intent": "ReminderCancelAll", "style": "stt", "text": "cancel all reminders"}
+{"intent": "ReminderCancelAll", "style": "stt", "text": "all my reminders deleted"}
+{"intent": "ReminderCancelAll", "style": "terse", "text": "clear reminders"}
+{"intent": "ReminderCancel", "style": "casual", "text": "hey cancel the reminder about the dentist"}
+{"intent": "ReminderCancel", "style": "casual", "text": "can you delete my reminder to call mum"}
+{"intent": "ReminderCancel", "style": "casual", "text": "actually never mind that reminder about the bins"}
+{"intent": "ReminderCancel", "style": "casual", "text": "could you remove the reminder for picking up sam"}
+{"intent": "ReminderCancel", "style": "nonnative", "text": "delete reminder of buy milk"}
+{"intent": "ReminderCancel", "style": "nonnative", "text": "cancel that reminder for the doctor please"}
+{"intent": "ReminderCancel", "style": "nonnative", "text": "remove reminder about pay rent"}
+{"intent": "ReminderCancel", "style": "stt", "text": "cancel the reminder about the laundry"}
+{"intent": "ReminderCancel", "style": "stt", "text": "delete my reminder to water the plants"}
+{"intent": "ReminderCancel", "style": "stt", "text": "the reminder about the oven cancel it"}
+{"intent": "ReminderCancel", "style": "terse", "text": "cancel dentist reminder"}
+{"intent": "AlarmSet", "style": "casual", "text": "hey set an alarm for seven tomorrow morning"}
+{"intent": "AlarmSet", "style": "casual", "text": "could you wake me up at six thirty please"}
+{"intent": "AlarmSet", "style": "casual", "text": "um can you set an alarm for 7 am in the bedroom"}
+{"intent": "AlarmSet", "style": "casual", "text": "set me an alarm for 6 with some music"}
+{"intent": "AlarmSet", "style": "casual", "text": "wake me up at 7 tomorrow with jazz"}
+{"intent": "AlarmSet", "style": "nonnative", "text": "you make alarm 7 o'clock"}
+{"intent": "AlarmSet", "style": "nonnative", "text": "alarm for seven please"}
+{"intent": "AlarmSet", "style": "nonnative", "text": "put alarm at six and half morning"}
+{"intent": "AlarmSet", "style": "nonnative", "text": "wake up me at 6 30"}
+{"intent": "AlarmSet", "style": "nonnative", "text": "make the alarm for 8 in the bedroom"}
+{"intent": "AlarmSet", "style": "stt", "text": "set an alarm for 6.45 a.m."}
+{"intent": "AlarmSet", "style": "stt", "text": "an alarm for 7"}
+{"intent": "AlarmSet", "style": "stt", "text": "set alarm for 7 30 am"}
+{"intent": "AlarmSet", "style": "stt", "text": "wake me up at six forty five"}
+{"intent": "AlarmSet", "style": "terse", "text": "alarm 7am"}
+{"intent": "AlarmSet", "style": "terse", "text": "alarm six thirty"}
+{"intent": "AlarmMusic", "style": "casual", "text": "hey can you change my wake up music to classical"}
+{"intent": "AlarmMusic", "style": "casual", "text": "i'd like my alarms to play the beatles from now on"}
+{"intent": "AlarmMusic", "style": "casual", "text": "could you make my alarm play radio instead"}
+{"intent": "AlarmMusic", "style": "casual", "text": "um set my wake up music to something relaxing"}
+{"intent": "AlarmMusic", "style": "nonnative", "text": "alarm play rock music please"}
+{"intent": "AlarmMusic", "style": "nonnative", "text": "change music of alarm to jazz"}
+{"intent": "AlarmMusic", "style": "nonnative", "text": "i want alarm with music of queen"}
+{"intent": "AlarmMusic", "style": "stt", "text": "set wake up music to lo-fi"}
+{"intent": "AlarmMusic", "style": "stt", "text": "change the alarm sound to my morning playlist"}
+{"intent": "AlarmMusic", "style": "stt", "text": "make my alarms play coldplay"}
+{"intent": "AlarmMusic", "style": "terse", "text": "alarm music jazz"}
+{"intent": "AlarmChange", "style": "casual", "text": "hey can you change my alarm to seven thirty"}
+{"intent": "AlarmChange", "style": "casual", "text": "actually move my alarm from six to six thirty"}
+{"intent": "AlarmChange", "style": "casual", "text": "could you push my alarm back ten minutes"}
+{"intent": "AlarmChange", "style": "casual", "text": "make my alarm 15 minutes earlier please"}
+{"intent": "AlarmChange", "style": "nonnative", "text": "change the alarm for 8 not 7"}
+{"intent": "AlarmChange", "style": "nonnative", "text": "alarm more late 20 minutes"}
+{"intent": "AlarmChange", "style": "nonnative", "text": "put my alarm more early half hour"}
+{"intent": "AlarmChange", "style": "nonnative", "text": "change alarm at seven to eight"}
+{"intent": "AlarmChange", "style": "stt", "text": "change my alarm to 6.45"}
+{"intent": "AlarmChange", "style": "stt", "text": "my alarm from 7 to 7 15"}
+{"intent": "AlarmChange", "style": "stt", "text": "make the alarm 10 minutes later"}
+{"intent": "AlarmChange", "style": "terse", "text": "alarm to 7:30"}
+{"intent": "AlarmMove", "style": "casual", "text": "hey can you make my alarm go off in the kitchen instead"}
+{"intent": "AlarmMove", "style": "casual", "text": "could you move my alarm to the living room speaker"}
+{"intent": "AlarmMove", "style": "casual", "text": "i want the alarm to ring everywhere tomorrow"}
+{"intent": "AlarmMove", "style": "casual", "text": "um switch the alarm to the bedroom speaker please"}
+{"intent": "AlarmMove", "style": "nonnative", "text": "alarm ring in kitchen not bedroom"}
+{"intent": "AlarmMove", "style": "nonnative", "text": "put the alarm on all speakers"}
+{"intent": "AlarmMove", "style": "nonnative", "text": "change alarm to office speaker"}
+{"intent": "AlarmMove", "style": "stt", "text": "move my alarm to the kids room"}
+{"intent": "AlarmMove", "style": "stt", "text": "play my alarm on every speaker"}
+{"intent": "AlarmMove", "style": "stt", "text": "my alarm to the living room"}
+{"intent": "AlarmMove", "style": "terse", "text": "alarm in the kitchen"}
+{"intent": "AlarmQuery", "style": "casual", "text": "hey when's my alarm set for"}
+{"intent": "AlarmQuery", "style": "casual", "text": "um what time did i set my alarm"}
+{"intent": "AlarmQuery", "style": "casual", "text": "do i have an alarm tomorrow"}
+{"intent": "AlarmQuery", "style": "casual", "text": "can you tell me when my alarm's going off"}
+{"intent": "AlarmQuery", "style": "nonnative", "text": "which time is my alarm"}
+{"intent": "AlarmQuery", "style": "nonnative", "text": "what time alarm will ring"}
+{"intent": "AlarmQuery", "style": "nonnative", "text": "my alarm is for what time"}
+{"intent": "AlarmQuery", "style": "nonnative", "text": "when alarm wake me"}
+{"intent": "AlarmQuery", "style": "stt", "text": "what time is my alarm"}
+{"intent": "AlarmQuery", "style": "stt", "text": "when is my alarm"}
+{"intent": "AlarmQuery", "style": "stt", "text": "is my alarm set"}
+{"intent": "AlarmQuery", "style": "terse", "text": "alarm?"}
+{"intent": "AlarmQuery", "style": "terse", "text": "when's my alarm"}
+{"intent": "AlarmCancel", "style": "casual", "text": "hey cancel my alarm please"}
+{"intent": "AlarmCancel", "style": "casual", "text": "could you turn off tomorrow's alarm i don't need it"}
+{"intent": "AlarmCancel", "style": "casual", "text": "um delete the alarm for seven"}
+{"intent": "AlarmCancel", "style": "casual", "text": "go ahead and get rid of my alarm"}
+{"intent": "AlarmCancel", "style": "nonnative", "text": "remove alarm please"}
+{"intent": "AlarmCancel", "style": "nonnative", "text": "no more alarm for tomorrow"}
+{"intent": "AlarmCancel", "style": "nonnative", "text": "delete the alarm of seven o'clock"}
+{"intent": "AlarmCancel", "style": "stt", "text": "cancel my alarm"}
+{"intent": "AlarmCancel", "style": "stt", "text": "delete my 6 30 alarm"}
+{"intent": "AlarmCancel", "style": "stt", "text": "cancel alarm four seven am"}
+{"intent": "AlarmCancel", "style": "terse", "text": "cancel alarm"}
+{"intent": "AlarmCancel", "style": "terse", "text": "no alarm tomorrow"}
+{"intent": "AlarmSnooze", "style": "casual", "text": "ugh snooze"}
+{"intent": "AlarmSnooze", "style": "casual", "text": "five more minutes please"}
+{"intent": "AlarmSnooze", "style": "casual", "text": "can you snooze it for ten minutes"}
+{"intent": "AlarmSnooze", "style": "casual", "text": "hey snooze the alarm"}
+{"intent": "AlarmSnooze", "style": "nonnative", "text": "snooze ten minute"}
+{"intent": "AlarmSnooze", "style": "nonnative", "text": "let me sleep more five minutes"}
+{"intent": "AlarmSnooze", "style": "nonnative", "text": "make snooze please"}
+{"intent": "AlarmSnooze", "style": "stt", "text": "snooze for 10 minutes"}
+{"intent": "AlarmSnooze", "style": "stt", "text": "snooze 9 minutes"}
+{"intent": "AlarmSnooze", "style": "stt", "text": "snooze it"}
+{"intent": "AlarmSnooze", "style": "terse", "text": "snooze"}
+{"intent": "AlarmSnoozeSet", "style": "casual", "text": "could you make the snooze ten minutes from now on"}
+{"intent": "AlarmSnoozeSet", "style": "casual", "text": "hey change my snooze to 5 minutes"}
+{"intent": "AlarmSnoozeSet", "style": "casual", "text": "um i want snooze to be fifteen minutes long"}
+{"intent": "AlarmSnoozeSet", "style": "nonnative", "text": "snooze time make 10 minutes"}
+{"intent": "AlarmSnoozeSet", "style": "nonnative", "text": "put snooze long 7 minutes"}
+{"intent": "AlarmSnoozeSet", "style": "nonnative", "text": "change the snooze for be 5 minute"}
+{"intent": "AlarmSnoozeSet", "style": "stt", "text": "set snooze length to 10 minutes"}
+{"intent": "AlarmSnoozeSet", "style": "stt", "text": "set the snooze to nine minutes"}
+{"intent": "AlarmSnoozeSet", "style": "stt", "text": "change snooze duration to 15 minutes"}
+{"intent": "AlarmSnoozeSet", "style": "terse", "text": "snooze length 10 minutes"}
+{"intent": "AlarmSnoozeQuery", "style": "casual", "text": "hey how long is my snooze"}
+{"intent": "AlarmSnoozeQuery", "style": "casual", "text": "um how many minutes does snooze give me"}
+{"intent": "AlarmSnoozeQuery", "style": "casual", "text": "what's the snooze set to"}
+{"intent": "AlarmSnoozeQuery", "style": "nonnative", "text": "how much time is snooze"}
+{"intent": "AlarmSnoozeQuery", "style": "nonnative", "text": "snooze is how long"}
+{"intent": "AlarmSnoozeQuery", "style": "nonnative", "text": "how many minute the snooze"}
+{"intent": "AlarmSnoozeQuery", "style": "stt", "text": "how long is snooze"}
+{"intent": "AlarmSnoozeQuery", "style": "stt", "text": "what's my snooze length"}
+{"intent": "AlarmSnoozeQuery", "style": "stt", "text": "long is the snooze"}
+{"intent": "AlarmSnoozeQuery", "style": "terse", "text": "snooze length?"}
+{"intent": "SnoozeLimitSet", "style": "casual", "text": "hey only let me snooze twice"}
+{"intent": "SnoozeLimitSet", "style": "casual", "text": "can you limit my snoozes to three"}
+{"intent": "SnoozeLimitSet", "style": "casual", "text": "don't let me snooze at all tomorrow okay"}
+{"intent": "SnoozeLimitSet", "style": "casual", "text": "um no snoozing please"}
+{"intent": "SnoozeLimitSet", "style": "nonnative", "text": "snooze only 2 times maximum"}
+{"intent": "SnoozeLimitSet", "style": "nonnative", "text": "i want not snooze anymore"}
+{"intent": "SnoozeLimitSet", "style": "nonnative", "text": "make snooze limit for three"}
+{"intent": "SnoozeLimitSet", "style": "stt", "text": "limit snoozes to 2"}
+{"intent": "SnoozeLimitSet", "style": "stt", "text": "set snooze limit to three"}
+{"intent": "SnoozeLimitSet", "style": "stt", "text": "no more than 2 snoozes"}
+{"intent": "SnoozeLimitSet", "style": "terse", "text": "max two snoozes"}
+{"intent": "SnoozeLimitClear", "style": "casual", "text": "okay let me snooze as much as i want"}
+{"intent": "SnoozeLimitClear", "style": "casual", "text": "could you remove the snooze limit"}
+{"intent": "SnoozeLimitClear", "style": "casual", "text": "hey turn off the snooze limit please"}
+{"intent": "SnoozeLimitClear", "style": "nonnative", "text": "delete limit of snooze"}
+{"intent": "SnoozeLimitClear", "style": "nonnative", "text": "i can snooze again no limit"}
+{"intent": "SnoozeLimitClear", "style": "nonnative", "text": "snooze unlimited please"}
+{"intent": "SnoozeLimitClear", "style": "stt", "text": "remove snooze limit"}
+{"intent": "SnoozeLimitClear", "style": "stt", "text": "allow snoozing"}
+{"intent": "SnoozeLimitClear", "style": "stt", "text": "clear the snooze limit"}
+{"intent": "SnoozeLimitClear", "style": "terse", "text": "unlimited snoozes"}
+{"intent": "SnoozeLimitQuery", "style": "casual", "text": "hey how many snoozes do i get"}
+{"intent": "SnoozeLimitQuery", "style": "casual", "text": "um how many times can i snooze"}
+{"intent": "SnoozeLimitQuery", "style": "casual", "text": "what's my snooze limit set to"}
+{"intent": "SnoozeLimitQuery", "style": "nonnative", "text": "how many time i can snooze"}
+{"intent": "SnoozeLimitQuery", "style": "nonnative", "text": "snooze limit is what"}
+{"intent": "SnoozeLimitQuery", "style": "nonnative", "text": "how much snoozes i have"}
+{"intent": "SnoozeLimitQuery", "style": "stt", "text": "how many snoozes do i have"}
+{"intent": "SnoozeLimitQuery", "style": "stt", "text": "what is the snooze limit"}
+{"intent": "SnoozeLimitQuery", "style": "stt", "text": "many snoozes do i get"}
+{"intent": "SnoozeLimitQuery", "style": "terse", "text": "snooze limit?"}
+{"intent": "AlarmStop", "style": "casual", "text": "okay okay stop"}
+{"intent": "AlarmStop", "style": "casual", "text": "turn off the alarm i'm up"}
+{"intent": "AlarmStop", "style": "casual", "text": "hey stop the alarm please"}
+{"intent": "AlarmStop", "style": "casual", "text": "shut it off"}
+{"intent": "AlarmStop", "style": "nonnative", "text": "stop alarm"}
+{"intent": "AlarmStop", "style": "nonnative", "text": "close the alarm"}
+{"intent": "AlarmStop", "style": "nonnative", "text": "alarm off please i wake"}
+{"intent": "AlarmStop", "style": "stt", "text": "stop the alarm"}
+{"intent": "AlarmStop", "style": "stt", "text": "turn the alarm off"}
+{"intent": "AlarmStop", "style": "stt", "text": "alarm off"}
+{"intent": "AlarmStop", "style": "terse", "text": "stop"}
+{"intent": "AlarmStop", "style": "terse", "text": "i'm awake"}
+{"intent": "NoteAdd", "style": "casual", "text": "hey take a note that the plumber is coming on tuesday"}
+{"intent": "NoteAdd", "style": "casual", "text": "remember that i put the spare key in the blue pot"}
+{"intent": "NoteAdd", "style": "casual", "text": "could you note that the wifi password is on the fridge"}
+{"intent": "NoteAdd", "style": "casual", "text": "um remember i left my passport in the desk drawer"}
+{"intent": "NoteAdd", "style": "casual", "text": "make a note buy new light bulbs"}
+{"intent": "NoteAdd", "style": "nonnative", "text": "you remember my keys is in the kitchen drawer"}
+{"intent": "NoteAdd", "style": "nonnative", "text": "write note the car is in level 3"}
+{"intent": "NoteAdd", "style": "nonnative", "text": "remember for me i put the charger in office"}
+{"intent": "NoteAdd", "style": "nonnative", "text": "keep in mind gift is under bed"}
+{"intent": "NoteAdd", "style": "stt", "text": "take a note the boiler code is 4 7 2 1"}
+{"intent": "NoteAdd", "style": "stt", "text": "remember that i put the batteries in the garage cabinet"}
+{"intent": "NoteAdd", "style": "stt", "text": "note that alex's shoes are in the closet"}
+{"intent": "NoteAdd", "style": "terse", "text": "note call the bank"}
+{"intent": "NoteFind", "style": "casual", "text": "hey where did i put my keys"}
+{"intent": "NoteFind", "style": "casual", "text": "um do you remember where i left the passport"}
+{"intent": "NoteFind", "style": "casual", "text": "where'd i put the spare key"}
+{"intent": "NoteFind", "style": "casual", "text": "can you remind me where i put the charger"}
+{"intent": "NoteFind", "style": "nonnative", "text": "where i put the batteries"}
+{"intent": "NoteFind", "style": "nonnative", "text": "where is my passport i told you"}
+{"intent": "NoteFind", "style": "nonnative", "text": "where i leave the car keys"}
+{"intent": "NoteFind", "style": "stt", "text": "where did i put the remote"}
+{"intent": "NoteFind", "style": "stt", "text": "where did i leave my glasses"}
+{"intent": "NoteFind", "style": "stt", "text": "did i put the scissors"}
+{"intent": "NoteFind", "style": "terse", "text": "where's my passport"}
+{"intent": "NoteRead", "style": "casual", "text": "hey read me my notes"}
+{"intent": "NoteRead", "style": "casual", "text": "what notes have i got"}
+{"intent": "NoteRead", "style": "casual", "text": "can you tell me what i asked you to remember"}
+{"intent": "NoteRead", "style": "nonnative", "text": "say my notes please"}
+{"intent": "NoteRead", "style": "nonnative", "text": "what is in my notes"}
+{"intent": "NoteRead", "style": "nonnative", "text": "read the notes for me"}
+{"intent": "NoteRead", "style": "stt", "text": "read my notes"}
+{"intent": "NoteRead", "style": "stt", "text": "what are my notes"}
+{"intent": "NoteRead", "style": "stt", "text": "my notes"}
+{"intent": "NoteRead", "style": "terse", "text": "notes?"}
+{"intent": "NoteClear", "style": "casual", "text": "hey delete all my notes"}
+{"intent": "NoteClear", "style": "casual", "text": "could you clear out my notes please"}
+{"intent": "NoteClear", "style": "casual", "text": "um forget everything i told you to remember"}
+{"intent": "NoteClear", "style": "nonnative", "text": "remove all the notes"}
+{"intent": "NoteClear", "style": "nonnative", "text": "delete notes please"}
+{"intent": "NoteClear", "style": "nonnative", "text": "forget my notes"}
+{"intent": "NoteClear", "style": "stt", "text": "clear my notes"}
+{"intent": "NoteClear", "style": "stt", "text": "delete my notes"}
+{"intent": "NoteClear", "style": "stt", "text": "erase all notes"}
+{"intent": "NoteClear", "style": "terse", "text": "clear notes"}
+{"intent": "MessageLeave", "style": "casual", "text": "hey leave a message for sam that dinner's in the oven"}
+{"intent": "MessageLeave", "style": "casual", "text": "can you tell alex i'll be home late when she gets back"}
+{"intent": "MessageLeave", "style": "casual", "text": "leave a note for everyone that i went to the shop"}
+{"intent": "MessageLeave", "style": "casual", "text": "um leave a message for sam saying call me"}
+{"intent": "MessageLeave", "style": "nonnative", "text": "give message to alex i am at gym"}
+{"intent": "MessageLeave", "style": "nonnative", "text": "say to sam when he come home do homework"}
+{"intent": "MessageLeave", "style": "nonnative", "text": "leave message for everybody, dog was fed"}
+{"intent": "MessageLeave", "style": "stt", "text": "leave a message for alex the package is in the garage"}
+{"intent": "MessageLeave", "style": "stt", "text": "message for sam take the chicken out"}
+{"intent": "MessageLeave", "style": "stt", "text": "leave a message for everyone pizza tonight"}
+{"intent": "MessageLeave", "style": "terse", "text": "message sam back at six"}
+{"intent": "MessageRead", "style": "casual", "text": "hey do i have any messages"}
+{"intent": "MessageRead", "style": "casual", "text": "did anyone leave me a message"}
+{"intent": "MessageRead", "style": "casual", "text": "um read me my messages"}
+{"intent": "MessageRead", "style": "nonnative", "text": "there is message for me"}
+{"intent": "MessageRead", "style": "nonnative", "text": "somebody leave me message"}
+{"intent": "MessageRead", "style": "nonnative", "text": "read the messages for me please"}
+{"intent": "MessageRead", "style": "stt", "text": "any messages"}
+{"intent": "MessageRead", "style": "stt", "text": "read my messages"}
+{"intent": "MessageRead", "style": "stt", "text": "do i have messages"}
+{"intent": "MessageRead", "style": "terse", "text": "messages?"}
+{"intent": "MessageRead", "style": "terse", "text": "my messages"}
+{"intent": "StopwatchStart", "style": "casual", "text": "hey start a stopwatch"}
+{"intent": "StopwatchStart", "style": "casual", "text": "could you start timing me"}
+{"intent": "StopwatchStart", "style": "casual", "text": "okay start the stopwatch now"}
+{"intent": "StopwatchStart", "style": "nonnative", "text": "begin stopwatch"}
+{"intent": "StopwatchStart", "style": "nonnative", "text": "start count time please"}
+{"intent": "StopwatchStart", "style": "nonnative", "text": "make stopwatch start"}
+{"intent": "StopwatchStart", "style": "stt", "text": "start stopwatch"}
+{"intent": "StopwatchStart", "style": "stt", "text": "start the stop watch"}
+{"intent": "StopwatchStart", "style": "stt", "text": "stopwatch start"}
+{"intent": "StopwatchStart", "style": "terse", "text": "stopwatch"}
+{"intent": "StopwatchStop", "style": "casual", "text": "okay stop the stopwatch"}
+{"intent": "StopwatchStop", "style": "casual", "text": "hey stop timing"}
+{"intent": "StopwatchStop", "style": "casual", "text": "could you stop the stopwatch please"}
+{"intent": "StopwatchStop", "style": "nonnative", "text": "finish stopwatch"}
+{"intent": "StopwatchStop", "style": "nonnative", "text": "stop the count time"}
+{"intent": "StopwatchStop", "style": "nonnative", "text": "stopwatch end now"}
+{"intent": "StopwatchStop", "style": "stt", "text": "stop stopwatch"}
+{"intent": "StopwatchStop", "style": "stt", "text": "stop the stop watch"}
+{"intent": "StopwatchStop", "style": "stt", "text": "stopwatch stop"}
+{"intent": "StopwatchStop", "style": "terse", "text": "stop stopwatch"}
+{"intent": "StopwatchRead", "style": "casual", "text": "how long has the stopwatch been going"}
+{"intent": "StopwatchRead", "style": "casual", "text": "hey what's the stopwatch at"}
+{"intent": "StopwatchRead", "style": "casual", "text": "um how much time is on the stopwatch"}
+{"intent": "StopwatchRead", "style": "nonnative", "text": "how many time in the stopwatch"}
+{"intent": "StopwatchRead", "style": "nonnative", "text": "stopwatch is how much"}
+{"intent": "StopwatchRead", "style": "nonnative", "text": "tell me the stopwatch time"}
+{"intent": "StopwatchRead", "style": "stt", "text": "what's the stopwatch at"}
+{"intent": "StopwatchRead", "style": "stt", "text": "how long on the stopwatch"}
+{"intent": "StopwatchRead", "style": "stt", "text": "stopwatch time"}
+{"intent": "StopwatchRead", "style": "terse", "text": "stopwatch?"}
+{"intent": "MusicPlay", "style": "casual", "text": "hey play some music"}
+{"intent": "MusicPlay", "style": "casual", "text": "can you put on some jazz in the kitchen"}
+{"intent": "MusicPlay", "style": "casual", "text": "play the beatles please"}
+{"intent": "MusicPlay", "style": "casual", "text": "could you play my chill playlist in the living room"}
+{"intent": "MusicPlay", "style": "casual", "text": "um put on bbc radio 2"}
+{"intent": "MusicPlay", "style": "casual", "text": "play the album abbey road by the beatles"}
+{"intent": "MusicPlay", "style": "nonnative", "text": "put music please"}
+{"intent": "MusicPlay", "style": "nonnative", "text": "play some music on kitchen"}
+{"intent": "MusicPlay", "style": "nonnative", "text": "i want listen taylor swift"}
+{"intent": "MusicPlay", "style": "nonnative", "text": "open the music in living room"}
+{"intent": "MusicPlay", "style": "stt", "text": "play music in the bedroom"}
+{"intent": "MusicPlay", "style": "stt", "text": "play coldplay"}
+{"intent": "MusicPlay", "style": "stt", "text": "lay some music"}
+{"intent": "MusicPlay", "style": "stt", "text": "play radio 4"}
+{"intent": "MusicPlay", "style": "terse", "text": "music"}
+{"intent": "MusicPlay", "style": "terse", "text": "play jazz"}
+{"intent": "MusicNowPlaying", "style": "casual", "text": "hey what song is this"}
+{"intent": "MusicNowPlaying", "style": "casual", "text": "who sings this"}
+{"intent": "MusicNowPlaying", "style": "casual", "text": "um what's this song called"}
+{"intent": "MusicNowPlaying", "style": "casual", "text": "what's playing right now"}
+{"intent": "MusicNowPlaying", "style": "nonnative", "text": "what is play now"}
+{"intent": "MusicNowPlaying", "style": "nonnative", "text": "which song is this"}
+{"intent": "MusicNowPlaying", "style": "nonnative", "text": "who is singer of this"}
+{"intent": "MusicNowPlaying", "style": "stt", "text": "what song is playing"}
+{"intent": "MusicNowPlaying", "style": "stt", "text": "what's this song"}
+{"intent": "MusicNowPlaying", "style": "stt", "text": "who's this by"}
+{"intent": "MusicNowPlaying", "style": "terse", "text": "song?"}
+{"intent": "MusicLouder", "style": "casual", "text": "turn it up a bit"}
+{"intent": "MusicLouder", "style": "casual", "text": "can you make the music louder please"}
+{"intent": "MusicLouder", "style": "casual", "text": "hey turn the music up in the kitchen"}
+{"intent": "MusicLouder", "style": "casual", "text": "crank it up"}
+{"intent": "MusicLouder", "style": "nonnative", "text": "music more loud"}
+{"intent": "MusicLouder", "style": "nonnative", "text": "put the music more high"}
+{"intent": "MusicLouder", "style": "nonnative", "text": "more volume please"}
+{"intent": "MusicLouder", "style": "stt", "text": "turn the music up"}
+{"intent": "MusicLouder", "style": "stt", "text": "louder"}
+{"intent": "MusicLouder", "style": "stt", "text": "volume up"}
+{"intent": "MusicLouder", "style": "terse", "text": "louder please"}
+{"intent": "MusicQuieter", "style": "casual", "text": "could you turn it down a bit"}
+{"intent": "MusicQuieter", "style": "casual", "text": "hey turn the music down please"}
+{"intent": "MusicQuieter", "style": "casual", "text": "bit quieter"}
+{"intent": "MusicQuieter", "style": "casual", "text": "can you lower the volume in the living room"}
+{"intent": "MusicQuieter", "style": "nonnative", "text": "put the music more low"}
+{"intent": "MusicQuieter", "style": "nonnative", "text": "music less loud"}
+{"intent": "MusicQuieter", "style": "nonnative", "text": "make volume small"}
+{"intent": "MusicQuieter", "style": "stt", "text": "turn the music down"}
+{"intent": "MusicQuieter", "style": "stt", "text": "quieter"}
+{"intent": "MusicQuieter", "style": "stt", "text": "volume down"}
+{"intent": "MusicQuieter", "style": "terse", "text": "turn it down"}
+{"intent": "MusicStop", "style": "casual", "text": "okay stop the music"}
+{"intent": "MusicStop", "style": "casual", "text": "hey pause that"}
+{"intent": "MusicStop", "style": "casual", "text": "can you turn the music off please"}
+{"intent": "MusicStop", "style": "casual", "text": "shut the music off in the kitchen"}
+{"intent": "MusicStop", "style": "nonnative", "text": "stop music"}
+{"intent": "MusicStop", "style": "nonnative", "text": "close the music"}
+{"intent": "MusicStop", "style": "nonnative", "text": "no more music please"}
+{"intent": "MusicStop", "style": "stt", "text": "stop the music"}
+{"intent": "MusicStop", "style": "stt", "text": "pause the music"}
+{"intent": "MusicStop", "style": "stt", "text": "pause"}
+{"intent": "MusicStop", "style": "terse", "text": "music off"}
+{"intent": "MusicMove", "style": "casual", "text": "hey move the music to the kitchen"}
+{"intent": "MusicMove", "style": "casual", "text": "can you play this in the living room instead"}
+{"intent": "MusicMove", "style": "casual", "text": "could you send the music to the bedroom please"}
+{"intent": "MusicMove", "style": "casual", "text": "um move this song over to the office"}
+{"intent": "MusicMove", "style": "nonnative", "text": "put the music in kitchen now"}
+{"intent": "MusicMove", "style": "nonnative", "text": "music go to living room"}
+{"intent": "MusicMove", "style": "nonnative", "text": "change music to bedroom speaker"}
+{"intent": "MusicMove", "style": "stt", "text": "move the music to the kids room"}
+{"intent": "MusicMove", "style": "stt", "text": "play this in the kitchen"}
+{"intent": "MusicMove", "style": "stt", "text": "move music to the office"}
+{"intent": "MusicMove", "style": "terse", "text": "music to kitchen"}
+{"intent": "MusicSleep", "style": "casual", "text": "hey stop the music in thirty minutes"}
+{"intent": "MusicSleep", "style": "casual", "text": "could you turn the music off in an hour"}
+{"intent": "MusicSleep", "style": "casual", "text": "set a sleep timer for 20 minutes"}
+{"intent": "MusicSleep", "style": "casual", "text": "um turn off the music after 15 minutes"}
+{"intent": "MusicSleep", "style": "nonnative", "text": "music stop after 30 minute"}
+{"intent": "MusicSleep", "style": "nonnative", "text": "close the music in half hour"}
+{"intent": "MusicSleep", "style": "nonnative", "text": "music sleep 20 minutes"}
+{"intent": "MusicSleep", "style": "stt", "text": "stop music in 45 minutes"}
+{"intent": "MusicSleep", "style": "stt", "text": "turn off the music in 30 minutes"}
+{"intent": "MusicSleep", "style": "stt", "text": "sleep timer 20 minutes"}
+{"intent": "MusicSleep", "style": "terse", "text": "music off in 10 minutes"}
+{"intent": "CalendarList", "style": "casual", "text": "hey what's on my calendar today"}
+{"intent": "CalendarList", "style": "casual", "text": "what do i have going on tomorrow"}
+{"intent": "CalendarList", "style": "casual", "text": "um what's on the calendar for friday"}
+{"intent": "CalendarList", "style": "casual", "text": "could you tell me what's on my schedule today"}
+{"intent": "CalendarList", "style": "nonnative", "text": "what i have today"}
+{"intent": "CalendarList", "style": "nonnative", "text": "what is in calendar tomorrow"}
+{"intent": "CalendarList", "style": "nonnative", "text": "tell me my plan for saturday"}
+{"intent": "CalendarList", "style": "stt", "text": "what's on my calendar tomorrow"}
+{"intent": "CalendarList", "style": "stt", "text": "what's on the calendar today"}
+{"intent": "CalendarList", "style": "stt", "text": "what do i have on monday"}
+{"intent": "CalendarList", "style": "terse", "text": "calendar today"}
+{"intent": "CalendarList", "style": "terse", "text": "today's schedule"}
+{"intent": "CalendarNext", "style": "casual", "text": "hey what's my next appointment"}
+{"intent": "CalendarNext", "style": "casual", "text": "um when's my next meeting"}
+{"intent": "CalendarNext", "style": "casual", "text": "what've i got coming up next"}
+{"intent": "CalendarNext", "style": "nonnative", "text": "what is next event"}
+{"intent": "CalendarNext", "style": "nonnative", "text": "when my next appointment is"}
+{"intent": "CalendarNext", "style": "nonnative", "text": "which is my next meeting"}
+{"intent": "CalendarNext", "style": "stt", "text": "what's my next event"}
+{"intent": "CalendarNext", "style": "stt", "text": "next appointment"}
+{"intent": "CalendarNext", "style": "stt", "text": "what's next on my calendar"}
+{"intent": "CalendarNext", "style": "terse", "text": "next event"}
+{"intent": "CalendarAdd", "style": "casual", "text": "hey add dentist on tuesday at 3pm to my calendar"}
+{"intent": "CalendarAdd", "style": "casual", "text": "could you put a meeting with sam on friday at 10"}
+{"intent": "CalendarAdd", "style": "casual", "text": "can you schedule soccer practice for saturday at nine"}
+{"intent": "CalendarAdd", "style": "casual", "text": "add dinner with alex tomorrow at 7 to the calendar"}
+{"intent": "CalendarAdd", "style": "nonnative", "text": "put in calendar doctor on monday 4 o'clock"}
+{"intent": "CalendarAdd", "style": "nonnative", "text": "make event haircut thursday at 2"}
+{"intent": "CalendarAdd", "style": "nonnative", "text": "add to calendar party for sunday at six evening"}
+{"intent": "CalendarAdd", "style": "stt", "text": "add dentist appointment on wednesday at 2 30 pm"}
+{"intent": "CalendarAdd", "style": "stt", "text": "add a meeting to my calendar tomorrow at 9 a.m."}
+{"intent": "CalendarAdd", "style": "stt", "text": "schedule lunch with mum on friday at 12"}
+{"intent": "CalendarAdd", "style": "terse", "text": "calendar dentist tuesday 3pm"}
+{"intent": "RoomOff", "style": "casual", "text": "hey turn off everything in the kitchen"}
+{"intent": "RoomOff", "style": "casual", "text": "could you turn the living room off please"}
+{"intent": "RoomOff", "style": "casual", "text": "um switch off all the lights in the bedroom"}
+{"intent": "RoomOff", "style": "casual", "text": "kill the lights in the office"}
+{"intent": "RoomOff", "style": "nonnative", "text": "close the light in kitchen"}
+{"intent": "RoomOff", "style": "nonnative", "text": "close everything in living room"}
+{"intent": "RoomOff", "style": "nonnative", "text": "switch off the kids room all"}
+{"intent": "RoomOff", "style": "stt", "text": "turn off the bedroom"}
+{"intent": "RoomOff", "style": "stt", "text": "lights off in the kitchen"}
+{"intent": "RoomOff", "style": "stt", "text": "turn off all the lights in the garage"}
+{"intent": "RoomOff", "style": "terse", "text": "kitchen off"}
+{"intent": "RoomOff", "style": "terse", "text": "office lights off"}
+{"intent": "RoomOn", "style": "casual", "text": "hey turn on the kitchen lights"}
+{"intent": "RoomOn", "style": "casual", "text": "could you turn the living room on please"}
+{"intent": "RoomOn", "style": "casual", "text": "um switch on the lights in the bedroom"}
+{"intent": "RoomOn", "style": "casual", "text": "lights on in the office please"}
+{"intent": "RoomOn", "style": "nonnative", "text": "open the light in kitchen"}
+{"intent": "RoomOn", "style": "nonnative", "text": "open the living room lights"}
+{"intent": "RoomOn", "style": "nonnative", "text": "make light on in kids room"}
+{"intent": "RoomOn", "style": "stt", "text": "turn on the garage lights"}
+{"intent": "RoomOn", "style": "stt", "text": "lights on in the bedroom"}
+{"intent": "RoomOn", "style": "stt", "text": "turn on the kitchen"}
+{"intent": "RoomOn", "style": "terse", "text": "kitchen on"}
+{"intent": "RoomOn", "style": "terse", "text": "living room lights on"}
+{"intent": "RoomWhichLights", "style": "casual", "text": "hey which lights are on"}
+{"intent": "RoomWhichLights", "style": "casual", "text": "are any lights still on in the house"}
+{"intent": "RoomWhichLights", "style": "casual", "text": "um what lights did we leave on downstairs"}
+{"intent": "RoomWhichLights", "style": "casual", "text": "which lights are on in the kitchen"}
+{"intent": "RoomWhichLights", "style": "nonnative", "text": "what lights is on"}
+{"intent": "RoomWhichLights", "style": "nonnative", "text": "which light still open"}
+{"intent": "RoomWhichLights", "style": "nonnative", "text": "there is light on in the house"}
+{"intent": "RoomWhichLights", "style": "stt", "text": "what lights are on"}
+{"intent": "RoomWhichLights", "style": "stt", "text": "which lights are on in the living room"}
+{"intent": "RoomWhichLights", "style": "stt", "text": "are any lights on"}
+{"intent": "RoomWhichLights", "style": "terse", "text": "lights on?"}
+{"intent": "DelayedCommand", "style": "casual", "text": "hey turn off the kitchen lights in ten minutes"}
+{"intent": "DelayedCommand", "style": "casual", "text": "could you switch off the living room in half an hour"}
+{"intent": "DelayedCommand", "style": "casual", "text": "in twenty minutes turn on the porch light please"}
+{"intent": "DelayedCommand", "style": "casual", "text": "um turn the bedroom lights off in 5 minutes"}
+{"intent": "DelayedCommand", "style": "nonnative", "text": "close the light of kitchen after 10 minutes"}
+{"intent": "DelayedCommand", "style": "nonnative", "text": "after 15 minute turn off the living room"}
+{"intent": "DelayedCommand", "style": "nonnative", "text": "in 30 minutes switch off bedroom light please"}
+{"intent": "DelayedCommand", "style": "stt", "text": "turn off the office lights in 10 minutes"}
+{"intent": "DelayedCommand", "style": "stt", "text": "turn on the garage light in 5 minutes"}
+{"intent": "DelayedCommand", "style": "stt", "text": "the lights off in the kitchen in 20 minutes"}
+{"intent": "DelayedCommand", "style": "terse", "text": "kitchen off in 10 minutes"}
+{"intent": "TimedCommand", "style": "casual", "text": "hey turn on the porch light at seven tonight"}
+{"intent": "TimedCommand", "style": "casual", "text": "could you turn off the kitchen lights at eleven"}
+{"intent": "TimedCommand", "style": "casual", "text": "switch on the living room at 6pm please"}
+{"intent": "TimedCommand", "style": "casual", "text": "at 10 o'clock turn off the bedroom lights"}
+{"intent": "TimedCommand", "style": "nonnative", "text": "open the light of porch at 7 evening"}
+{"intent": "TimedCommand", "style": "nonnative", "text": "at nine turn off all light in office"}
+{"intent": "TimedCommand", "style": "nonnative", "text": "close the kids room light at 8 o'clock"}
+{"intent": "TimedCommand", "style": "stt", "text": "turn on the porch light at 7 pm"}
+{"intent": "TimedCommand", "style": "stt", "text": "turn off the garage lights at 10 30 p.m."}
+{"intent": "TimedCommand", "style": "stt", "text": "at 6 a.m. turn on the kitchen lights"}
+{"intent": "TimedCommand", "style": "terse", "text": "porch light on at 7pm"}
+{"intent": "LightDim", "style": "casual", "text": "hey dim the lights in the living room"}
+{"intent": "LightDim", "style": "casual", "text": "could you make it a bit darker in here"}
+{"intent": "LightDim", "style": "casual", "text": "um turn the kitchen lights down a bit"}
+{"intent": "LightDim", "style": "casual", "text": "dim the bedroom lights please"}
+{"intent": "LightDim", "style": "nonnative", "text": "make the light less bright"}
+{"intent": "LightDim", "style": "nonnative", "text": "lights more dark please"}
+{"intent": "LightDim", "style": "nonnative", "text": "put the light low in kitchen"}
+{"intent": "LightDim", "style": "stt", "text": "dim the living room lights"}
+{"intent": "LightDim", "style": "stt", "text": "turn down the lights"}
+{"intent": "LightDim", "style": "stt", "text": "dim the office"}
+{"intent": "LightDim", "style": "terse", "text": "dim lights"}
+{"intent": "LightBrighten", "style": "casual", "text": "hey brighten the lights in the kitchen"}
+{"intent": "LightBrighten", "style": "casual", "text": "can you make it brighter in here"}
+{"intent": "LightBrighten", "style": "casual", "text": "um turn the living room lights up a bit"}
+{"intent": "LightBrighten", "style": "casual", "text": "could you make the office lights brighter"}
+{"intent": "LightBrighten", "style": "nonnative", "text": "more light please"}
+{"intent": "LightBrighten", "style": "nonnative", "text": "make the light more strong"}
+{"intent": "LightBrighten", "style": "nonnative", "text": "put the lights more bright in bedroom"}
+{"intent": "LightBrighten", "style": "stt", "text": "brighten the lights"}
+{"intent": "LightBrighten", "style": "stt", "text": "turn up the kitchen lights"}
+{"intent": "LightBrighten", "style": "stt", "text": "make the lights brighter"}
+{"intent": "LightBrighten", "style": "terse", "text": "brighter"}
+{"intent": "LightWarmer", "style": "casual", "text": "hey make the lights warmer in the living room"}
+{"intent": "LightWarmer", "style": "casual", "text": "could you make the light a bit more yellow"}
+{"intent": "LightWarmer", "style": "casual", "text": "um can the bedroom lights be warmer please"}
+{"intent": "LightWarmer", "style": "nonnative", "text": "make the light more hot"}
+{"intent": "LightWarmer", "style": "nonnative", "text": "light more warm color"}
+{"intent": "LightWarmer", "style": "nonnative", "text": "put the lights warm in kitchen"}
+{"intent": "LightWarmer", "style": "stt", "text": "make the lights warmer"}
+{"intent": "LightWarmer", "style": "stt", "text": "warmer light in the bedroom"}
+{"intent": "LightWarmer", "style": "stt", "text": "warmer lights"}
+{"intent": "LightWarmer", "style": "terse", "text": "warmer lights please"}
+{"intent": "LightCooler", "style": "casual", "text": "hey make the lights cooler in the office"}
+{"intent": "LightCooler", "style": "casual", "text": "could you make the light a bit whiter"}
+{"intent": "LightCooler", "style": "casual", "text": "um can the kitchen lights be cooler please"}
+{"intent": "LightCooler", "style": "nonnative", "text": "make the light more cold"}
+{"intent": "LightCooler", "style": "nonnative", "text": "light more blue color"}
+{"intent": "LightCooler", "style": "nonnative", "text": "put the light cold in office"}
+{"intent": "LightCooler", "style": "stt", "text": "make the lights cooler"}
+{"intent": "LightCooler", "style": "stt", "text": "cooler light in the kitchen"}
+{"intent": "LightCooler", "style": "stt", "text": "cooler lights"}
+{"intent": "LightCooler", "style": "terse", "text": "cooler lights please"}
+{"intent": "ClimateWarmer", "style": "casual", "text": "hey it's a bit chilly can you make it warmer"}
+{"intent": "ClimateWarmer", "style": "casual", "text": "could you turn the heat up please"}
+{"intent": "ClimateWarmer", "style": "casual", "text": "um bump the thermostat up a couple of degrees"}
+{"intent": "ClimateWarmer", "style": "casual", "text": "make it warmer in here"}
+{"intent": "ClimateWarmer", "style": "nonnative", "text": "i am cold make more hot"}
+{"intent": "ClimateWarmer", "style": "nonnative", "text": "put the heating more high"}
+{"intent": "ClimateWarmer", "style": "nonnative", "text": "make the house more warm"}
+{"intent": "ClimateWarmer", "style": "stt", "text": "turn up the heat"}
+{"intent": "ClimateWarmer", "style": "stt", "text": "make it warmer"}
+{"intent": "ClimateWarmer", "style": "stt", "text": "raise the temperature two degrees"}
+{"intent": "ClimateWarmer", "style": "terse", "text": "warmer"}
+{"intent": "ClimateCooler", "style": "casual", "text": "hey it's too hot in here can you cool it down"}
+{"intent": "ClimateCooler", "style": "casual", "text": "could you turn the thermostat down a bit please"}
+{"intent": "ClimateCooler", "style": "casual", "text": "um make it cooler"}
+{"intent": "ClimateCooler", "style": "casual", "text": "turn the temperature down a couple degrees"}
+{"intent": "ClimateCooler", "style": "nonnative", "text": "is too hot make more cold"}
+{"intent": "ClimateCooler", "style": "nonnative", "text": "put the temperature more low"}
+{"intent": "ClimateCooler", "style": "nonnative", "text": "make the house more fresh"}
+{"intent": "ClimateCooler", "style": "stt", "text": "make it cooler"}
+{"intent": "ClimateCooler", "style": "stt", "text": "lower the temperature"}
+{"intent": "ClimateCooler", "style": "stt", "text": "turn down the heat"}
+{"intent": "ClimateCooler", "style": "terse", "text": "cooler"}
+{"intent": "ClimateQuery", "style": "casual", "text": "hey what's the thermostat set to"}
+{"intent": "ClimateQuery", "style": "casual", "text": "um what's the temperature inside right now"}
+{"intent": "ClimateQuery", "style": "casual", "text": "how warm is it in the house"}
+{"intent": "ClimateQuery", "style": "nonnative", "text": "which temperature is the house"}
+{"intent": "ClimateQuery", "style": "nonnative", "text": "how much degrees inside"}
+{"intent": "ClimateQuery", "style": "nonnative", "text": "the thermostat is what number"}
+{"intent": "ClimateQuery", "style": "stt", "text": "what is the thermostat set to"}
+{"intent": "ClimateQuery", "style": "stt", "text": "what's the temperature inside"}
+{"intent": "ClimateQuery", "style": "stt", "text": "how warm is it in here"}
+{"intent": "ClimateQuery", "style": "terse", "text": "thermostat?"}
+{"intent": "ClimateQuery", "style": "terse", "text": "inside temperature"}
+{"intent": "ClimateIsOn", "style": "casual", "text": "hey is the heat on right now"}
+{"intent": "ClimateIsOn", "style": "casual", "text": "is the ac running"}
+{"intent": "ClimateIsOn", "style": "casual", "text": "um is the heating actually on"}
+{"intent": "ClimateIsOn", "style": "nonnative", "text": "heating is working now"}
+{"intent": "ClimateIsOn", "style": "nonnative", "text": "the air condition is on"}
+{"intent": "ClimateIsOn", "style": "nonnative", "text": "is run the heater"}
+{"intent": "ClimateIsOn", "style": "stt", "text": "is the heat on"}
+{"intent": "ClimateIsOn", "style": "stt", "text": "is the air conditioning running"}
+{"intent": "ClimateIsOn", "style": "stt", "text": "is the furnace running"}
+{"intent": "ClimateIsOn", "style": "terse", "text": "heat on?"}
+{"intent": "ClimateMode", "style": "casual", "text": "hey switch the thermostat to heat"}
+{"intent": "ClimateMode", "style": "casual", "text": "could you put the ac on please"}
+{"intent": "ClimateMode", "style": "casual", "text": "um turn the thermostat off"}
+{"intent": "ClimateMode", "style": "casual", "text": "set the heating to cool mode"}
+{"intent": "ClimateMode", "style": "nonnative", "text": "put the thermostat in heating"}
+{"intent": "ClimateMode", "style": "nonnative", "text": "make the air condition cool mode"}
+{"intent": "ClimateMode", "style": "nonnative", "text": "close the heating"}
+{"intent": "ClimateMode", "style": "stt", "text": "set the thermostat to heat"}
+{"intent": "ClimateMode", "style": "stt", "text": "thermostat to cool"}
+{"intent": "ClimateMode", "style": "stt", "text": "turn off the thermostat"}
+{"intent": "ClimateMode", "style": "terse", "text": "thermostat off"}
+{"intent": "ClimatePreset", "style": "casual", "text": "hey set the thermostat to eco mode"}
+{"intent": "ClimatePreset", "style": "casual", "text": "could you put the heating on away please"}
+{"intent": "ClimatePreset", "style": "casual", "text": "um switch the thermostat to eco"}
+{"intent": "ClimatePreset", "style": "nonnative", "text": "put thermostat in eco"}
+{"intent": "ClimatePreset", "style": "nonnative", "text": "make the thermostat for away mode"}
+{"intent": "ClimatePreset", "style": "nonnative", "text": "thermostat do the eco"}
+{"intent": "ClimatePreset", "style": "stt", "text": "set the thermostat to away"}
+{"intent": "ClimatePreset", "style": "stt", "text": "eco mode on the thermostat"}
+{"intent": "ClimatePreset", "style": "stt", "text": "set thermostat to home mode"}
+{"intent": "ClimatePreset", "style": "terse", "text": "thermostat eco"}
+{"intent": "OutsideAnyone", "style": "casual", "text": "hey is anyone outside"}
+{"intent": "OutsideAnyone", "style": "casual", "text": "is somebody at the front door"}
+{"intent": "OutsideAnyone", "style": "casual", "text": "um who's at the door"}
+{"intent": "OutsideAnyone", "style": "casual", "text": "is there anyone in the back yard"}
+{"intent": "OutsideAnyone", "style": "nonnative", "text": "there is someone outside"}
+{"intent": "OutsideAnyone", "style": "nonnative", "text": "somebody is in the door"}
+{"intent": "OutsideAnyone", "style": "nonnative", "text": "who is at door now"}
+{"intent": "OutsideAnyone", "style": "stt", "text": "is anyone at the door"}
+{"intent": "OutsideAnyone", "style": "stt", "text": "is someone outside"}
+{"intent": "OutsideAnyone", "style": "stt", "text": "anybody outside"}
+{"intent": "OutsideAnyone", "style": "terse", "text": "anyone outside?"}
+{"intent": "OutsideMotion", "style": "casual", "text": "hey has there been any motion outside"}
+{"intent": "OutsideMotion", "style": "casual", "text": "did the cameras see anything out there"}
+{"intent": "OutsideMotion", "style": "casual", "text": "um any movement in the back yard"}
+{"intent": "OutsideMotion", "style": "nonnative", "text": "there was motion outside"}
+{"intent": "OutsideMotion", "style": "nonnative", "text": "something move outside"}
+{"intent": "OutsideMotion", "style": "nonnative", "text": "the camera see movement"}
+{"intent": "OutsideMotion", "style": "stt", "text": "any motion outside"}
+{"intent": "OutsideMotion", "style": "stt", "text": "was there motion in the driveway"}
+{"intent": "OutsideMotion", "style": "stt", "text": "any motion detected"}
+{"intent": "OutsideMotion", "style": "terse", "text": "motion outside?"}
+{"intent": "CameraShow", "style": "casual", "text": "hey show me the front door camera on the tv"}
+{"intent": "CameraShow", "style": "casual", "text": "could you put the driveway camera on the living room tv"}
+{"intent": "CameraShow", "style": "casual", "text": "um show the backyard camera please"}
+{"intent": "CameraShow", "style": "casual", "text": "let me see the front door"}
+{"intent": "CameraShow", "style": "nonnative", "text": "put the camera of door on tv"}
+{"intent": "CameraShow", "style": "nonnative", "text": "show camera front door on television"}
+{"intent": "CameraShow", "style": "nonnative", "text": "open the camera of garage"}
+{"intent": "CameraShow", "style": "stt", "text": "show the front door camera"}
+{"intent": "CameraShow", "style": "stt", "text": "show the driveway camera on the tv"}
+{"intent": "CameraShow", "style": "stt", "text": "front door camera on the living room tv"}
+{"intent": "CameraShow", "style": "terse", "text": "front door camera"}
+{"intent": "CameraClose", "style": "casual", "text": "okay close the camera"}
+{"intent": "CameraClose", "style": "casual", "text": "hey stop showing the camera please"}
+{"intent": "CameraClose", "style": "casual", "text": "you can get rid of the camera now"}
+{"intent": "CameraClose", "style": "nonnative", "text": "close camera"}
+{"intent": "CameraClose", "style": "nonnative", "text": "remove the camera from tv"}
+{"intent": "CameraClose", "style": "nonnative", "text": "camera finish"}
+{"intent": "CameraClose", "style": "stt", "text": "stop showing the camera"}
+{"intent": "CameraClose", "style": "stt", "text": "close the camera"}
+{"intent": "CameraClose", "style": "stt", "text": "hide the camera"}
+{"intent": "CameraClose", "style": "terse", "text": "camera off"}
+{"intent": "TvSource", "style": "casual", "text": "hey switch the tv to hdmi 2"}
+{"intent": "TvSource", "style": "casual", "text": "could you change the tv input to the playstation"}
+{"intent": "TvSource", "style": "casual", "text": "um put the tv on hdmi one please"}
+{"intent": "TvSource", "style": "nonnative", "text": "change tv for hdmi 1"}
+{"intent": "TvSource", "style": "nonnative", "text": "put television in the input 2"}
+{"intent": "TvSource", "style": "nonnative", "text": "tv go hdmi three"}
+{"intent": "TvSource", "style": "stt", "text": "switch the tv to hdmi 2"}
+{"intent": "TvSource", "style": "stt", "text": "change the input to hdmi 1"}
+{"intent": "TvSource", "style": "stt", "text": "tv source hdmi 3"}
+{"intent": "TvSource", "style": "terse", "text": "hdmi 2"}
+{"intent": "TvWhatsOn", "style": "casual", "text": "hey what's on the tv right now"}
+{"intent": "TvWhatsOn", "style": "casual", "text": "what's playing on the living room tv"}
+{"intent": "TvWhatsOn", "style": "casual", "text": "um what are they watching on the tv"}
+{"intent": "TvWhatsOn", "style": "nonnative", "text": "what is play on tv"}
+{"intent": "TvWhatsOn", "style": "nonnative", "text": "which show is on the television"}
+{"intent": "TvWhatsOn", "style": "nonnative", "text": "tv is showing what"}
+{"intent": "TvWhatsOn", "style": "stt", "text": "what's on the tv"}
+{"intent": "TvWhatsOn", "style": "stt", "text": "what's playing on the tv"}
+{"intent": "TvWhatsOn", "style": "stt", "text": "what's on tv in the living room"}
+{"intent": "TvWhatsOn", "style": "terse", "text": "tv?"}
+{"intent": "TvApp", "style": "casual", "text": "hey open netflix on the tv"}
+{"intent": "TvApp", "style": "casual", "text": "could you put youtube on the living room tv please"}
+{"intent": "TvApp", "style": "casual", "text": "um launch disney plus on the tv"}
+{"intent": "TvApp", "style": "casual", "text": "start prime video on the tv"}
+{"intent": "TvApp", "style": "nonnative", "text": "open the netflix in television"}
+{"intent": "TvApp", "style": "nonnative", "text": "put youtube for tv"}
+{"intent": "TvApp", "style": "nonnative", "text": "tv make netflix"}
+{"intent": "TvApp", "style": "stt", "text": "open netflix on the tv"}
+{"intent": "TvApp", "style": "stt", "text": "launch youtube on the tv"}
+{"intent": "TvApp", "style": "stt", "text": "open plex"}
+{"intent": "TvApp", "style": "terse", "text": "netflix on tv"}
+{"intent": "BedPreset", "style": "casual", "text": "hey set the bed to reading position"}
+{"intent": "BedPreset", "style": "casual", "text": "could you put the bed in read mode please"}
+{"intent": "BedPreset", "style": "casual", "text": "um set my side of the bed to tv"}
+{"intent": "BedPreset", "style": "casual", "text": "put the bed on the snore preset"}
+{"intent": "BedPreset", "style": "nonnative", "text": "bed make read position"}
+{"intent": "BedPreset", "style": "nonnative", "text": "put bed in position for watch tv"}
+{"intent": "BedPreset", "style": "nonnative", "text": "bed for reading please"}
+{"intent": "BedPreset", "style": "stt", "text": "set the bed to read"}
+{"intent": "BedPreset", "style": "stt", "text": "bed to zero g"}
+{"intent": "BedPreset", "style": "stt", "text": "set bed to tv mode"}
+{"intent": "BedPreset", "style": "terse", "text": "bed read"}
+{"intent": "BedRaise", "style": "casual", "text": "hey raise the head of the bed"}
+{"intent": "BedRaise", "style": "casual", "text": "could you lift my feet up a bit"}
+{"intent": "BedRaise", "style": "casual", "text": "um can you raise the head of my side of the bed"}
+{"intent": "BedRaise", "style": "casual", "text": "bring the foot of the bed up please"}
+{"intent": "BedRaise", "style": "nonnative", "text": "make the bed head more high"}
+{"intent": "BedRaise", "style": "nonnative", "text": "bed up the legs"}
+{"intent": "BedRaise", "style": "nonnative", "text": "put head of bed up"}
+{"intent": "BedRaise", "style": "stt", "text": "raise the head of the bed"}
+{"intent": "BedRaise", "style": "stt", "text": "raise the foot of the bed"}
+{"intent": "BedRaise", "style": "stt", "text": "raise my head"}
+{"intent": "BedRaise", "style": "terse", "text": "head up"}
+{"intent": "BedFlatten", "style": "casual", "text": "hey flatten the bed"}
+{"intent": "BedFlatten", "style": "casual", "text": "could you put the bed flat please"}
+{"intent": "BedFlatten", "style": "casual", "text": "um lay the bed down flat"}
+{"intent": "BedFlatten", "style": "nonnative", "text": "bed make flat"}
+{"intent": "BedFlatten", "style": "nonnative", "text": "put the bed straight"}
+{"intent": "BedFlatten", "style": "nonnative", "text": "bed all down please"}
+{"intent": "BedFlatten", "style": "stt", "text": "flatten the bed"}
+{"intent": "BedFlatten", "style": "stt", "text": "bed flat"}
+{"intent": "BedFlatten", "style": "stt", "text": "make the bed flat"}
+{"intent": "BedFlatten", "style": "terse", "text": "flat"}
+{"intent": "BedNumber", "style": "casual", "text": "hey set my sleep number to 50"}
+{"intent": "BedNumber", "style": "casual", "text": "could you change my sleep number to sixty please"}
+{"intent": "BedNumber", "style": "casual", "text": "um make my side of the bed 45"}
+{"intent": "BedNumber", "style": "casual", "text": "set my bed firmness to 40"}
+{"intent": "BedNumber", "style": "nonnative", "text": "put sleep number 55"}
+{"intent": "BedNumber", "style": "nonnative", "text": "make my sleep number for 60"}
+{"intent": "BedNumber", "style": "nonnative", "text": "sleep number change to 35"}
+{"intent": "BedNumber", "style": "stt", "text": "set my sleep number to 65"}
+{"intent": "BedNumber", "style": "stt", "text": "sleep number to forty"}
+{"intent": "BedNumber", "style": "stt", "text": "change my sleep number to 50"}
+{"intent": "BedNumber", "style": "terse", "text": "sleep number 60"}
+{"intent": "BedQuery", "style": "casual", "text": "hey what's my sleep number"}
+{"intent": "BedQuery", "style": "casual", "text": "um what's my bed set to"}
+{"intent": "BedQuery", "style": "casual", "text": "what number is my side of the bed on"}
+{"intent": "BedQuery", "style": "nonnative", "text": "which is my sleep number"}
+{"intent": "BedQuery", "style": "nonnative", "text": "my sleep number is what"}
+{"intent": "BedQuery", "style": "nonnative", "text": "how much is sleep number"}
+{"intent": "BedQuery", "style": "stt", "text": "what's my sleep number"}
+{"intent": "BedQuery", "style": "stt", "text": "what is my sleep number set to"}
+{"intent": "BedQuery", "style": "stt", "text": "my sleep number"}
+{"intent": "BedQuery", "style": "terse", "text": "sleep number?"}
+{"intent": "BedSleep", "style": "casual", "text": "hey how did i sleep last night"}
+{"intent": "BedSleep", "style": "casual", "text": "um what was my sleep score"}
+{"intent": "BedSleep", "style": "casual", "text": "how well did i sleep"}
+{"intent": "BedSleep", "style": "nonnative", "text": "how i sleep last night"}
+{"intent": "BedSleep", "style": "nonnative", "text": "my sleep was good"}
+{"intent": "BedSleep", "style": "nonnative", "text": "tell me how was my sleep"}
+{"intent": "BedSleep", "style": "stt", "text": "how did i sleep"}
+{"intent": "BedSleep", "style": "stt", "text": "what's my sleep score"}
+{"intent": "BedSleep", "style": "stt", "text": "how was my sleep last night"}
+{"intent": "BedSleep", "style": "terse", "text": "sleep score"}
+{"intent": "HealthReport", "style": "casual", "text": "hey is everything ok in the house"}
+{"intent": "HealthReport", "style": "casual", "text": "um any problems at home i should know about"}
+{"intent": "HealthReport", "style": "casual", "text": "is everything alright with the house"}
+{"intent": "HealthReport", "style": "casual", "text": "give me a house status report"}
+{"intent": "HealthReport", "style": "nonnative", "text": "house is ok"}
+{"intent": "HealthReport", "style": "nonnative", "text": "there is problem in house"}
+{"intent": "HealthReport", "style": "nonnative", "text": "everything fine at home"}
+{"intent": "HealthReport", "style": "stt", "text": "is everything okay"}
+{"intent": "HealthReport", "style": "stt", "text": "any problems in the house"}
+{"intent": "HealthReport", "style": "stt", "text": "house status"}
+{"intent": "HealthReport", "style": "terse", "text": "house ok?"}
+{"intent": "BatteryAll", "style": "casual", "text": "hey what are the battery levels"}
+{"intent": "BatteryAll", "style": "casual", "text": "um how are all the batteries doing"}
+{"intent": "BatteryAll", "style": "casual", "text": "can you check the batteries on everything"}
+{"intent": "BatteryAll", "style": "nonnative", "text": "tell me battery of all devices"}
+{"intent": "BatteryAll", "style": "nonnative", "text": "how is the batteries"}
+{"intent": "BatteryAll", "style": "nonnative", "text": "battery level all please"}
+{"intent": "BatteryAll", "style": "stt", "text": "battery levels"}
+{"intent": "BatteryAll", "style": "stt", "text": "check all the batteries"}
+{"intent": "BatteryAll", "style": "stt", "text": "what are my battery levels"}
+{"intent": "BatteryAll", "style": "terse", "text": "batteries"}
+{"intent": "BatteryLow", "style": "casual", "text": "hey are any batteries low"}
+{"intent": "BatteryLow", "style": "casual", "text": "um does anything need a new battery"}
+{"intent": "BatteryLow", "style": "casual", "text": "is anything running low on battery"}
+{"intent": "BatteryLow", "style": "nonnative", "text": "which battery is low"}
+{"intent": "BatteryLow", "style": "nonnative", "text": "some battery is finish"}
+{"intent": "BatteryLow", "style": "nonnative", "text": "battery low which device"}
+{"intent": "BatteryLow", "style": "stt", "text": "any low batteries"}
+{"intent": "BatteryLow", "style": "stt", "text": "which batteries are low"}
+{"intent": "BatteryLow", "style": "stt", "text": "are any batteries running low"}
+{"intent": "BatteryLow", "style": "terse", "text": "low batteries?"}
+{"intent": "BatteryOne", "style": "casual", "text": "hey what's the battery on the front door lock"}
+{"intent": "BatteryOne", "style": "casual", "text": "um how much battery does the garage sensor have"}
+{"intent": "BatteryOne", "style": "casual", "text": "what's the battery level of the kitchen motion sensor"}
+{"intent": "BatteryOne", "style": "nonnative", "text": "battery of the door lock how much"}
+{"intent": "BatteryOne", "style": "nonnative", "text": "how much battery front door camera have"}
+{"intent": "BatteryOne", "style": "nonnative", "text": "the bedroom sensor battery is what"}
+{"intent": "BatteryOne", "style": "stt", "text": "what's the battery on the back door sensor"}
+{"intent": "BatteryOne", "style": "stt", "text": "battery level of the front door lock"}
+{"intent": "BatteryOne", "style": "stt", "text": "how's the doorbell battery"}
+{"intent": "BatteryOne", "style": "terse", "text": "door lock battery"}
+{"intent": "BatteryPhone", "style": "casual", "text": "hey how much battery does my phone have"}
+{"intent": "BatteryPhone", "style": "casual", "text": "um is my phone charged"}
+{"intent": "BatteryPhone", "style": "casual", "text": "what's my phone battery at"}
+{"intent": "BatteryPhone", "style": "nonnative", "text": "my phone battery how much"}
+{"intent": "BatteryPhone", "style": "nonnative", "text": "how much charge in my telephone"}
+{"intent": "BatteryPhone", "style": "nonnative", "text": "phone is charged"}
+{"intent": "BatteryPhone", "style": "stt", "text": "what's my phone battery"}
+{"intent": "BatteryPhone", "style": "stt", "text": "how much battery is on my phone"}
+{"intent": "BatteryPhone", "style": "stt", "text": "phone battery"}
+{"intent": "BatteryPhone", "style": "terse", "text": "phone battery?"}
+{"intent": "GuestOn", "style": "casual", "text": "hey turn on guest mode"}
+{"intent": "GuestOn", "style": "casual", "text": "we've got people coming over can you switch on guest mode"}
+{"intent": "GuestOn", "style": "casual", "text": "um put the house in guest mode please"}
+{"intent": "GuestOn", "style": "nonnative", "text": "activate the guest mode"}
+{"intent": "GuestOn", "style": "nonnative", "text": "open guest mode"}
+{"intent": "GuestOn", "style": "nonnative", "text": "we have guest, make guest mode"}
+{"intent": "GuestOn", "style": "stt", "text": "guest mode on"}
+{"intent": "GuestOn", "style": "stt", "text": "turn on guest mode"}
+{"intent": "GuestOn", "style": "stt", "text": "enable guest mode"}
+{"intent": "GuestOn", "style": "terse", "text": "guest mode"}
+{"intent": "GuestOff", "style": "casual", "text": "hey turn off guest mode"}
+{"intent": "GuestOff", "style": "casual", "text": "okay everyone's gone you can switch off guest mode"}
+{"intent": "GuestOff", "style": "casual", "text": "um disable guest mode please"}
+{"intent": "GuestOff", "style": "nonnative", "text": "close guest mode"}
+{"intent": "GuestOff", "style": "nonnative", "text": "guest mode finish"}
+{"intent": "GuestOff", "style": "nonnative", "text": "no more guest mode"}
+{"intent": "GuestOff", "style": "stt", "text": "guest mode off"}
+{"intent": "GuestOff", "style": "stt", "text": "turn off guest mode"}
+{"intent": "GuestOff", "style": "stt", "text": "disable guest mode"}
+{"intent": "GuestOff", "style": "terse", "text": "guests gone"}
+{"intent": "GuestQuery", "style": "casual", "text": "hey is guest mode on"}
+{"intent": "GuestQuery", "style": "casual", "text": "um is guest mode still on"}
+{"intent": "GuestQuery", "style": "casual", "text": "are we in guest mode right now"}
+{"intent": "GuestQuery", "style": "nonnative", "text": "guest mode is on or off"}
+{"intent": "GuestQuery", "style": "nonnative", "text": "guest mode is active"}
+{"intent": "GuestQuery", "style": "nonnative", "text": "the guest mode is open"}
+{"intent": "GuestQuery", "style": "stt", "text": "is guest mode on"}
+{"intent": "GuestQuery", "style": "stt", "text": "is guest mode enabled"}
+{"intent": "GuestQuery", "style": "stt", "text": "guest mode status"}
+{"intent": "GuestQuery", "style": "terse", "text": "guest mode?"}
+{"intent": "DoorOpen", "style": "casual", "text": "hey open the garage door"}
+{"intent": "DoorOpen", "style": "casual", "text": "could you open the garage please"}
+{"intent": "DoorOpen", "style": "casual", "text": "um can you open up the garage for me"}
+{"intent": "DoorOpen", "style": "nonnative", "text": "open garage"}
+{"intent": "DoorOpen", "style": "nonnative", "text": "make garage door open"}
+{"intent": "DoorOpen", "style": "nonnative", "text": "please garage door up"}
+{"intent": "DoorOpen", "style": "stt", "text": "open the garage door"}
+{"intent": "DoorOpen", "style": "stt", "text": "open garage door"}
+{"intent": "DoorOpen", "style": "stt", "text": "the garage door"}
+{"intent": "DoorOpen", "style": "terse", "text": "garage open"}
+{"intent": "DoorClose", "style": "casual", "text": "hey close the garage door"}
+{"intent": "DoorClose", "style": "casual", "text": "could you shut the garage please"}
+{"intent": "DoorClose", "style": "casual", "text": "um can you close up the garage"}
+{"intent": "DoorClose", "style": "nonnative", "text": "close garage"}
+{"intent": "DoorClose", "style": "nonnative", "text": "make garage door close"}
+{"intent": "DoorClose", "style": "nonnative", "text": "garage door down please"}
+{"intent": "DoorClose", "style": "stt", "text": "close the garage door"}
+{"intent": "DoorClose", "style": "stt", "text": "shut the garage door"}
+{"intent": "DoorClose", "style": "stt", "text": "close garage door"}
+{"intent": "DoorClose", "style": "terse", "text": "garage close"}
+{"intent": "DoorStatus", "style": "casual", "text": "hey is the garage door open"}
+{"intent": "DoorStatus", "style": "casual", "text": "did i leave the garage open"}
+{"intent": "DoorStatus", "style": "casual", "text": "um is the garage closed"}
+{"intent": "DoorStatus", "style": "nonnative", "text": "garage door is open"}
+{"intent": "DoorStatus", "style": "nonnative", "text": "garage is close or open"}
+{"intent": "DoorStatus", "style": "nonnative", "text": "the garage door open still"}
+{"intent": "DoorStatus", "style": "stt", "text": "is the garage door open"}
+{"intent": "DoorStatus", "style": "stt", "text": "is the garage door closed"}
+{"intent": "DoorStatus", "style": "stt", "text": "garage door status"}
+{"intent": "DoorStatus", "style": "terse", "text": "garage open?"}
+{"intent": "NightOn", "style": "casual", "text": "hey turn on night mode"}
+{"intent": "NightOn", "style": "casual", "text": "okay we're going to bed switch on night mode"}
+{"intent": "NightOn", "style": "casual", "text": "um put the house in night mode please"}
+{"intent": "NightOn", "style": "casual", "text": "good night"}
+{"intent": "NightOn", "style": "nonnative", "text": "activate night mode"}
+{"intent": "NightOn", "style": "nonnative", "text": "make night mode"}
+{"intent": "NightOn", "style": "nonnative", "text": "start mode night"}
+{"intent": "NightOn", "style": "stt", "text": "night mode on"}
+{"intent": "NightOn", "style": "stt", "text": "turn on night mode"}
+{"intent": "NightOn", "style": "stt", "text": "enable night mode"}
+{"intent": "NightOn", "style": "terse", "text": "night mode"}
+{"intent": "NightOff", "style": "casual", "text": "hey turn off night mode"}
+{"intent": "NightOff", "style": "casual", "text": "okay we're up you can switch off night mode"}
+{"intent": "NightOff", "style": "casual", "text": "um disable night mode please"}
+{"intent": "NightOff", "style": "nonnative", "text": "close night mode"}
+{"intent": "NightOff", "style": "nonnative", "text": "night mode finish"}
+{"intent": "NightOff", "style": "nonnative", "text": "stop the night mode"}
+{"intent": "NightOff", "style": "stt", "text": "night mode off"}
+{"intent": "NightOff", "style": "stt", "text": "turn off night mode"}
+{"intent": "NightOff", "style": "stt", "text": "disable night mode"}
+{"intent": "NightOff", "style": "terse", "text": "night mode off"}
+{"intent": "NightQuery", "style": "casual", "text": "hey is night mode on"}
+{"intent": "NightQuery", "style": "casual", "text": "um is night mode still on"}
+{"intent": "NightQuery", "style": "casual", "text": "are we in night mode"}
+{"intent": "NightQuery", "style": "nonnative", "text": "night mode is on or off"}
+{"intent": "NightQuery", "style": "nonnative", "text": "night mode active"}
+{"intent": "NightQuery", "style": "nonnative", "text": "the night mode is open"}
+{"intent": "NightQuery", "style": "stt", "text": "is night mode on"}
+{"intent": "NightQuery", "style": "stt", "text": "is night mode enabled"}
+{"intent": "NightQuery", "style": "stt", "text": "night mode status"}
+{"intent": "NightQuery", "style": "terse", "text": "night mode?"}
+{"intent": "BroadcastMessage", "style": "casual", "text": "hey broadcast dinner's ready"}
+{"intent": "BroadcastMessage", "style": "casual", "text": "could you announce that we're leaving in five minutes"}
+{"intent": "BroadcastMessage", "style": "casual", "text": "um tell everyone the movie's starting"}
+{"intent": "BroadcastMessage", "style": "casual", "text": "announce to the whole house come down for dinner"}
+{"intent": "BroadcastMessage", "style": "nonnative", "text": "say to all speakers dinner is ready"}
+{"intent": "BroadcastMessage", "style": "nonnative", "text": "tell all house we go now"}
+{"intent": "BroadcastMessage", "style": "nonnative", "text": "make announce, time for bed"}
+{"intent": "BroadcastMessage", "style": "stt", "text": "broadcast time to go to school"}
+{"intent": "BroadcastMessage", "style": "stt", "text": "announce dinner is ready"}
+{"intent": "BroadcastMessage", "style": "stt", "text": "broadcast come downstairs"}
+{"intent": "BroadcastMessage", "style": "terse", "text": "broadcast dinner"}
+{"intent": "Help", "style": "casual", "text": "hey what can you do"}
+{"intent": "Help", "style": "casual", "text": "um what kind of things can i ask you"}
+{"intent": "Help", "style": "casual", "text": "can you help me"}
+{"intent": "Help", "style": "casual", "text": "what are you able to do"}
+{"intent": "Help", "style": "nonnative", "text": "what you can do"}
+{"intent": "Help", "style": "nonnative", "text": "how i use you"}
+{"intent": "Help", "style": "nonnative", "text": "which things you know do"}
+{"intent": "Help", "style": "stt", "text": "what can you do"}
+{"intent": "Help", "style": "stt", "text": "help"}
+{"intent": "Help", "style": "stt", "text": "what commands can i say"}
+{"intent": "Help", "style": "terse", "text": "help me"}
+{"intent": "HassStartTimer", "style": "casual", "text": "hey set a timer for ten minutes"}
+{"intent": "HassStartTimer", "style": "casual", "text": "could you start a pasta timer for twelve minutes"}
+{"intent": "HassStartTimer", "style": "casual", "text": "um set a 5 minute timer please"}
+{"intent": "HassStartTimer", "style": "casual", "text": "timer for 30 seconds"}
+{"intent": "HassStartTimer", "style": "nonnative", "text": "make timer 10 minute"}
+{"intent": "HassStartTimer", "style": "nonnative", "text": "put timer for the eggs 7 minutes"}
+{"intent": "HassStartTimer", "style": "nonnative", "text": "start timer twenty minute"}
+{"intent": "HassStartTimer", "style": "stt", "text": "set a timer for 15 minutes"}
+{"intent": "HassStartTimer", "style": "stt", "text": "a timer for 10 minutes"}
+{"intent": "HassStartTimer", "style": "stt", "text": "set a timer for one hour"}
+{"intent": "HassStartTimer", "style": "terse", "text": "timer 5 minutes"}
+{"intent": "HassStartTimer", "style": "terse", "text": "10 minute timer"}
+{"intent": "HassIncreaseTimer", "style": "casual", "text": "hey add five minutes to the timer"}
+{"intent": "HassIncreaseTimer", "style": "casual", "text": "could you put another ten minutes on the pasta timer"}
+{"intent": "HassIncreaseTimer", "style": "casual", "text": "um add a minute to my timer"}
+{"intent": "HassIncreaseTimer", "style": "nonnative", "text": "timer more 5 minutes"}
+{"intent": "HassIncreaseTimer", "style": "nonnative", "text": "put more time in the timer, 3 minutes"}
+{"intent": "HassIncreaseTimer", "style": "nonnative", "text": "make timer longer 2 minute"}
+{"intent": "HassIncreaseTimer", "style": "stt", "text": "add 5 minutes to my timer"}
+{"intent": "HassIncreaseTimer", "style": "stt", "text": "add two minutes to the timer"}
+{"intent": "HassIncreaseTimer", "style": "stt", "text": "add ten minutes to the pizza timer"}
+{"intent": "HassIncreaseTimer", "style": "terse", "text": "plus 5 minutes"}
+{"intent": "HassDecreaseTimer", "style": "casual", "text": "hey take five minutes off the timer"}
+{"intent": "HassDecreaseTimer", "style": "casual", "text": "could you knock two minutes off the pasta timer"}
+{"intent": "HassDecreaseTimer", "style": "casual", "text": "um remove a minute from my timer"}
+{"intent": "HassDecreaseTimer", "style": "nonnative", "text": "timer less 5 minutes"}
+{"intent": "HassDecreaseTimer", "style": "nonnative", "text": "make timer shorter 2 minute"}
+{"intent": "HassDecreaseTimer", "style": "nonnative", "text": "take out 3 minutes of the timer"}
+{"intent": "HassDecreaseTimer", "style": "stt", "text": "subtract 5 minutes from the timer"}
+{"intent": "HassDecreaseTimer", "style": "stt", "text": "remove two minutes from my timer"}
+{"intent": "HassDecreaseTimer", "style": "stt", "text": "take 10 minutes off the pizza timer"}
+{"intent": "HassDecreaseTimer", "style": "terse", "text": "minus 5 minutes"}
+{"intent": "NONE", "style": "casual", "text": "how tall is mount everest"}
+{"intent": "NONE", "style": "casual", "text": "who won the game last night"}
+{"intent": "NONE", "style": "casual", "text": "what's the weather like tomorrow"}
+{"intent": "NONE", "style": "casual", "text": "tell me a joke"}
+{"intent": "NONE", "style": "casual", "text": "how are you today"}
+{"intent": "NONE", "style": "casual", "text": "what's the capital of france"}
+{"intent": "NONE", "style": "casual", "text": "how many ounces in a cup"}
+{"intent": "NONE", "style": "casual", "text": "what's 15 times 23"}
+{"intent": "NONE", "style": "casual", "text": "who was the first president of the united states"}
+{"intent": "NONE", "style": "casual", "text": "how do i set an alarm on my iphone"}
+{"intent": "NONE", "style": "casual", "text": "what's an alarm clock made of"}
+{"intent": "NONE", "style": "casual", "text": "who invented the alarm clock"}
+{"intent": "NONE", "style": "casual", "text": "what's the best alarm clock app"}
+{"intent": "NONE", "style": "casual", "text": "remind me what the capital of france is"}
+{"intent": "NONE", "style": "casual", "text": "do you remember the first time we met"}
+{"intent": "NONE", "style": "casual", "text": "what's a good song to wake up to"}
+{"intent": "NONE", "style": "casual", "text": "who sings bohemian rhapsody"}
+{"intent": "NONE", "style": "casual", "text": "what's the best music for studying"}
+{"intent": "NONE", "style": "casual", "text": "how do i turn on the lights in my car"}
+{"intent": "NONE", "style": "casual", "text": "why do my lights flicker"}
+{"intent": "NONE", "style": "casual", "text": "how much does a garage door opener cost"}
+{"intent": "NONE", "style": "casual", "text": "how do i fix a garage door that won't close"}
+{"intent": "NONE", "style": "casual", "text": "what's the history of the thermostat"}
+{"intent": "NONE", "style": "casual", "text": "what temperature should i cook chicken to"}
+{"intent": "NONE", "style": "casual", "text": "what's the temperature in paris"}
+{"intent": "NONE", "style": "casual", "text": "is it going to rain today"}
+{"intent": "NONE", "style": "casual", "text": "how long do you boil an egg"}
+{"intent": "NONE", "style": "casual", "text": "how do you spell necessary"}
+{"intent": "NONE", "style": "casual", "text": "what does snooze mean"}
+{"intent": "NONE", "style": "casual", "text": "why is snoozing bad for you"}
+{"intent": "NONE", "style": "casual", "text": "how many hours of sleep do adults need"}
+{"intent": "NONE", "style": "casual", "text": "what is a sleep number bed"}
+{"intent": "NONE", "style": "casual", "text": "how do batteries work"}
+{"intent": "NONE", "style": "casual", "text": "what's the population of canada"}
+{"intent": "NONE", "style": "casual", "text": "translate hello into spanish"}
+{"intent": "NONE", "style": "casual", "text": "thank you"}
+{"intent": "NONE", "style": "casual", "text": "never mind"}
+{"intent": "NONE", "style": "casual", "text": "you're funny"}
+{"intent": "NONE", "style": "casual", "text": "what's your name"}
+{"intent": "NONE", "style": "casual", "text": "i love you"}
+{"intent": "NONE", "style": "casual", "text": "good morning how are you"}
+{"intent": "NONE", "style": "casual", "text": "what time is it"}
+{"intent": "NONE", "style": "casual", "text": "what day is it today"}
+{"intent": "NONE", "style": "casual", "text": "how far is the moon"}
+{"intent": "NONE", "style": "casual", "text": "what's the news today"}
+{"intent": "NONE", "style": "casual", "text": "what's the stock price of apple"}
+{"intent": "NONE", "style": "nonnative", "text": "what is the meaning of life"}
+{"intent": "NONE", "style": "nonnative", "text": "how much is weigh an elephant"}
+{"intent": "NONE", "style": "nonnative", "text": "who is most rich person in world"}
+{"intent": "NONE", "style": "stt", "text": "what's the score of the arsenal game"}
+{"intent": "NONE", "style": "stt", "text": "how old is taylor swift"}
+{"intent": "NONE", "style": "stt", "text": "define serendipity"}
+{"intent": "NONE", "style": "stt", "text": "what movies are playing near me"}
+{"intent": "NONE", "style": "casual", "text": "what's on netflix that's good"}
+{"intent": "NONE", "style": "casual", "text": "recommend a good tv show"}
+{"intent": "NONE", "style": "casual", "text": "what does hdmi stand for"}
+{"intent": "NONE", "style": "casual", "text": "how do i take a good note in class"}
+{"intent": "NONE", "style": "casual", "text": "who is sam altman"}
+{"intent": "NONE", "style": "casual", "text": "what's alex trebek famous for"}
+{"intent": "NONE", "style": "casual", "text": "how do i leave a voicemail"}
+{"intent": "NONE", "style": "casual", "text": "what is a stopwatch used for"}
+{"intent": "NONE", "style": "casual", "text": "what's the difference between eco mode and normal mode on a dishwasher"}

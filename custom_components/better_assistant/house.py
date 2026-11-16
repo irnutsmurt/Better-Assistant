@@ -493,7 +493,15 @@ class HouseSkills:
         self._later(self._seconds(slots), f"turn off {thing}", user_input)
         return f"{first.rstrip('.')}. I'll turn it off in {self._say_delay(slots)}."
 
+    def _here(self, slots, user_input) -> dict:
+        """No light named ("dim the lights"): the lights in the speaker's own room."""
+        if slots.get("light_target") or not (area := self._sat_area(user_input)):
+            return slots
+        return {**slots, "light_target": f"area:{area}"}
+
     def _lights_for(self, target: str) -> list[str]:
+        if not target:
+            return []
         if target.startswith("area:"):
             return [e for e in self._rooms().get(target[5:], {}).get("lights", []) if e.startswith("light.")]
         return [target]
@@ -503,10 +511,12 @@ class HouseSkills:
             else self._friendly(target).lower()
 
     async def _h_light_dim(self, slots, user_input, up: bool = False) -> str:
+        slots = self._here(slots, user_input)
         target = slots.get("light_target", "")
         lights = self._lights_for(target)
         if not lights:
-            return "I couldn't find those lights."
+            return "I couldn't find those lights." if target else \
+                f"Which lights? Say something like: {'brighten' if up else 'dim'} the kitchen lights."
         step = int(slots.get("percent") or self.setting("rooms_lights", "dim_step"))
         await self._call("light", "turn_on", {"entity_id": lights, "brightness_step_pct": step if up else -step})
         return f"Okay, {'brightening' if up else 'dimming'} the {self._target_name(target)}."
@@ -516,6 +526,8 @@ class HouseSkills:
 
     async def _kelvin(self, slots, warmer: bool) -> str:
         target = slots.get("light_target", "")
+        if not target:
+            return f"Which lights? Say something like: make the kitchen lights {'warmer' if warmer else 'cooler'}."
         done = 0
         for light in self._lights_for(target):
             st = self.hass.states.get(light)
@@ -531,10 +543,10 @@ class HouseSkills:
         return f"Okay, making the {self._target_name(target)} {'warmer' if warmer else 'cooler'}."
 
     async def _h_light_warmer(self, slots, user_input) -> str:
-        return await self._kelvin(slots, True)
+        return await self._kelvin(self._here(slots, user_input), True)
 
     async def _h_light_cooler(self, slots, user_input) -> str:
-        return await self._kelvin(slots, False)
+        return await self._kelvin(self._here(slots, user_input), False)
 
     # ------------------------------------------------------------ climate
     def _thermostat(self, user_input) -> str | None:

@@ -1,0 +1,634 @@
+# How people really say things: casual, terse and non-native English wordings, added to the intents in
+# en.yaml and home_en.yaml (each block here is appended to that intent's own). Fillers and politeness
+# ("hey", "um", "could you", "please") are stripped before matching (core/normalize.py), and "the",
+# "a" and "my" are optional in every pattern, so neither needs writing out here.
+# Checked against a corpus of everyday, terse, misheard and non-native requests (tests/test_casual.py, tests/data/phrasings.jsonl).
+language: en
+intents:
+  # ------------------------------------------------------------------ who am I
+  WhoAmI:
+    data:
+      - sentences:
+          - "you know who i am"
+          - "(do|can) you tell me who [you think] (i am|this is)"
+
+  # ------------------------------------------------------------------ reminders
+  ReminderAdd:
+    data:
+      - sentences:
+          - "(you|please) remind me [to|for|about] {text}"
+          - "remind me for {text}"
+          - "me to {text}"
+          - "(make|put|create) [a] reminder (to|for|about) {text}"
+  ReminderAddFor:
+    data:
+      - sentences:
+          - "(make|put|create) [a] reminder (to|for) {person} [to|for|about] {text}"
+          - "(you|please) remind {person} [to|for|about] {text}"
+  ReminderList:
+    data:
+      - sentences:
+          - "reminders"
+          - "my reminders [for {cal_range:range}]"
+          - "(tell me|read me|give me|read) my reminders [for {cal_range:range}]"
+          - "reminders (do|did) i have"
+          - "(what|which) reminders i have"
+          - "what did i ask you to remind me [about|of]"
+          - "what (are|is) my reminder[s] [for {cal_range:range}]"
+          - "(any|have i got any|is there any|are there any) reminders"
+  ReminderCancelAll:
+    data:
+      - sentences:
+          - "(cancel|delete|clear|remove|erase|get rid of) (every|all [of] [the]|all my|all [the]) reminder[s]"
+          - "(clear|delete|remove|erase) [my|the] reminders"
+          - "get rid of (every|all [of]) [my|the] reminder[s] [i've got|i have]"
+          - "(cancel|delete|remove|clear) reminders all"
+  ReminderCancel:
+    data:
+      - sentences:
+          - "(cancel|delete|remove|forget|never mind) [the|my|that] reminder (of|about|to|for) {text}"
+          - "(cancel|delete|remove) [the|my] {text} reminder"
+          - "[the] reminder (about|for|to|of) {text} (cancel|delete|remove) [it]"
+
+  # ------------------------------------------------------------------ alarms
+  AlarmSet:
+    data:
+      - sentences:
+          - "(put|make|set) [an|the|a|my] alarm (at|for|on) {text}"
+          - "(you|please) (make|set|put) [an|the|a] alarm [at|for|on] {text}"
+          - "alarm (at|for) {text}"
+          - "an alarm (at|for) {text}"
+          - "set me [an|a] alarm [at|for] {text}"
+          - "i (want|need) [an|a] alarm [at|for] {text}"
+  AlarmChange:
+    data:
+      - sentences:
+          - "put [my|the] alarm {text}"
+          - "alarm (earlier|later|sooner|back|up) {text}"
+          - "alarm to {text}"
+  AlarmMove:
+    data:
+      - sentences:
+          - "alarm (ring|play) {text}"
+          - "i want [the] alarm to (ring|play) {text}"
+  AlarmMusic:
+    data:
+      - sentences:
+          - "alarm music {text}"
+          - "(change|set|put) [the] music (of|for|on) [my|the] alarm (to|for) {text}"
+          - "i want [the|my] alarm with music (of|from|by) {text}"
+          - "i want [the|my] alarm (to play|playing) {text}"
+  AlarmQuery:
+    data:
+      - sentences:
+          - "(when|what time)('s| is| will) [my|the] alarm [set for|going to go off|ring|going off|set]"
+          - "(when|what time) (does|will|is) [my|the] alarm (ring|go off|going off)"
+          - "what time alarm (will ring|is|ring)"
+          - "(tell me|can you tell me) when [my|the] alarm('s| is) going off"
+          - "what time did i set [my|the] alarm [for]"
+          - "my alarm [is] what time"
+          - "[is] [my|the] alarm (set|on)"
+          - "alarm time"
+  AlarmCancel:
+    data:
+      - sentences:
+          - "(cancel|delete|remove|clear|turn off) [my|the] alarm (for|at) {text}"
+          - "get rid of [my|the] alarm[s]"
+          - "(cancel|delete|remove|clear) [the] alarm"
+          - "turn off tomorrow's alarm [i don't need it]"
+          - "i don't need [my|the|an] alarm [tomorrow|anymore]"
+          - "no alarm [tomorrow]"
+  AlarmSnooze:
+    data:
+      - sentences:
+          - "snooze {any_minutes:minutes} minute[s]"
+          - "let me sleep [more|longer] [for] {any_minutes:minutes} [more] minute[s]"
+          - "let me sleep [a bit|a little] [more|longer]"
+          - "(ugh|ah) snooze"
+          - "{snooze_minutes:minutes} more minute[s]"
+  AlarmSnoozeSet:
+    data:
+      - sentences:
+          - "(make|change|set) [the|my] snooze [time|length|duration] [to|for] [be] {any_minutes:minutes} minute[s] [long] [from now on]"
+          - "i want [the|my] snooze to be {any_minutes:minutes} minute[s] [long]"
+          - "snooze [time|length|duration] {any_minutes:minutes} minute[s]"
+  AlarmSnoozeQuery:
+    data:
+      - sentences:
+          - "(how much time|how many minutes|how many minute) (is|does) [the] snooze [give me|last|be]"
+          - "how many minute[s] [is] the snooze"
+          - "snooze (length|time|duration)"
+          - "how long (does|will) [the|a] snooze (last|go for|give me)"
+  SnoozeLimitSet:
+    data:
+      - sentences:
+          - "max[imum] {limit_count:count} snooze[s]"
+          - "snooze only {limit_count:count} time[s] [maximum|max]"
+          - "(make|put) [the] snooze limit (for|to|at) {limit_count:count}"
+          - "only let me snooze {limit_count:count} time[s]"
+      - sentences:
+          - "only let me snooze (once|one time)"
+        slots:
+          count: 1
+      - sentences:
+          - "only let me snooze twice"
+        slots:
+          count: 2
+      - sentences:
+          - "don't let me snooze [at all] [tomorrow]"
+          - "no snooze [at all|tomorrow]"
+        slots:
+          count: 0
+  SnoozeLimitClear:
+    data:
+      - sentences:
+          - "snooze unlimited"
+          - "(delete|remove|clear) [the] limit (of|for|on) [the] snooze[s]"
+          - "let me snooze as much as i want"
+  SnoozeLimitQuery:
+    data:
+      - sentences:
+          - "how (much|many) snoozes [do] i (have|get)"
+          - "how many time[s] (can i|i can) snooze"
+          - "snooze limit [is what]"
+  AlarmStop:
+    data:
+      - sentences:
+          - "(okay|ok) [okay|ok] stop"
+          - "(turn off|stop) [the] alarm[,] (i'm|i am) (up|awake)"
+          - "alarm off [i wake|i'm up|i'm awake]"
+          - "(shut|turn) it off"
+          - "close [the] alarm"
+          - "(i'm|i am) awake"
+          - "enough"
+
+  # ------------------------------------------------------------------ notes and messages
+  NoteAdd:
+    data:
+      - sentences:
+          - "keep in mind [that] {text}"
+          - "note {text}"
+          - "(remember|write down) for me [that] {text}"
+      - sentences:
+          - "(you|please) remember [that] {text}"
+  NoteFind:
+    data:
+      - sentences:
+          - "where (i|did i|d i) (put|leave|left) {text}"
+          - "where'd i (put|leave) {text}"
+          - "(do you remember|can you remind me|remind me|tell me) where i (put|left) {text}"
+  NoteRead:
+    data:
+      - sentences:
+          - "read [me] [the|my] notes [for me]"
+          - "my notes"
+          - "notes"
+  NoteClear:
+    data:
+      - sentences:
+          - "forget (everything|all) i told you to remember"
+          - "(delete|remove|clear|erase) (all [of] [the]|the|every) note[s]"
+  MessageLeave:
+    data:
+      - sentences:
+          - "(say|tell) {person} [that|when (he|she|they) (come|comes|get|gets) home] {text}"
+          - "give (a|the) message to {person} [that|saying] {text}"
+          - "leave (a|an) (message|note) for (everyone|everybody|the family) [that|saying] {text}"
+          - "can you tell {person} {text} when (he|she|they) (gets|get|come|comes) (back|home)"
+  MessageRead:
+    data:
+      - sentences:
+          - "(is there|there is|is there a|there's) [any] message[s] for me"
+          - "read [me] my messages"
+          - "messages"
+
+  # ------------------------------------------------------------------ stopwatch
+  StopwatchStart:
+    data:
+      - sentences:
+          - "(start|begin) [the|a] stop watch"
+          - "(make|let) [the] stopwatch start"
+          - "start (count time|counting time|counting|timing me)"
+          - "time me"
+  StopwatchStop:
+    data:
+      - sentences:
+          - "(stop|end) [the] stop watch"
+          - "stopwatch (stop|end|finish)"
+          - "stop (the count time|counting time|counting|timing me)"
+  StopwatchRead:
+    data:
+      - sentences:
+          - "stopwatch [is] [how much|time]"
+          - "(tell me|what's|what is) the stopwatch time"
+          - "how long on the stop[ ]watch"
+          - "how (much time|long) (is|has it been) on the stopwatch"
+
+  # ------------------------------------------------------------------ music
+  MusicPlay:
+    data:
+      - sentences:
+          - "i (want|wanna) (to listen to|listen|to hear|hear) {query}"
+          - "(put|start) on {query}"
+      - sentences:
+          - "(put|start) [some|the] music"
+          - "music"
+        slots:
+          query: ""
+  MusicLouder:
+    data:
+      - sentences:
+          - "more volume"
+          - "(crank|pump) it up"
+          - "turn it up [a bit|a little]"
+          - "turn [the] music up (in|on) [the] {music_target}"
+          - "(volume|music) (up|louder)"
+          - "louder music"
+  MusicQuieter:
+    data:
+      - sentences:
+          - "music quieter"
+          - "make [the] volume (small|smaller|low|lower)"
+          - "[a] bit quieter"
+          - "turn it down [a bit|a little]"
+          - "(volume|music) (down|quieter)"
+  MusicStop:
+    data:
+      - sentences:
+          - "music (off|stop)"
+          - "turn [the] music off"
+          - "no more music"
+          - "turn off [the] music"
+          - "stop [the] song"
+  MusicMove:
+    data:
+      - sentences:
+          - "(change|switch) [the] music to [the] {music_target} [speaker]"
+          - "move (this|the song|this song|it) [over] to [the] {music_target}"
+          - "move music to [the] {music_target}"
+          - "play this (in|on) [the] {music_target}"
+  MusicSleep:
+    data:
+      - sentences:
+          - "[set] [a] sleep timer [for] {sleep_n:minutes} minute[s]"
+          - "music sleep {sleep_n:minutes} minute[s]"
+          - "(stop|turn off) [the] music after {sleep_n:minutes} minute[s]"
+          - "music stop after {sleep_n:minutes} minute[s]"
+
+  # ------------------------------------------------------------------ calendar
+  CalendarList:
+    data:
+      - sentences:
+          - "calendar [for] [{cal_range:range}]"
+          - "{cal_range:range}('s| is) (schedule|calendar|plan)"
+          - "tell me my (plan|plans|schedule|calendar) [for] [{cal_range:range}]"
+          - "what (is|'s) in [my|the] calendar [for] [{cal_range:range}]"
+          - "what i have [on] {cal_range:range}"
+          - "what do i have going on [{cal_range:range}]"
+          - "what('s| is) on my schedule [for] [{cal_range:range}]"
+  CalendarNext:
+    data:
+      - sentences:
+          - "next (event|appointment|meeting)"
+          - "(which|what) is my next (meeting|appointment|event)"
+          - "when my next (appointment|meeting|event) is"
+  CalendarAdd:
+    data:
+      - sentences:
+          - "add [an|a] {text} (appointment|meeting|event) (on|for) {when}"
+          - "schedule {text} (on|for) {when}"
+          - "put (in|on) [the] calendar {text} (on|for) {when}"
+
+  # ------------------------------------------------------------------ rooms and lights
+  RoomOff:
+    data:
+      - sentences:
+          - "{area} off"
+          - "turn off everything in [the] {area}"
+          - "kill [the] lights (in|of) [the] {area}"
+  RoomOn:
+    data:
+      - sentences:
+          - "{area} on"
+  LightDim:
+    data:
+      - sentences:
+          - "dim [the] lights (in|of) [the] {light_target}"
+          - "(put|make) [the] light[s] low (in|of) [the] {light_target}"
+          - "turn [the] {light_target} down [a bit|a little]"
+      - sentences:
+          - "(dim|dim the lights|lights more dark|make the lights darker|make it darker|darker)"
+          - "light[s] (more dark|darker|lower)"
+        slots:
+          light_target: ""
+  LightBrighten:
+    data:
+      - sentences:
+          - "brighten [the] lights (in|of) [the] {light_target}"
+          - "turn [the] {light_target} up [a bit|a little]"
+          - "turn [the] lights up (in|of) [the] {light_target} [a bit|a little]"
+      - sentences:
+          - "(brighten the lights|make the lights brighter|make the light more strong|more light|brighter)"
+          - "light[s] (more bright|brighter|more strong)"
+        slots:
+          light_target: ""
+  LightWarmer:
+    data:
+      - sentences:
+          - "make [the] lights warmer (in|of) [the] {light_target}"
+          - "warmer light[s] (in|of) [the] {light_target}"
+          - "(put|make) [the] lights warm (in|of) [the] {light_target}"
+          - "can [the] {light_target} [lights] be warmer"
+      - sentences:
+          - "warmer light[s]"
+          - "make [the] light[s] [a bit] (more hot|warmer|more warm|more yellow|yellower)"
+          - "light[s] (more warm|warmer) [color|colour]"
+        slots:
+          light_target: ""
+  LightCooler:
+    data:
+      - sentences:
+          - "make [the] lights (cooler|whiter|colder) (in|of) [the] {light_target}"
+          - "cooler light[s] (in|of) [the] {light_target}"
+      - sentences:
+          - "cooler light[s]"
+          - "make [the] light[s] [a bit] (more cold|cooler|whiter|more white|more blue|bluer)"
+          - "light[s] (more cold|cooler|whiter) [color|colour]"
+        slots:
+          light_target: ""
+
+  # ------------------------------------------------------------------ climate
+  ClimateWarmer:
+    data:
+      - sentences:
+          - "(turn|bump|crank) [the] (heat|thermostat|temperature) up [a bit|a little|a couple of degrees|{deg:degrees} degree[s]]"
+          - "(raise|increase|bump up) [the] (temperature|thermostat|heat) {deg:degrees} degree[s]"
+          - "(put|make) [the] heat (more high|higher|hotter)"
+          - "make (the house|it|the room) (more warm|warmer|more hot|hotter) [in here]"
+          - "i (am|'m) cold [make (it|the house) (more hot|warmer|more warm)]"
+          - "make (it|the house) more hot"
+          - "it's [a bit] (chilly|cold) [in here] [can you] [make it warmer]"
+  ClimateCooler:
+    data:
+      - sentences:
+          - "(turn|bump) [the] (heat|thermostat|temperature) down [a bit|a little|a couple of degrees|{deg:degrees} degree[s]]"
+          - "make (the house|it|the room) (more fresh|fresher|more cool|cooler|more cold|colder) [in here]"
+          - "it's too (hot|warm) [in here] [can you] [cool it down]"
+          - "cool (it|the house) down"
+  ClimateQuery:
+    data:
+      - sentences:
+          - "(how much|how many) degrees [is it] [inside|in here|in the house]"
+          - "thermostat"
+          - "how (warm|hot|cold) is it (in here|inside|in the house)"
+          - "what('s| is) the temperature (inside|in here|in the house) [right now]"
+          - "what('s| is) the (thermostat|heat) set (to|at)"
+  ClimateIsOn:
+    data:
+      - sentences:
+          - "(heat|heating) (on|running|working) [now]"
+          - "is the heat [actually] (on|running|working)"
+          - "heat is (working|on|running) [now]"
+        slots:
+          what: heat
+      - sentences:
+          - "(ac|cooling) (on|running|working) [now]"
+          - "is the ac [actually] (on|running|working)"
+        slots:
+          what: cool
+  ClimateMode:
+    data:
+      - sentences:
+          - "thermostat (to|on) {climate_mode:mode}"
+          - "(put|make) [the] (ac|thermostat) [to|on|in] {climate_mode:mode} mode"
+      - sentences:
+          - "(put|turn) [the] ac on"
+          - "(turn|switch) on [the] ac"
+        slots:
+          mode: cool
+      - sentences:
+          - "(put|turn) [the] heat on"
+        slots:
+          mode: heat
+  ClimatePreset:
+    data:
+      - sentences:
+          - "{climate_preset:preset} mode on [the] thermostat"
+          - "(put|set) [the] (heat|thermostat) (on|to|in) {climate_preset:preset} [mode]"
+          - "(set|put) thermostat (on|to|in) {climate_preset:preset} [mode]"
+
+  # ------------------------------------------------------------------ outside and cameras
+  OutsideAnyone:
+    data:
+      - sentences:
+          - "(anyone|anybody|someone|somebody) outside"
+          - "(somebody|someone|anyone|anybody) (is|) (in|at) [the] door"
+          - "is (anyone|anybody|someone|somebody) at the door"
+        slots:
+          place: outside
+  OutsideMotion:
+    data:
+      - sentences:
+          - "any (motion|movement) [detected] [outside]"
+          - "motion outside"
+          - "(something|anything) move[d] outside"
+          - "did the cameras see anything [out there|outside]"
+        slots:
+          place: outside
+      - sentences:
+          - "any (motion|movement) (at|in|on|by) [the] {place}"
+  CameraShow:
+    data:
+      - sentences:
+          - "let me see [the] {camera} [camera]"
+          - "{camera} camera [on [the] {tv}]"
+          - "show [the] {camera} [camera] please"
+  CameraClose:
+    data:
+      - sentences:
+          - "(get rid of|remove|close) [the] camera [from [the] (tv|television)] [now]"
+          - "camera (finish|off|close|stop)"
+          - "stop [the] camera"
+
+  # ------------------------------------------------------------------ TV
+  TvSource:
+    data:
+      - sentences:
+          - "(put|switch|change) [the] (tv|television) (in|to|on) [the] {tv_source:source}"
+          - "tv source {tv_source:source}"
+          - "{tv_source:source}"
+  TvWhatsOn:
+    data:
+      - sentences:
+          - "(which|what) (show|program|programme|movie) is on [the] (tv|television)"
+          - "what is play[ing] on [the] (tv|television)"
+          - "what are (they|we|you) watching on [the] (tv|television)"
+  TvApp:
+    data:
+      - sentences:
+          - "(start|open|put) [the] {tv_app:app} (on|in|for) [the] (tv|television)"
+          - "{tv_app:app} on [the] (tv|television)"
+
+  # ------------------------------------------------------------------ bed
+  BedPreset:
+    data:
+      - sentences:
+          - "(set|put|make) [the] bed (to|in|on) [the] {bed_preset:preset} [preset|mode|position]"
+          - "bed (to|in|on) {bed_preset:preset} [preset|mode|position]"
+          - "bed make {bed_preset:preset} [preset|mode|position]"
+  BedRaise:
+    data:
+      - sentences:
+          - "raise [the] (head|foot|feet|legs) (of|on) [my side of] [the] bed"
+          - "(raise|lift) my (head|feet|legs) [up] [a bit|a little]"
+          - "bed up [the] (head|legs|feet)"
+          - "head up"
+        slots:
+          who: me
+  BedFlatten:
+    data:
+      - sentences:
+          - "bed all down"
+          - "make [the] bed flat"
+          - "bed flat"
+        slots:
+          who: all
+  BedNumber:
+    data:
+      - sentences:
+          - "(change|put|make|set) my sleep number [to] {bed_number:number}"
+          - "sleep number (change to|to) {bed_number:number}"
+          - "put sleep number {bed_number:number}"
+          - "(set|change) my bed firmness to {bed_number:number}"
+        slots:
+          who: me
+  BedQuery:
+    data:
+      - sentences:
+          - "my sleep number [is what]"
+          - "what number is my side of the bed [on|at]"
+          - "what('s| is) my sleep number set (to|at)"
+        slots:
+          who: me
+  BedSleep:
+    data:
+      - sentences:
+          - "tell me how (was my sleep|i slept|did i sleep)"
+          - "how (was|is) my sleep"
+          - "my sleep (was good|last night)"
+        slots:
+          who: me
+
+  # ------------------------------------------------------------------ health and batteries
+  HealthReport:
+    data:
+      - sentences:
+          - "any problems at home [i should know about]"
+          - "(house|home) (is ok|ok|okay|status|report)"
+          - "(give me) [a] (house|home) status [report]"
+          - "everything (fine|ok|okay|alright) at home"
+          - "is everything (fine|ok|okay|alright) (at home|in the house)"
+  BatteryAll:
+    data:
+      - sentences:
+          - "battery (levels|level all|status all)"
+          - "how (is|are) [all] the batteries [doing]"
+          - "(check|tell me) the batteries [on everything]"
+          - "what are the battery levels"
+  BatteryLow:
+    data:
+      - sentences:
+          - "(any|are any) batteries (running low|low)"
+          - "any low batteries"
+          - "does anything need [a] new batter(y|ies)"
+  BatteryOne:
+    data:
+      - sentences:
+          - "how much battery [does] [the] {battery_thing:thing} (have|has)"
+          - "battery (of|on|for) [the] {battery_thing:thing} [how much]"
+          - "battery level of [the] {battery_thing:thing}"
+          - "{battery_thing:thing} battery [level]"
+          - "how's the {battery_thing:thing} battery"
+          - "what's the battery (on|of) [the] {battery_thing:thing}"
+  BatteryPhone:
+    data:
+      - sentences:
+          - "(what's|what is) my phone battery [at|level]"
+          - "my phone battery [how much|level]"
+          - "is my phone charged"
+          - "phone (is charged|battery)"
+          - "how much (charge|battery) (in|on|does) my phone [have]"
+
+  # ------------------------------------------------------------------ guest and night mode
+  GuestOn:
+    data:
+      - sentences:
+          - "put the house in guest mode"
+          - "(make|open) guest mode"
+          - "we have guest[s]"
+  GuestOff:
+    data:
+      - sentences:
+          - "guest mode (finish|done|over)"
+          - "close guest mode"
+          - "no more guest mode"
+  GuestQuery:
+    data:
+      - sentences:
+          - "are we in guest mode [right now]"
+          - "guest mode"
+          - "is guest mode (enabled|active|on or off)"
+          - "guest mode is (on or off|active)"
+  NightOn:
+    data:
+      - sentences:
+          - "(make|open) night mode"
+          - "switch on night mode"
+          - "we're going to bed[,] (switch on|turn on|start) night mode"
+  NightOff:
+    data:
+      - sentences:
+          - "night mode (finish|done|over)"
+          - "stop [the] night mode"
+          - "we're up[,] [you can] (switch off|turn off|stop) night mode"
+  NightQuery:
+    data:
+      - sentences:
+          - "are we in night mode"
+          - "night mode (status|active)"
+          - "is night mode (enabled|active|on or off)"
+          - "night mode is (on or off|active)"
+
+  # ------------------------------------------------------------------ doors
+  DoorOpen:
+    data:
+      - sentences:
+          - "(make|put) [the] {door} open"
+          - "[the] {door} up"
+  DoorClose:
+    data:
+      - sentences:
+          - "(make|put) [the] {door} close[d]"
+          - "[the] {door} (down|close)"
+          - "close up [the] {door}"
+  DoorStatus:
+    data:
+      - sentences:
+          - "[the] {door} (open still|still open|status)"
+          - "did i leave [the] {door} open"
+          - "is [the] {door} still open"
+
+  # ------------------------------------------------------------------ broadcast and help
+  BroadcastMessage:
+    data:
+      - sentences:
+          - "say to (all [the] speakers|everyone|everybody) [that] {message}"
+          - "announce to (everyone|everybody|the house) [that] {message}"
+  Help:
+    data:
+      - sentences:
+          - "what kind of things can i (ask|say to) you"
+          - "what commands can i (say|use)"
+          - "help me"
+          - "(what|how) can you help [me] [with]"
+
