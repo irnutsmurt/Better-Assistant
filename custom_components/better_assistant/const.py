@@ -102,5 +102,6 @@ EXTRA_FIELDS: dict[str, dict[str, tuple[str, object, dict]]] = {
 # The integration's own to-do lists: key -> name.
 LISTS = {"reminders": "Reminders", "notes": "Notes", "messages": "Messages"}
 
-ALARM_URL = "/better_assistant/alarm.mp3"
+ALARM_URL = "/better_assistant/alarm-60s.mp3"      # the tone, a minute long, played again each minute
+ALARM_SECONDS = 60
 RING_MINUTES = 10

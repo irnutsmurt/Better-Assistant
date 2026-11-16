@@ -154,6 +154,9 @@ class BetterAssistantAgent(conversation.ConversationEntity):
         """(speech, is_error)."""
         heard = self._entry.runtime_data.heard
         skills = self._entry.runtime_data.skills
+        ringing = await skills.ringing_reply(text, user_input) if skills else None
+        if ringing:                                          # an alarm is going off on this speaker
+            return ringing, False
         if skills and skills.has_pending(user_input):        # the answer to "What's the passphrase?"
             return await skills.answer_pending(text, user_input), False     # never kept in history
         if is_what_did_you_hear(text):

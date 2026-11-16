@@ -137,8 +137,9 @@ intents:
   AlarmStop:
     data:
       - sentences:
-          - "(stop|silence|dismiss|turn off) (the|my) alarm"
-          - "alarm off"
+          - "(stop|silence|dismiss|turn off|shut off|end|kill) [the|my] alarm[s]"
+          - "(turn|shut) [the|my] alarm[s] off"
+          - "alarm[s] (off|stop)"
           - "i'm up"
           - "i am up"
   NoteAdd:

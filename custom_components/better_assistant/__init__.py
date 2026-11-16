@@ -15,7 +15,7 @@ from homeassistant.core import HomeAssistant
 
 from homeassistant.components.http import StaticPathConfig
 
-from .const import (ALARM_URL, DOMAIN, HISTORY_SIZE, OPT_SNOOZE, OPT_SNOOZE_ENABLED, OPT_SNOOZE_LIMIT,
+from .const import (ALARM_URL, DOMAIN, HISTORY_SIZE, OPT_ALARM_MUSIC, OPT_SNOOZE, OPT_SNOOZE_ENABLED, OPT_SNOOZE_LIMIT,
                     OPT_VM_ENABLED, OPT_VOICE_PENDING, OPT_VT_ENABLED)
 from .autodetect import AutoDetect
 from .store import BetterAssistantStore
@@ -117,14 +117,15 @@ async def _async_register_tone(hass: HomeAssistant) -> None:
     if hass.data.get(f"{DOMAIN}_tone"):
         return
     hass.data[f"{DOMAIN}_tone"] = True
-    path = str(Path(__file__).parent / "www" / "alarm.mp3")
+    path = str(Path(__file__).parent / "www" / "alarm-60s.mp3")
     await hass.http.async_register_static_paths([StaticPathConfig(ALARM_URL, path, True)])
 
 
 async def _async_update_listener(hass: HomeAssistant, entry: BetterAssistantConfigEntry) -> None:
-    """Reload on option changes, except snooze length and limit (read live, so a ringing alarm survives)."""
-    old = {k: v for k, v in entry.runtime_data.options.items() if k not in (OPT_SNOOZE, OPT_SNOOZE_ENABLED, OPT_SNOOZE_LIMIT)}
-    new = {k: v for k, v in entry.options.items() if k not in (OPT_SNOOZE, OPT_SNOOZE_ENABLED, OPT_SNOOZE_LIMIT)}
+    """Reload on option changes, except the ones read live (so a ringing alarm survives)."""
+    live = (OPT_SNOOZE, OPT_SNOOZE_ENABLED, OPT_SNOOZE_LIMIT, OPT_ALARM_MUSIC)
+    old = {k: v for k, v in entry.runtime_data.options.items() if k not in live}
+    new = {k: v for k, v in entry.options.items() if k not in live}
     entry.runtime_data.options = dict(entry.options)
     if old != new:
         await hass.config_entries.async_reload(entry.entry_id)

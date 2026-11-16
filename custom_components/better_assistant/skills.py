@@ -15,11 +15,12 @@ from homeassistant.components import conversation
 from homeassistant.const import EVENT_CALL_SERVICE, STATE_HOME
 from homeassistant.core import Context, Event, EventStateChangedData, HomeAssistant, callback
 from homeassistant.helpers import area_registry as ar, device_registry as dr, entity_registry as er, intent
-from homeassistant.helpers.event import async_track_point_in_time, async_track_state_change_event
+from homeassistant.helpers.event import (async_track_point_in_time, async_track_state_change_event,
+                                         async_track_time_interval)
 from homeassistant.helpers.network import NoURLAvailableError, get_url
 from homeassistant.util import dt as dt_util
 
-from .const import ALARM_URL, DEFAULTS, OPT_ALARM_MUSIC, OPT_ALARM_SPEAKER, OPT_SNOOZE, OPT_SNOOZE_ENABLED, OPT_SNOOZE_LIMIT, RING_MINUTES
+from .const import ALARM_SECONDS, ALARM_URL, DEFAULTS, OPT_ALARM_MUSIC, OPT_ALARM_SPEAKER, OPT_SNOOZE, OPT_SNOOZE_ENABLED, OPT_SNOOZE_LIMIT, RING_MINUTES
 from .core import intents as sentences
 from .core.features import (
     ALL_SPEAKERS,
@@ -774,6 +775,20 @@ class Skills(HouseSkills, SecuritySkills):
         n = self.snooze_default()
         return f"Snooze is {n} minute{'s' if n != 1 else ''}."
 
+    async def ringing_reply(self, text: str, user_input) -> str | None:
+        """While an alarm rings on the speaker being talked to, whatever is said stops it ("stop alarm",
+        "okay I'm up", or words the speech-to-text got wrong over the noise), except a snooze."""
+        if not (getattr(user_input, "satellite_id", None) or user_input.device_id):
+            return None                                      # typed in the app: answer normally
+        if not self._ringing_for(user_input):
+            return None
+        match = self.recognize(text)
+        if match and match.intent == "AlarmSnooze":
+            return await self._h_alarm_snooze(match.slots, user_input)
+        if re.search(r"\bsnooze|\bmore minutes?\b|\bfew more\b|\bfive more\b", text, re.I):
+            return await self._h_alarm_snooze({}, user_input)
+        return await self._h_alarm_stop({}, user_input)
+
     def _ringing_for(self, user_input) -> list[str]:
         """Ringing alarm keys that this speaker can stop or snooze (any of them from the app)."""
         sat = self.satellite_for(user_input)
@@ -927,6 +942,37 @@ class Skills(HouseSkills, SecuritySkills):
         stopped = asyncio.Event()
         settled = self.hass.loop.time() + 5                   # a new queue can blink idle while it starts
 
+        def quiet_early(player: str, state: str) -> bool:
+            return player in players and state in ("paused", "off", "idle") and self.hass.loop.time() >= settled
+
+        unwatch = self._watch_stop(watched, sats, stopped, quiet_early)
+        try:
+            try:
+                await asyncio.wait_for(stopped.wait(), RING_MINUTES * 60)
+            except TimeoutError:
+                pass
+        finally:
+            unwatch()
+        if self._ring_music.pop(key, None):                   # stopped from outside or timed out
+            stop = Context()
+            ours.add(stop.id)
+            await self._call("media_player", "media_stop", {"entity_id": players}, stop)
+            if stopped.is_set():
+                self._stopped_outside(key, [])
+        return True
+
+    @callback
+    def _watch_stop(self, players: list[str], sats: list[str], stopped: asyncio.Event,
+                    quiet_early: Callable[[str, str], bool]) -> Callable[[], None]:
+        """Listen for a ringing alarm being stopped from outside:
+        - a stop / pause / mute / off service call on one of its players (Home Assistant's own "stop");
+        - a player going quiet early (quiet_early(player, state)) while nobody is talking to the speaker:
+          the Voice PE's own on-device "stop". If the speaker is listening or answering instead, it's a
+          request in progress (perhaps "snooze"), which the agent handles."""
+        ours = self._own_contexts
+        busy = {"t": -1e9}
+        early: dict[str, float] = {}
+
         @callback
         def _service(event: Event) -> None:
             data = event.data
@@ -935,35 +981,95 @@ class Skills(HouseSkills, SecuritySkills):
                 return
             ids = (data.get("service_data") or {}).get("entity_id")
             ids = [ids] if isinstance(ids, str) else list(ids or [])
-            if not ids or any(p in ids for p in watched):
+            if not ids or any(p in ids for p in players):
                 stopped.set()
 
         @callback
-        def _state(event: Event[EventStateChangedData]) -> None:
+        def _player(event: Event[EventStateChangedData]) -> None:
             new = event.data["new_state"]
-            if new and new.state in ("paused", "off", "idle") and new.context.id not in ours \
-                    and self.hass.loop.time() >= settled:
-                stopped.set()
+            if new and new.context.id not in ours and quiet_early(event.data["entity_id"], new.state):
+                early[event.data["entity_id"]] = self.hass.loop.time()
+
+        @callback
+        def _satellite(event: Event[EventStateChangedData]) -> None:
+            new = event.data["new_state"]
+            if new and new.state not in ("idle", "unavailable", "unknown"):
+                busy["t"] = self.hass.loop.time()
+
+        @callback
+        def _check(_now) -> None:
+            t = self.hass.loop.time()
+            for player, when in list(early.items()):
+                if t - when < 1.5:                            # the speaker's state can lag its player's
+                    continue
+                early.pop(player)
+                if busy["t"] < when - 1.0 and not self._sats_busy(sats):
+                    stopped.set()
 
         unsubs = [self.hass.bus.async_listen(EVENT_CALL_SERVICE, _service),
-                  async_track_state_change_event(self.hass, players, _state)]
+                  async_track_state_change_event(self.hass, players, _player),
+                  async_track_time_interval(self.hass, _check, dt.timedelta(seconds=0.5))]
+        if sats:
+            unsubs.append(async_track_state_change_event(self.hass, sats, _satellite))
+        return lambda: [u() for u in unsubs]
+
+    def _sats_busy(self, sats: list[str]) -> bool:
+        """A voice speaker in the middle of a request (listening, thinking or answering)."""
+        return any((st := self.hass.states.get(s)) and st.state not in ("idle", "unavailable", "unknown")
+                   for s in sats)
+
+    async def _ring_tone(self, key: str, players: list[str], url: str, sats: list[str]) -> None:
+        """The bundled tone (a minute long) on each player, again whenever it ends, for RING_MINUTES.
+        It waits while the speaker is listening or answering, so a request isn't drowned out."""
+        ours = self._own_contexts
+        stopped = asyncio.Event()
+        started: dict[str, float] = {}
+
+        def quiet_early(player: str, state: str) -> bool:
+            if state in ("paused", "off"):
+                stopped.set()                                 # the tone never pauses or turns off itself
+                return False
+            return state == "idle" and self.hass.loop.time() - started.get(player, -1e9) < ALARM_SECONDS - 4
+
+        unwatch = self._watch_stop(players, sats, stopped, quiet_early)
         try:
-            try:
-                await asyncio.wait_for(stopped.wait(), RING_MINUTES * 60)
-            except TimeoutError:
-                pass
+            end = self.hass.loop.time() + RING_MINUTES * 60
+            while self.hass.loop.time() < end and not stopped.is_set():
+                if len(ours) > 500:
+                    ours.clear()
+                now = self.hass.loop.time()
+                due = [p for p in players if now - started.get(p, -1e9) > 3
+                       and not ((st := self.hass.states.get(p)) and st.state == "playing")]
+                if due and not self._sats_busy(sats):
+                    calls = []
+                    for player in due:
+                        ctx = Context()
+                        ours.add(ctx.id)
+                        started[player] = now
+                        calls.append(self._call("media_player", "play_media", {
+                            "entity_id": player, "media_content_id": url,
+                            "media_content_type": "music", "announce": True}, ctx))
+                    await asyncio.gather(*calls)
+                try:
+                    await asyncio.wait_for(stopped.wait(), 1)
+                except TimeoutError:
+                    pass
         finally:
-            for unsub in unsubs:
-                unsub()
-        if self._ring_music.pop(key, None):                   # stopped from outside or timed out
-            stop = Context()
-            ours.add(stop.id)
-            await self._call("media_player", "media_stop", {"entity_id": players}, stop)
-            if stopped.is_set():
-                if (cancel := self._timers.pop(f"snooze:{key}", None)):
-                    cancel()
-                self._snooze_count.pop(key, None)
-        return True
+            unwatch()
+        if stopped.is_set():
+            _LOGGER.debug("Alarm %s stopped from outside", key)
+            self._stopped_outside(key, players)
+
+    @callback
+    def _stopped_outside(self, key: str, players: list[str]) -> None:
+        """Stopped on one speaker (or by Home Assistant's "stop"): quiet the others, forget the snooze."""
+        for other in players:
+            ctx = Context()
+            self._own_contexts.add(ctx.id)
+            self.hass.async_create_task(self._call("media_player", "media_stop", {"entity_id": other}, ctx))
+        if (cancel := self._timers.pop(f"snooze:{key}", None)):
+            cancel()
+        self._snooze_count.pop(key, None)
 
     async def _ring(self, key: str) -> None:
         """Ring on every target speaker through its own media player until stopped, snoozed or
@@ -991,58 +1097,7 @@ class Skills(HouseSkills, SecuritySkills):
             if not players:
                 await asyncio.sleep(RING_MINUTES * 60)       # still "ringing", so snooze / stop work
                 return
-            stopped = asyncio.Event()
-            ours = self._own_contexts                         # our own replays and stops
-
-            @callback
-            def _service(event: Event) -> None:
-                data = event.data
-                if data.get("domain") != "media_player" or data.get("service") not in STOP_SERVICES:
-                    return
-                if event.context.id in ours:
-                    return
-                ids = (data.get("service_data") or {}).get("entity_id")
-                ids = [ids] if isinstance(ids, str) else list(ids or [])
-                if not ids or any(p in ids for p in players):  # stopped by someone else (e.g. "stop")
-                    stopped.set()
-
-            @callback
-            def _state(event: Event[EventStateChangedData]) -> None:
-                new = event.data["new_state"]
-                if new and new.state in ("paused", "off") and new.context.id not in ours:
-                    stopped.set()                             # the tone never pauses or turns off itself
-
-            unsubs = [self.hass.bus.async_listen(EVENT_CALL_SERVICE, _service),
-                      async_track_state_change_event(self.hass, players, _state)]
-            try:
-                end = dt_util.now() + dt.timedelta(minutes=RING_MINUTES)
-                while dt_util.now() < end and not stopped.is_set():
-                    if len(ours) > 500:
-                        ours.clear()
-                    calls = []
-                    for player in players:
-                        ctx = Context()
-                        ours.add(ctx.id)
-                        calls.append(self._call("media_player", "play_media", {
-                            "entity_id": player, "media_content_id": url,
-                            "media_content_type": "music", "announce": True}, ctx))
-                    await asyncio.gather(*calls)
-                    try:
-                        await asyncio.wait_for(stopped.wait(), 4)
-                    except TimeoutError:
-                        pass
-            finally:
-                for unsub in unsubs:
-                    unsub()
-            if stopped.is_set():
-                _LOGGER.debug("Alarm %s stopped from outside", key)
-                for other in players:                         # stop it on the other speakers too
-                    ctx = Context()
-                    ours.add(ctx.id)
-                    self.hass.async_create_task(self._call("media_player", "media_stop", {"entity_id": other}, ctx))
-                if (cancel := self._timers.pop(f"snooze:{key}", None)):
-                    cancel()
-                self._snooze_count.pop(key, None)
+            await self._ring_tone(key, players, url, sats)
         finally:
             if self._ringing.get(key) is asyncio.current_task():
                 self._ringing.pop(key, None)

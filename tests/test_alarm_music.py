@@ -153,3 +153,78 @@ async def test_set_an_alarm_with_music(hass):
     s.store.data["alarms"].clear()
     await s._h_alarm_set({"text": "7"}, None)
     assert "music" not in next(iter(s.store.data["alarms"].values()))
+
+
+# ------------------------------------------------------------------ stopping the tone
+async def _tone(hass):
+    s = skills(hass)
+    hass.states.async_set(SAT, "idle")
+    hass.states.async_set(TONE_PLAYER, "idle")
+
+    async def play(call):
+        s.calls.append(("tone", dict(call.data)))
+        hass.states.async_set(TONE_PLAYER, "playing", context=call.context)
+
+    hass.services.async_register("media_player", "play_media", play)
+    task = asyncio.ensure_future(s._ring_tone("k", [TONE_PLAYER], "http://x/alarm.mp3", [SAT]))
+    for _ in range(100):
+        await asyncio.sleep(0.01)
+        if s.calls:
+            break
+    return s, task
+
+
+async def test_the_speakers_own_stop_ends_the_alarm(hass):
+    s, task = await _tone(hass)
+    assert s.calls[0][1]["announce"] is True
+    hass.states.async_set(TONE_PLAYER, "idle")                 # "stop" said to the Voice PE itself
+    await asyncio.wait_for(task, 4)
+    assert len([c for c in s.calls if c[0] == "tone"]) == 1     # not played again
+
+
+async def test_a_request_in_progress_doesnt_end_the_alarm(hass):
+    s, task = await _tone(hass)
+    hass.states.async_set(SAT, "listening")                     # wake word: the tone pauses for the request
+    hass.states.async_set(TONE_PLAYER, "idle")
+    await asyncio.sleep(2.5)
+    assert not task.done() and len(s.calls) == 1                # still ringing, but quiet while it listens
+    hass.states.async_set(SAT, "idle")
+    await asyncio.sleep(1.5)
+    assert len([c for c in s.calls if c[0] == "tone"]) == 2     # back on once the speaker is free
+    task.cancel()
+
+
+async def test_anything_said_while_ringing_stops_or_snoozes(hass):
+    from homeassistant.components.conversation import ConversationInput
+    from homeassistant.core import Context
+    s = skills(hass)
+    s.recognize = lambda text: recognize(text, ["rob"])
+    s.satellite_for = lambda ui: SAT
+    s._ring_targets["k"] = [SAT]
+    s._ringing["k"] = object()
+    said = []
+
+    async def stop(slots, ui):
+        said.append("stop")
+        return "Alarm off."
+
+    async def snooze(slots, ui):
+        said.append(("snooze", slots.get("minutes")))
+        return "Okay."
+
+    s._h_alarm_stop, s._h_alarm_snooze = stop, snooze
+    ui = ConversationInput(text="x", context=Context(), conversation_id="c", device_id="d", satellite_id=SAT,
+                           language="en", agent_id="conversation.x")
+    for text in ("Stop alarm.", "okay I'm up", "That's fast. Sorry, that too.", "snooze", "5 more minutes"):
+        await s.ringing_reply(text, ui)
+    assert said == ["stop", "stop", "stop", ("snooze", None), ("snooze", 5)]
+    typed = ConversationInput(text="x", context=Context(), conversation_id="c", device_id=None, satellite_id=None,
+                              language="en", agent_id="conversation.x")
+    assert await s.ringing_reply("what's the weather", typed) is None   # the app isn't the ringing speaker
+    s._ringing.clear()
+    assert await s.ringing_reply("stop alarm", ui) is None
+
+
+def test_stop_alarm_without_the():
+    assert recognize("Stop alarm", ["rob"]).intent == "AlarmStop"
+    assert recognize("turn the alarm off", ["rob"]).intent == "AlarmStop"
