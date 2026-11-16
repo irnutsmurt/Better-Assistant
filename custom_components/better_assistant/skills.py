@@ -55,6 +55,7 @@ from .core.features import (
     split_alarm_place,
     sentence,
 )
+from .alarm_sounds import LAST, describe, parse_ma
 from .core.intents import TIMER_INTENTS, Match
 from .core.music import parse_music_query
 from .core.timeparse import fmt_time, parse, say_when
@@ -590,21 +591,22 @@ class Skills(HouseSkills, SecuritySkills):
             " That replaces the one that was there." if replaced else "")
 
     def _wake_music(self, music: str | None) -> str | None:
-        """What an alarm plays: None = the tone, "" = whatever played last, else a request ("jazz")."""
+        """What an alarm plays: None = the alarm sound, else a choice from alarm_sounds ("last", a library
+        item) or a request said by voice ("jazz"). music: this alarm's own (None = the wake-up setting)."""
         default = (self.entry.options.get(OPT_ALARM_MUSIC) or "").strip()
         if music == TONE:
             return None
-        if music == DEFAULT_MUSIC:
-            return default
+        if music == DEFAULT_MUSIC:                           # "with music": the setting, else what played last
+            return default or LAST
         return music or default or None
 
     def _say_music(self, music: str | None) -> str:
         if not music or music == TONE:
             return ""
         if not self._ma_ready():
-            return " Music Assistant isn't set up, so it will ring with the alarm tone."
+            return " Music Assistant isn't set up, so it will ring with the alarm sound."
         play = self._wake_music(music)
-        return f" It will play {flip_pronouns(play)}." if play else " It will play your music."
+        return f" It will play {flip_pronouns(describe(play))}." if play else ""
 
     async def _h_alarm_music(self, slots: dict, user_input) -> str:
         """"Change my wake-up music to jazz": the default for every alarm, and this speaker's alarms now."""
@@ -612,8 +614,8 @@ class Skills(HouseSkills, SecuritySkills):
             play = self._wake_music(None)
             mine = [a.get("music") for a in self._mine(user_input).values() if a.get("music")]
             if mine and mine[0] not in (TONE, DEFAULT_MUSIC):
-                return f"Your alarm will play {flip_pronouns(mine[0])}."
-            return f"Your alarms play {flip_pronouns(play)}." if play else "Your alarms ring with the alarm tone."
+                return f"Your alarm will play {flip_pronouns(describe(mine[0]))}."
+            return f"Your alarms play {flip_pronouns(describe(play))}." if play else "Your alarms ring with the alarm sound."
         _rest, music = split_alarm_music("with " + (slots.get("text") or "").strip())
         if not music or music == DEFAULT_MUSIC:
             return "What should your alarm play? For example, say change my wake-up music to my morning playlist."
@@ -623,10 +625,10 @@ class Skills(HouseSkills, SecuritySkills):
             alarm.pop("music", None)
         self.store.changed()
         if not value:
-            return "Okay, your alarms will ring with the alarm tone."
+            return "Okay, your alarms will ring with the alarm sound."
         if not self._ma_ready():
             return f"Okay, I'll remember {flip_pronouns(value)}, but Music Assistant isn't set up, so alarms will ring with the tone."
-        return f"Okay, your alarms will play {flip_pronouns(value)}."
+        return f"Okay, your alarms will play {flip_pronouns(describe(value))}."
 
     def _mine(self, user_input) -> dict[str, dict]:
         sat = self.satellite_for(user_input)
@@ -1107,8 +1109,14 @@ class Skills(HouseSkills, SecuritySkills):
         ours = self._own_contexts
         ctx = Context()
         ours.add(ctx.id)
-        req = parse_music_query(play) if play else None
-        if req and req.name:
+        library = parse_ma(play)
+        req = parse_music_query(play) if play and play != LAST and not library else None
+        if library:                                          # picked from the library: play exactly that
+            media_type, uri, _name = library
+            await self._call("music_assistant", "play_media", {
+                "entity_id": players, "media_id": uri, "media_type": media_type, "enqueue": "replace",
+                "radio_mode": media_type == "artist"}, ctx)
+        elif req and req.name:
             data: dict[str, Any] = {"entity_id": players, "media_id": req.name, "enqueue": "replace",
                                     "radio_mode": req.radio or req.media_type not in ("playlist", "album")}
             if req.media_type:

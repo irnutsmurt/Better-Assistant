@@ -101,7 +101,7 @@ async def test_which_music_an_alarm_plays(hass):
     assert s._wake_music(DEFAULT_MUSIC) == "my morning playlist"
     s.entry.options["alarm_music"] = ""
     assert s._wake_music(None) is None                             # nothing set: the tone
-    assert s._wake_music(DEFAULT_MUSIC) == ""                      # "with music": what played last
+    assert s._wake_music(DEFAULT_MUSIC) == "last"                  # "with music": what played last
     assert s._say_music("jazz") == " It will play jazz."
 
 
@@ -284,3 +284,48 @@ async def test_falls_back_to_the_tone_when_the_speaker_doesnt_ring(hass):
     with patch("custom_components.better_assistant.skills.intent.async_handle", start_timer), \
             patch("custom_components.better_assistant.skills.asyncio.sleep", lambda *_: real_sleep(0)):
         assert await s._ring_native("k", [SAT]) is False
+
+
+# ------------------------------------------------------------------ picking the sound from a list
+def test_sound_values():
+    pytest.importorskip("homeassistant")
+    from custom_components.better_assistant.alarm_sounds import describe, label, ma_value, parse_ma
+    v = ma_value("playlist", "library://playlist/9", "Liked Music (YouTube Music)")
+    assert parse_ma(v) == ("playlist", "library://playlist/9", "Liked Music (YouTube Music)")
+    assert label(v) == "Playlist: Liked Music (YouTube Music)" and describe(v) == "your Liked Music (YouTube Music) playlist"
+    assert label("") == "Alarm sound" and label("last") == "Whatever played last"
+    assert describe(ma_value("artist", "spotify://artist/1", "Queen")) == "music like Queen"
+    assert label("jazz") == "jazz (asked for by voice)" and parse_ma("jazz") is None
+
+
+async def test_choices_come_from_the_music_assistant_library(hass):
+    from homeassistant.config_entries import ConfigEntry, ConfigEntryState
+    from custom_components.better_assistant.alarm_sounds import async_choices
+    assert await async_choices(hass) == [{"value": "", "label": "Alarm sound"}]          # no Music Assistant
+    entry = ConfigEntry(version=1, minor_version=1, domain="music_assistant", title="MA", data={}, source="user",
+                        options={}, unique_id=None, discovery_keys={}, subentries_data=None)
+    hass.config_entries._entries[entry.entry_id] = entry
+    entry._async_set_state(hass, ConfigEntryState.LOADED, None)
+    library = {"playlist": [{"uri": "library://playlist/9", "name": "Liked Music"}],
+               "artist": [{"uri": "spotify://artist/1", "name": "Queen"}], "radio": []}
+
+    async def get_library(call):
+        return {"items": library[call.data["media_type"]]}
+
+    from homeassistant.core import SupportsResponse
+    hass.services.async_register("music_assistant", "get_library", get_library, supports_response=SupportsResponse.ONLY)
+    got = await async_choices(hass, "jazz")
+    assert [c["label"] for c in got] == ["Alarm sound", "Whatever played last", "Playlist: Liked Music",
+                                         "Music like Queen", "jazz (asked for by voice)"]
+
+
+async def test_a_picked_playlist_plays_exactly_that(hass):
+    s = skills(hass)
+    task = asyncio.ensure_future(s._ring_with_music("k", [MA], "ma:playlist:library://playlist/9|Liked Music", [SAT]))
+    for _ in range(50):
+        await asyncio.sleep(0.01)
+        if s.calls:
+            break
+    name, data = s.calls[0]
+    assert (data["media_id"], data["media_type"], data["radio_mode"]) == ("library://playlist/9", "playlist", False)
+    task.cancel()

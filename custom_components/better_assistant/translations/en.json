@@ -342,14 +342,14 @@
           "snooze_limit": "Snooze limit per alarm",
           "snooze_enabled": "Snoozing",
           "alarm_speaker": "Default alarm speaker",
-          "alarm_music": "Wake-up music"
+          "alarm_music": "Wake up to"
         },
         "data_description": {
           "snooze_minutes": "Used for \"snooze\". You can also say \"set the snooze to 10 minutes\".",
           "snooze_limit": "Leave empty for no limit, or 1-10. 0 turns snoozing off. By voice: \"limit snoozes to 3\", \"no snooze limit\", \"no snoozing\".",
           "snooze_enabled": "Off: the alarm rings until you stop it.",
           "alarm_speaker": "Leave empty to ring on the speaker you asked from (all voice speakers when set from the app). You can also say \"set an alarm for 7 in the bedroom\" or \"... everywhere\".",
-          "alarm_music": "Leave empty for the alarm tone. Or type what to play, the way you'd ask for it: \"my Discover Weekly playlist\", \"Taylor Swift\", \"music like Norah Jones\", \"the album Abbey Road\". It plays from Music Assistant (Spotify, YouTube Music and the rest) on the alarm's speaker, and if it can't start, the tone rings instead. By voice: \"wake me up to Taylor Swift at 7\", \"set an alarm for 7 with my morning playlist\", \"change my wake-up music to jazz\"."
+          "alarm_music": "The alarm sound, or one of your Music Assistant playlists and favourites. By voice: \"wake me up to Taylor Swift at 7\", \"change my wake-up music to jazz\"."
         }
       },
       "health": {

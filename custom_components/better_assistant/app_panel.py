@@ -239,6 +239,7 @@ def app_view(hass: HomeAssistant, user) -> dict[str, Any]:
             "music": entry.options.get(OPT_ALARM_MUSIC) or "", "music_ready": music,
         },
         "speakers": [{"value": s["entity_id"], "label": s["name"]} for s in speakers],
+        "sounds": _sounds(hass, entry),
         "reminders": skills.app_reminders(),
         "notes": [{"uid": i["uid"], "summary": i["summary"]} for i in store.items("notes") if i["status"] == "needs_action"],
         "messages": [{"uid": i["uid"], "summary": i["summary"]} for i in store.items("messages")
@@ -266,6 +267,29 @@ def ws_app_subscribe(hass: HomeAssistant, connection: websocket_api.ActiveConnec
     connection.subscriptions[msg["id"]] = async_dispatcher_connect(hass, SIGNAL_APP, send)
     connection.send_result(msg["id"])
     send()
+    hass.async_create_task(_async_refresh_sounds(hass))       # the library may have changed since
+
+
+async def _async_refresh_sounds(hass: HomeAssistant) -> None:
+    """Read the Music Assistant library for the alarm sound drop-down, then update open pages."""
+    from .alarm_sounds import async_choices  # noqa: PLC0415
+    entry = _entry(hass)
+    if entry is None:
+        return
+    choices = await async_choices(hass, entry.options.get(OPT_ALARM_MUSIC) or "")
+    if choices != hass.data.get(f"{DOMAIN}_sounds"):
+        hass.data[f"{DOMAIN}_sounds"] = choices
+        async_dispatcher_send(hass, SIGNAL_APP)
+
+
+def _sounds(hass: HomeAssistant, entry) -> list[dict[str, str]]:
+    """The alarm sound choices last read from the library, always with the current setting in them."""
+    from .alarm_sounds import label  # noqa: PLC0415
+    choices = list(hass.data.get(f"{DOMAIN}_sounds") or [{"value": "", "label": label("")}])
+    current = entry.options.get(OPT_ALARM_MUSIC) or ""
+    if current and all(c["value"] != current for c in choices):
+        choices.append({"value": current, "label": label(current)})
+    return choices
 
 
 def _not_running(connection, msg) -> None:
@@ -361,7 +385,7 @@ SETTINGS_SCHEMA = vol.Schema({
     vol.Optional(OPT_SNOOZE_ENABLED): bool,
     vol.Optional(OPT_SNOOZE_LIMIT): vol.Any(None, vol.All(vol.Coerce(int), vol.Range(0, 10))),
     vol.Optional(OPT_ALARM_SPEAKER): vol.Any(None, str),
-    vol.Optional(OPT_ALARM_MUSIC): vol.All(str, vol.Length(max=200)),
+    vol.Optional(OPT_ALARM_MUSIC): vol.All(str, vol.Length(max=500)),
     vol.Optional(OPT_VT_ENABLED): vol.In([True]),             # turning it off: More settings (it tidies up)
 })
 

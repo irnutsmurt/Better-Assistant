@@ -598,10 +598,21 @@ class BetterAssistantApp extends HTMLElement {
   }
 
   // ------------------------------------------------------------ alarms & reminders
+  // what an alarm wakes you with: picked from v.sounds ([{value, label}]), never typed
+  _soundLabel(value) {
+    const s = (this._view.sounds || []).find((x) => x.value === value);
+    if (s) return s.label;
+    const m = /^ma:[^:]+:.*\|(.*)$/.exec(value || "");
+    return m ? m[1] : value;
+  }
+
   _sound(music) {
     if (!music) return "";
-    if (music === "tone") return "alarm tone";
+    if (music === "tone") return "alarm sound";
     if (music === "default") return "wake-up music";
+    if (music === "last") return "plays whatever played last";
+    const m = /^ma:([^:]+):.*\|(.*)$/.exec(music);
+    if (m) return m[1] === "artist" ? `plays music like ${m[2]}` : `plays ${m[2]}`;
     return `plays ${music}`;
   }
 
@@ -609,16 +620,20 @@ class BetterAssistantApp extends HTMLElement {
     const e = this._edit;
     const speakers = v.speakers.map((s) => `<option value="${this._esc(s.value)}" ${e.target === s.value ? "selected" : ""}>${this._esc(s.label)}</option>`).join("");
     const reps = Object.entries(REPEAT_NAMES).map(([k, n]) => `<option value="${k}" ${e.repeat === k ? "selected" : ""}>${n}</option>`).join("");
-    const soundOpt = (k, n) => `<option value="${k}" ${e.sound === k ? "selected" : ""}>${n}</option>`;
-    const musicNote = v.alarm_settings.music ? `Wake-up music (${this._esc(v.alarm_settings.music)})` : "Alarm tone (default)";
+    // "" = whatever the wake-up setting says, "tone" = the alarm sound, else one of the library choices
+    const setting = v.alarm_settings.music ? `Wake-up music (${this._esc(this._soundLabel(v.alarm_settings.music))})`
+                                           : "Wake-up setting (alarm sound)";
+    const choices = [["", setting], ["tone", "Alarm sound"],
+                     ...(v.sounds || []).filter((s) => s.value).map((s) => [s.value, s.label])];
+    if (e.music && !choices.some(([k]) => k === e.music)) choices.push([e.music, this._soundLabel(e.music)]);
+    const sounds = choices.map(([k, n]) => `<option value="${this._esc(k)}" ${e.music === k ? "selected" : ""}>${this._esc(n)}</option>`).join("");
     return `<div class="form">
       <label>Time<input type="time" data-f="time" value="${this._esc(e.time)}"></label>
       <div class="two">
         <label>Repeat<select data-f="repeat">${reps}</select></label>
         <label>Speaker<select data-f="target"><option value="all" ${e.target === "all" ? "selected" : ""}>All voice speakers</option>${speakers}</select></label>
       </div>
-      <label>Sound<select data-f="sound">${soundOpt("", musicNote)}${soundOpt("tone", "Alarm tone")}${v.alarm_settings.music_ready ? soundOpt("music", "Music…") : ""}</select></label>
-      ${e.sound === "music" ? `<label>What to play<input type="text" data-f="music" value="${this._esc(e.music)}" placeholder="Taylor Swift, my morning playlist…"></label>` : ""}
+      <label>Sound<select data-f="music">${sounds}</select></label>
       <div class="acts" style="justify-content:flex-start"><button class="primary" data-alarm-save="1">${e.key ? "Save" : "Add alarm"}</button>
         <button data-alarm-cancel="1">Cancel</button></div></div>`;
   }
@@ -658,11 +673,11 @@ class BetterAssistantApp extends HTMLElement {
         <select data-set="snooze_limit" ${dis}>${limits}</select></div>` : ""}
       <div class="setting"><div class="main"><div class="name">Rings on</div><div class="sub">When you don't say where.</div></div>
         <select data-set="alarm_speaker" ${dis}>${where}</select></div>
-      <div class="setting" style="flex-wrap:wrap"><div class="main" style="min-width:100%"><div class="name">Wake-up music</div>
-        <div class="sub">${st.music_ready ? "What alarms play, the way you'd ask for it. Empty: the alarm tone." :
-          "Needs Music Assistant. Until then alarms ring with the tone."}</div></div>
-        <div class="inline"><input type="text" data-music-input="1" value="${this._esc(st.music)}" placeholder="Alarm tone" ${dis}>
-        <button data-music-save="1" ${dis}>Save</button></div></div></div>`;
+      <div class="setting"><div class="main"><div class="name">Wake up to</div>
+        <div class="sub">${st.music_ready ? "Your playlists and favourites from Music Assistant, or the alarm sound." :
+          "Music needs Music Assistant. Until then alarms ring with the alarm sound."}</div></div>
+        <select data-set="alarm_music" ${dis}>${(v.sounds || [{ value: "", label: "Alarm sound" }]).map((s) =>
+          `<option value="${this._esc(s.value)}" ${st.music === s.value ? "selected" : ""}>${this._esc(s.label)}</option>`).join("")}</select></div></div>`;
     const list = (items, kind, empty) => items.map((i) => `<div class="row"><div class="main"><div class="name">${this._esc(i.summary)}</div>
         ${i.when ? `<div class="sub">${this._esc(i.when)}</div>` : ""}</div>
         <button class="danger" data-item="${kind}" data-uid="${this._esc(i.uid)}">Delete</button></div>`).join("")
@@ -681,12 +696,11 @@ class BetterAssistantApp extends HTMLElement {
       if (!a) return;
       const music = a.music || "";
       this._edit = { key, time: a.time, repeat: a.repeat, target: a.targets === "all" ? "all" : a.targets[0],
-                     sound: music === "tone" ? "tone" : music && music !== "default" ? "music" : "",
-                     music: music === "tone" || music === "default" ? "" : music };
+                     music: music === "default" ? "" : music };
     } else {
       this._edit = { key: null, time: "07:00", repeat: "once",
                      target: v.alarm_settings.speaker || (v.speakers[0] ? v.speakers[0].value : "all"),
-                     sound: "", music: "" };
+                     music: "" };
     }
     this._render();
   }
@@ -694,8 +708,7 @@ class BetterAssistantApp extends HTMLElement {
   async _saveAlarm() {
     const e = this._edit;
     if (!e.time) { this._say("Pick a time."); return; }
-    const music = e.sound === "tone" ? "tone" : e.sound === "music" ? e.music.trim() : "";
-    if (e.sound === "music" && !music) { this._say("Say what to play."); return; }
+    const music = e.music || "";
     const res = await this._ws({ type: "better_assistant/app/alarm", action: e.key ? "change" : "add",
                                  ...(e.key ? { key: e.key } : {}), time: e.time, repeat: e.repeat,
                                  targets: e.target === "all" ? "all" : [e.target], music },
@@ -817,7 +830,6 @@ class BetterAssistantApp extends HTMLElement {
     else if (d.item) {
       if (confirm("Delete it?")) this._ws({ type: "better_assistant/app/item", list: d.item, uid: d.uid }, "Deleted");
     }
-    else if (d.musicSave) this._setOption("alarm_music", this.shadowRoot.querySelector("[data-music-input]").value);
     else if (d.voiceOn) this._ws({ type: "better_assistant/app/settings", values: { voice_training: true } },
                                  "Voice training is on");
   }
@@ -827,7 +839,6 @@ class BetterAssistantApp extends HTMLElement {
     const d = el.dataset || {};
     if (d.f && this._edit) {
       this._edit[d.f] = el.value;
-      if (d.f === "sound") this._render();                  // show or hide "What to play"
       return;
     }
     if (d.feature) {
