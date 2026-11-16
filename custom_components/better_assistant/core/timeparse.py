@@ -154,8 +154,11 @@ def parse(text, now, alarm=False):
         t = (t[:m.start()] + t[m.end():]).strip()
         if k == "morning":
             t += " morning"                                # "every morning at 7" is an AM hint
-    # relative: in 20 minutes / in 1 hour and 30 minutes / in 1.5 hours / in 0.5 hour
-    m = re.search(r"\bin (\d+(?:\.\d+)?|\.5) ?(minute|min|hour|hr)s?(?: and (\d+(?:\.\d+)?) ?(minute|min)s?)?(?: and a half)?\b", t)
+    # relative: in 20 minutes / in 1 hour and 30 minutes / in 1.5 hours / in 0.5 hour / 20 minutes from now,
+    # and for an alarm a bare length: "a 2 minute alarm", "an alarm for 20 minutes"
+    span = r"(\d+(?:\.\d+)?|\.5)[ -]?(minute|min|hour|hr)s?(?: and (\d+(?:\.\d+)?) ?(minute|min)s?)?(?: and a half)?\b"
+    m = (re.search(r"\bin " + span, t) or re.search(r"\b" + span + r" from now", t)
+         or (re.fullmatch(r"(?:for |a |an )?" + span + r"(?: long)?", t.strip()) if alarm else None))
     if m:
         n = float(m.group(1))
         mins = n * 60 if m.group(2).startswith("h") else n

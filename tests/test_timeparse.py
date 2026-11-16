@@ -97,3 +97,20 @@ def test_world_clock_offsets():
 ])
 def test_confirmations_always_give_clock_time(when, expected):
     assert say_when(when, NOW) == expected
+
+
+@pytest.mark.parametrize("text,minutes", [
+    ("2 minute", 2), ("a 2 minute", 2), ("2-minute", 2), ("ten minute", 10), ("for 20 minutes", 20),
+    ("2 minutes from now", 2), ("in 2 minutes", 2), ("an hour", None),
+])
+def test_alarm_lengths_are_from_now(text, minutes):
+    """"Set a 2 minute alarm" once rang at 2 PM."""
+    at, _ = parse(text, NOW, alarm=True)
+    if minutes is None:
+        return
+    assert at == NOW + dt.timedelta(minutes=minutes)
+
+
+def test_a_bare_number_is_still_a_clock_time():
+    assert parse("2", NOW, alarm=True)[0].hour == 14
+    assert parse("for 20 minutes", NOW)[0] != NOW + dt.timedelta(minutes=20)    # reminders: not a length
