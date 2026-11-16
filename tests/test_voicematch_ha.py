@@ -187,14 +187,14 @@ async def test_who_am_i(hass):
         return ConversationInput(text="who am i", context=Context(user_id=user), conversation_id="c",
                                  device_id="d" if voice else None, satellite_id=None, language="en", agent_id="x")
     ask = lambda u: skills._h_who_am_i({}, u)
-    assert await ask(ui()) == "Nobody has taught me their voice yet. You can on the Voice training page."
+    assert await ask(ui()) == "Nobody has taught me their voice yet. You can in the Better Assistant app, on the Voice page."
     m.prints = [{"person": "person.rob"}]
     m._last = (vm.Match("person.rob", 0.62), time.time())
     assert await ask(ui()) == "You sound like Rob."
     m._last = (vm.Match(None, 0.42, "person.leila"), time.time())
     assert await ask(ui()) == "I'm not sure. You might be Leila, but I'd rather not guess."
     m._last = (vm.Match(None, 0.05, "person.rob"), time.time())
-    assert await ask(ui()) == "I don't recognise your voice. You can teach me on the Voice training page."
+    assert await ask(ui()) == "I don't recognise your voice. You can teach me in the Better Assistant app, on the Voice page."
     assert await ask(ui(user="u-leila", voice=False)) == "You're Leila."
     assert (await ask(ui(voice=False))).startswith("I can only tell who you are by your voice")
     m.entry.options = {"voice_training": True}

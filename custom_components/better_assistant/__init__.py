@@ -81,11 +81,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: BetterAssistantConfigEnt
 
         on = bool(entry.options.get(OPT_VT_ENABLED) and entry.options.get(OPT_VM_ENABLED))
         entry.async_create_background_task(hass, async_cover_pipelines(hass, entry, on), f"{DOMAIN}_voice_cover")
-    if entry.options.get(OPT_VT_ENABLED):                   # the Voice training page in the sidebar
-        from .voice_panel import async_remove_panel, async_setup_panel  # noqa: PLC0415
+    from .app_panel import async_app_changed, async_setup_panel  # noqa: PLC0415 - the app in the sidebar
 
-        await async_setup_panel(hass)
-        entry.async_on_unload(lambda: async_remove_panel(hass))
+    entry.async_on_unload(store.async_add_listener(lambda: async_app_changed(hass)))
+    entry.async_on_unload(trainer.add_listener(lambda: async_app_changed(hass)))
+    if entry.runtime_data.matcher:
+        entry.async_on_unload(entry.runtime_data.matcher.add_listener(lambda: async_app_changed(hass)))
+    await async_setup_panel(hass)
     if entry.options.get(OPT_VOICE_PENDING):
         entry.async_create_background_task(hass, _async_voice_pending(hass, entry), f"{DOMAIN}_voice_setup")
     return True
@@ -129,6 +131,13 @@ async def _async_update_listener(hass: HomeAssistant, entry: BetterAssistantConf
     entry.runtime_data.options = dict(entry.options)
     if old != new:
         await hass.config_entries.async_reload(entry.entry_id)
+
+
+async def async_remove_entry(hass: HomeAssistant, entry: BetterAssistantConfigEntry) -> None:
+    """Better Assistant removed: take its app out of the sidebar (a reload keeps it there)."""
+    from .app_panel import async_remove_panel  # noqa: PLC0415
+
+    async_remove_panel(hass)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: BetterAssistantConfigEntry) -> bool:

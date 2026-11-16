@@ -463,7 +463,7 @@
           "delete_recordings": "Removes every clip and its notes from the folder above.",
           "voice_training_phone": "Uses the Home Assistant app on the phone linked to the person being trained. Without one, the speaker reads the phrases out.",
           "voice_training_satellite": "The phone's Start voice training button makes this speaker listen without the wake word. Empty: the first voice speaker.",
-          "voice_match": "Uses the voices trained on the Voice training page, on this machine (downloads a 19 MB model once). Never used to unlock doors. While it's on, everyday requests are kept 14 days so you can check who it thought it was on the Recordings tab; turning it off deletes the unlabelled ones and stops recording them."
+          "voice_match": "Uses the voices trained in the Better Assistant app (Voice), on this machine (downloads a 19 MB model once). Never used to unlock doors. While it's on, everyday requests are kept 14 days so you can check who it thought it was on the Recordings tab; turning it off deletes the unlabelled ones and stops recording them."
         }
       }
     },

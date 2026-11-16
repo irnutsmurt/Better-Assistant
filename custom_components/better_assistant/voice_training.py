@@ -201,7 +201,7 @@ async def async_switch_pipelines(hass: HomeAssistant, entry_id: str, options: di
 
 # the speaker's own "listening" chime, played to open the mic without a wake word
 PREANNOUNCE_URL = "/api/assist_satellite/static/preannounce.mp3"
-PANEL_LINK = "/better-assistant-voice"            # voice_panel.PANEL_PATH
+PANEL_LINK = "/better-assistant#voice"             # the Voice page of the app (app_panel.PANEL_PATH)
 
 
 # ------------------------------------------------------------------ the training conversation
@@ -497,7 +497,7 @@ class VoiceTrainer:
             return reply
         await skills.notify(session.person, PHONE_TITLE, phone_text(session, reply),
                             {"tag": PHONE_TAG, "push": {"interruption-level": "time-sensitive"},
-                             "clickAction": PANEL_LINK, "url": PANEL_LINK,       # tap: the Voice training page
+                             "clickAction": PANEL_LINK, "url": PANEL_LINK,       # tap: the app's Voice page
                              "actions": [] if session.index >= len(PHRASES) else
                              [{"action": ACTION_SKIP, "title": "Skip"}, {"action": ACTION_STOP, "title": "Stop"}]})
         session.last_said = ""

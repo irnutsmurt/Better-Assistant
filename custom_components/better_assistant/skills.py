@@ -276,17 +276,17 @@ class Skills(HouseSkills, SecuritySkills):
         opts = self.entry.options
         matcher = getattr(getattr(self.entry, "runtime_data", None), "matcher", None)
         if not (opts.get(OPT_VT_ENABLED) and opts.get(OPT_VM_ENABLED)) or matcher is None:
-            return "I don't know voices yet. Turn on voice match on the Voice training page."
+            return "I don't know voices yet. Turn on voice match in the Better Assistant app, on the Voice page."
         if matcher.status != "ready":
             return "Voice match is still getting ready. Ask me again in a minute."
         if not matcher.prints:
-            return "Nobody has taught me their voice yet. You can on the Voice training page."
+            return "Nobody has taught me their voice yet. You can in the Better Assistant app, on the Voice page."
         heard = matcher.recent()
         if heard and heard.person:
             return f"You sound like {self.person_name(heard.person)}."
         if heard and heard.runner_up and heard.score >= 0.3:
             return f"I'm not sure. You might be {self.person_name(heard.runner_up)}, but I'd rather not guess."
-        return "I don't recognise your voice. You can teach me on the Voice training page."
+        return "I don't recognise your voice. You can teach me in the Better Assistant app, on the Voice page."
 
     async def _h_unknown_person(self, slots: dict, user_input) -> str:
         name = (slots.get("name") or "").strip(" ,.")
@@ -639,12 +639,83 @@ class Skills(HouseSkills, SecuritySkills):
         if not mine:
             return "You don't have an alarm set."
         for key in mine:
-            self._alarms().pop(key, None)
-            self._snooze_count.pop(key, None)
-            if (cancel := self._timers.pop(f"alarm:{key}", None)):
-                cancel()
-        self.store.changed()
+            self.delete_alarm(key)
         return "Okay, your alarm is cancelled." if len(mine) == 1 else f"Okay, I cancelled {len(mine)} alarms."
+
+    # ------------------------------------------------------------ alarms from the app
+    @callback
+    def delete_alarm(self, key: str) -> bool:
+        alarm = self._alarms().pop(key, None)
+        self._snooze_count.pop(key, None)
+        if (cancel := self._timers.pop(f"alarm:{key}", None)):
+            cancel()
+        self.store.changed()
+        return alarm is not None
+
+    @callback
+    def app_set_alarm(self, targets, hour: int, minute: int, repeat: str, music: str | None,
+                      person: str | None, old_key: str | None = None) -> str:
+        """Add or change an alarm from the Better Assistant app; returns its key. Changing one keeps
+        who set it and where from (old_key), and a new place replaces an alarm already there."""
+        old = self._alarms().get(old_key) if old_key else None
+        if old_key:
+            self.delete_alarm(old_key)
+        now = dt_util.now()
+        at = next_alarm(hour, minute, repeat, now)
+        key = self._key(targets)
+        alarm = {"targets": targets, "hour": hour, "minute": minute, "repeat": repeat, "next": at.isoformat(),
+                 "person": old.get("person") if old else person, "origin": old.get("origin") if old else None}
+        if music:
+            alarm["music"] = music
+        self._alarms()[key] = alarm
+        self.store.changed()
+        self._schedule_alarm(key)
+        return key
+
+    @callback
+    def app_stop_alarm(self, key: str) -> bool:
+        """Stop (or cancel the snooze of) one ringing alarm from the app."""
+        found = False
+        if (cancel := self._timers.pop(f"snooze:{key}", None)):
+            cancel()
+            found = True
+        self._snooze_count.pop(key, None)
+        if key in self._ringing:
+            self._stop_ringing(key)
+            found = True
+        return found
+
+    def app_alarms(self) -> list[dict[str, Any]]:
+        """Alarms for the app, soonest first."""
+        now = dt_util.now()
+        names = self._names()
+        out = []
+        for key, a in self._alarms().items():
+            at = dt_util.parse_datetime(a["next"])
+            local = dt_util.as_local(at).replace(tzinfo=None) if at else None
+            targets = a["targets"]
+            out.append({
+                "key": key, "time": f"{a['hour']:02d}:{a['minute']:02d}", "repeat": a["repeat"],
+                "next": at.isoformat() if at else None,
+                "said": say_alarm(local, a["repeat"], now.replace(tzinfo=None)) if local else "",
+                "targets": targets, "where": "All voice speakers" if targets == ALL_SPEAKERS else
+                ", ".join(names.get(t, t) for t in targets),
+                "music": a.get("music"), "ringing": key in self._ringing,
+                "snoozed": f"snooze:{key}" in self._timers,
+            })
+        return sorted(out, key=lambda x: x["next"] or "")
+
+    def app_reminders(self) -> list[dict[str, Any]]:
+        now = dt_util.now()
+        out = []
+        for i in self._open_reminders():
+            meta = self.store.data["reminders"].get(i["uid"], {})
+            when = i.get("description") or ""
+            if meta.get("kind") == "time" and meta.get("repeat", "once") == "once" and i.get("due"):
+                due = dt_util.parse_datetime(i["due"])
+                when = say_when(dt_util.as_local(due).replace(tzinfo=None), now.replace(tzinfo=None)) if due else when
+            out.append({"uid": i["uid"], "summary": i["summary"], "when": when})
+        return out
 
     async def _h_alarm_change(self, slots: dict, user_input) -> str:
         """"Change my alarm to 9:50", "from 9 to 9:50", "push it back 10 minutes", or a new speaker."""

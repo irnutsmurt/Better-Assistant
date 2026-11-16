@@ -120,6 +120,27 @@ Nothing here needs a Home Assistant Cloud subscription. Tips if you set things u
 - **Speed:** on a Raspberry Pi 4/5, `base` Whisper takes a second or two per sentence; on an
   x86 mini PC it is near instant. Cloud speech is quicker and more accurate on slow hardware.
 
+## The Better Assistant app
+
+A **Better Assistant** page in the sidebar, for everyone in the household, works on a phone (tabs at
+the bottom) and a computer. Nothing to set up: it appears as soon as the integration is installed.
+
+- **Home:** "All set", or what needs attention with a one-tap fix where there is one (a voice speaker
+  using another assistant gets **Use Better Assistant**). Your voice speakers, their rooms and which
+  assistant each uses; the next alarm, Music Assistant, calendars, web searches used this month, voice
+  match and reminders at a glance; and things to try saying, based on the features that are on.
+- **Alarms:** every alarm with its time, repeat, speaker and wake-up music, with **Change**, **Delete**,
+  **+ Add** (time, repeat, speaker, and the wake-up music, the tone or something to play) and **Stop**
+  while one rings or is snoozed. Snooze on/off, length and limit, the default alarm speaker and the
+  wake-up music. Reminders (with **Delete**), notes and messages.
+- **Voice:** voice training, voice match and the Recordings tab (below). With voice training off,
+  a card explains it with a button to turn it on.
+- **Settings:** switch features on and off, web answers (on/off, searches per month, say the source)
+  and how requests are understood; **Open all settings** goes to the full settings menu below.
+
+Anyone can manage alarms, reminders, notes and messages. Settings, alarm settings and the one-tap fixes
+are for administrators; other users see them read-only.
+
 ## Settings page
 
 **Settings > Devices & services > Better Assistant > Configure** opens a menu:
@@ -243,7 +264,8 @@ custom integrations, so it isn't used.)
 Off by default, and **nothing is recorded until you turn it on**. It collects labelled voice clips for
 a later "who is speaking" (voice match) test. Nothing recognises voices yet.
 
-**Turning it on:** Settings > Devices & services > Better Assistant > Configure > Voice training.
+**Turning it on:** **Turn on voice training** on the app's Voice page, or Settings > Devices & services >
+Better Assistant > Configure > Voice training.
 Tick "Turn on voice training" and tick the voice assistant(s) that should use **Better Assistant
 speech-to-text**. That entity (`stt.better_assistant_speech_to_text`) passes the audio to your real
 engine (Home Assistant Cloud, Whisper, ...; pick one or leave it to choose) and hands back its answer
@@ -252,8 +274,7 @@ or turning voice training off, switches it back to the engine it had before.
 
 **Training:** two ways to start.
 
-- **From the Voice training page:** with voice training on, a **Voice training** page appears in the
-  sidebar. Press **Start**, then read each phrase on the screen out loud to your speaker; done ones
+- **From the app:** open **Better Assistant** in the sidebar, then **Voice**. Press **Start**, then read each phrase on the screen out loud to your speaker; done ones
   are crossed out as you go. The speaker plays its listening chime and stays quiet otherwise.
 - **By voice:** say "train my voice", "learn my voice" or "train Rob's voice" to a speaker.
 
@@ -267,7 +288,7 @@ use), not typed chat. The speaker for the phone button is set under Voice traini
 
 **Voice match (experimental, off by default):** recognises who's speaking, so "my calendar", "my
 reminders" and "how did I sleep" work for whoever asks on a shared speaker. Turn it on with **Turn on
-voice match** on the Voice training page (or under Configure > Voice training). It runs on this machine
+voice match** on the app's Voice page (or under Configure > Voice training). It runs on this machine
 with numpy, which Home Assistant already has; the speaker model (TitaNet-S, about 19 MB) is downloaded
 once from this project's GitHub repository and checked against a checksum. Nothing is sent anywhere.
 
@@ -302,7 +323,7 @@ transcript, the phrase asked for, speaker and device when known, length), under
 uploaded anywhere by this feature (your speech-to-text engine receives the audio exactly as it
 would without it). The settings page shows how many clips each person has.
 
-**Deleting:** tick "Delete all recordings" on the Voice training page, or delete the
+**Deleting:** tick "Delete all recordings" under Configure > Voice training, or delete the
 `/config/better_assistant/voice` folder. Backups of `/config` include the clips, so delete them
 before making a backup you share.
 
