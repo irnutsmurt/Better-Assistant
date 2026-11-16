@@ -52,3 +52,27 @@ def test_everyday_questions_are_left_alone():
     hits = [(r["text"], m.intent) for r in ROWS if r["intent"] == "NONE" and r["text"] not in allowed
             and (m := recognize(r["text"], ["sam", "alex", "rob"], lists=LISTS))]
     assert hits == []
+
+
+# ------------------------------------------------------------------ broken English, keyword understanding
+BROKEN = [json.loads(line) for line in (Path(__file__).parent / "data" / "phrasings_broken.jsonl").read_text().splitlines() if line]
+
+
+def _understood(text):
+    from core.intents import recognize_loosely
+    m = recognize(text, ["sam", "alex", "rob"], lists=LISTS) or recognize_loosely(text, ["sam", "alex", "rob"], lists=LISTS)
+    return m.intent if m else None
+
+
+def test_broken_english_is_mostly_understood():
+    """A second set, written later and mostly non-native ("for tomorrow alarm delete"). The aim is that
+    someone with little English can do most things; the keyword step does the heavy lifting."""
+    rows = [r for r in BROKEN if r["intent"] != "NONE"]
+    ok = sum(_understood(r["text"]) == r["intent"] for r in rows)
+    assert ok / len(rows) >= 0.55, ok / len(rows)
+
+
+def test_keywords_leave_general_questions_alone():
+    hits = [(r["text"], got) for r in ROWS + BROKEN if r["intent"] == "NONE"
+            and r["text"] != "remind me what the capital of france is" and (got := _understood(r["text"]))]
+    assert hits == []

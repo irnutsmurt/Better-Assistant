@@ -104,3 +104,29 @@ def recognize(text: str, people: list[str] | tuple[str, ...] = (), language: str
         if m:                                             # "leave a message for <someone unknown> that ..."
             return Match("UnknownPerson", {"name": m.group(1), "text": m.group(2)})
     return Match(result.intent.name, slots)
+
+
+@lru_cache(maxsize=4)
+def _fixed_lists(language: str) -> dict[str, dict[str, Any]]:
+    """The sentence files' own value lists ("the weekend" -> "this weekend"), for keyword matching."""
+    out: dict[str, dict[str, Any]] = {}
+    for name, spec in (_raw(language).get("lists") or {}).items():
+        values = (spec or {}).get("values") if isinstance(spec, dict) else None
+        if values:
+            out[name] = {(v["in"] if isinstance(v, dict) else str(v)): (v["out"] if isinstance(v, dict) else v)
+                         for v in values}
+    return out
+
+
+def recognize_loosely(text: str, people: list[str] | tuple[str, ...] = (), language: str = "en",
+                      lists: dict[str, list[str] | dict[str, str]] | None = None,
+                      disabled: set[str] | frozenset[str] = frozenset()) -> Match | None:
+    """The last try, after the sentence patterns and Home Assistant's own both missed (often broken
+    grammar): keyword understanding (core/keywords.py)."""
+    from .keywords import understand  # noqa: PLC0415
+    given = {k: v for k, v in (lists or {}).items() if v}
+    if people:
+        given["person"] = list(people)
+    found = understand(text, {**_fixed_lists(language), **given}, set(load(language, frozenset(disabled)).intents),
+                       language)
+    return Match(found[0], found[1]) if found else None

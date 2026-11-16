@@ -35,6 +35,7 @@ from .const import (
 from .core import search
 from .core.extras import fun_answer, is_what_did_you_hear, time_in_place
 from .core.guards import is_question, looks_like_command, plan_compound
+from .core.normalize import tidy
 from .core.router import local_answer
 from .core.security import split_oneshot
 from .core.timeparse import world_clock
@@ -173,6 +174,14 @@ class BetterAssistantAgent(conversation.ConversationEntity):
         local = self._local(text)
         if local:
             return local, False
+        tidied = tidy(text)
+        if tidied.lower() != text.lower().strip(" .!?") and await self._matches(tidied, user_input):
+            ok, speech = await self._run_local(tidied, user_input)     # "um could you turn on the kitchen light please"
+            if ok:
+                return speech or "Done.", False
+        loose = skills.recognize_loosely(text) if skills else None
+        if loose:                                            # broken grammar: "for tomorrow alarm delete"
+            return await skills.async_handle(loose, text, user_input), False
         if self._opt(OPT_QUESTION_GUARD) and not is_question(text):
             return DIDNT_CATCH, True
         if looks_like_command(text, self._home_names()):

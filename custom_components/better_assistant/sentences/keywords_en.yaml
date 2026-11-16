@@ -1,0 +1,236 @@
+# Keyword understanding for English (core/keywords.py): used only when no sentence pattern matches,
+# mostly for broken grammar ("for tomorrow alarm delete", "battery finish which one").
+#
+# To add a language, copy this file to keywords_<lang>.yaml and translate the words; the rules usually
+# stay the same. Words match whole and also with a plural "s". In a rule:
+#   need   concepts that must all be there. "@list" = a name from that list (a room, an app...),
+#          "#number" = any number, "#time" = a clock time, "!concept" = that concept must be absent
+#   avoid  concepts that rule the request out
+#   slots  what the intent gets: a fixed value, "#number", "$rest" (the words left over once the
+#          keywords, names and filler are taken out) or "$text" (the whole request)
+#   priority  breaks a tie between rules with the same score (higher wins)
+# Doors, locks and guest mode on/off are left out on purpose: those need the request said properly.
+
+# never handled here: general questions that only mention a keyword
+skip:
+  - how do
+  - how does
+  - how to
+  - should i
+  - should you
+  - cook
+  - recipe
+  - oven
+  - difference
+  - between
+  - recommend
+  - best
+  - good for
+  - that's good
+  - what's good
+  - who invented
+  - founded
+  - founder
+  - who made
+  - who owns
+  - company
+  - how it work
+  - how it works
+  - hotel
+  - invented
+  - history
+  - what is a
+  - what's a
+  - what is an
+  - what's an
+  - what mean
+  - what does
+  - meaning
+  - mean
+  - define
+  - definition
+  - iphone
+  - android
+  - car
+  - speed of
+  - made of
+  - price
+  - buy
+  - weather
+  - spell
+  - wikipedia
+  - why
+
+filler: [the, a, an, my, to, for, of, 'on', in, at, me, please, now, i, you, it, is, are, be, want, can, put,
+         make, do, did, set, change, move, go, please, tell, give, some, more, with, from, and, by]
+
+concepts:
+  alarm: [alarm, alarm clock, wake me, wake up, wakeup, wake-up]
+  snooze: [snooze, snoozing]
+  reminder: [reminder, remind]
+  note: [note, notes]
+  message: [message, messages, msg]
+  stopwatch: [stopwatch, stop watch, chronometer, chrono]
+  music: [music, song, songs, track, radio, playlist, tune, tunes]
+  volume: [volume, sound]
+  light: [light, lights, lamp, lamps, bulb, bulbs, lighting]
+  thermostat: [thermostat, heat, heater, ac, air conditioning, climate, hvac, furnace, house temperature]
+  inside: [inside, in here, indoor, indoors, house, home, room, here]
+  degrees: [degree, degrees, temperature, temp]
+  calendar: [calendar, schedule, agenda, appointment, appointments, meeting, meetings, event, events, plans, plan]
+  tv: [tv, television, telly, screen]
+  camera: [camera, cam, cameras]
+  bed: [bed, sleep number, mattress]
+  sleep_number: [sleep number, firmness, number]
+  sleep: [sleep, slept, sleeping]
+  battery: [battery, batteries, charge, charged]
+  phone: [phone]
+  outside: [outside, door, yard, backyard, porch, driveway, out]
+  motion: [motion, movement, moving, move, moved, moves]
+  person_word: [anyone, anybody, someone, somebody, person, people, who]
+  guest: [guest, guests, guest mode]
+  night: [night mode]
+  help: [help, what can you do, what you can do, what you do, commands, abilities]
+  who_me: [who am i, who i am, who is talking, who is speaking, who speak, who talk, recognise me, recognize me, my voice]
+  me: [me, i, my]
+  someone_else: [sam, alex]
+
+  # actions
+  remove: [cancel, delete, remove, clear, erase, finish, finished, kill, get rid, no more, don't need, dont need,
+           not need, not want, don't want, forget, 'off']
+  stop: [stop, 'off', finish, end, enough, silence, quiet, shut, close, awake, wake, up already, i'm up]
+  start: [start, begin, go, run, 'on', open]
+  pause: [pause, stop, 'off', close, finish, enough, no more, silence]
+  ask: [what, what's, when, when's, which, how, how's, how much, how many, is, are, do, does, have, any, status, '?', tell me, show me,
+        check, level, left, still]
+  where: [where]
+  read: [read, say, tell, list, show, what, what's, which, any, have]
+  louder: [louder, loud, up, high, higher, more volume, increase, raise, bigger, strong, stronger]
+  quieter: [quieter, quiet, softer, soft, down, low, lower, less, decrease, reduce, small, smaller]
+  brighter: [brighter, bright, more light, stronger, strong, up, increase, raise, high]
+  darker: [darker, dark, dim, dimmer, less, low, lower, down, decrease, weak]
+  warmer_light: [warm, warmer, hot, yellow, yellower, orange, cozy]
+  cooler_light: [cool, cooler, cold, colder, white, whiter, blue, bluer]
+  warmer: [warmer, warm, hot, hotter, heat up, up, raise, increase, more heat, cold, freezing, chilly]
+  cooler: [cooler, cool, cold, colder, fresh, fresher, down, lower, decrease, less heat, hot, too hot, too warm]
+  earlier: [earlier, early, sooner, before]
+  later: [later, late, after, back]
+  low: [low, finish, finished, empty, dead, dying, weak, change, replace, almost]
+  play: [play, playing, listen, hear, 'put on', start music, open music]
+  what_song: [which song, what song, song name, name of song, who sing this, who sings this, who is singing, singer of this,
+              this song, song is this, what is play, what's play, what is playing, what's playing]
+  move_to: [move, send, transfer, switch, change, go, to]
+  raise: [raise, lift, up, higher, high]
+  flat: [flat, flatten, straight, lower, down]
+  next: [next, coming, upcoming, after]
+  how_long: [how long, how much time, how many minutes, length, duration, time]
+  limit: [limit, max, maximum, how many times, how many snoozes]
+  all_things: [all, every, everything, levels, devices]
+  everything_ok: [ok, okay, alright, all right, problem, problems, wrong, broken, fine, status, report, issue, issues]
+  which_lights_on: ['on', 'still on', 'left on', open]
+  show: [show, see, display, look, put, open, watch]
+  app_open: [open, start, launch, put, watch, go]
+  input_word: [input, source, hdmi, port]
+  remember: [remember, keep in mind, don't forget, note that, write down]
+  task_words: [buy, call, take, pay, pick up, bring, clean, feed, water, check]
+  timer_word: [timer]
+
+rules:
+  # ---------------------------------------------------------------- who am I / help
+  - {intent: WhoAmI, need: [who_me]}
+  - {intent: Help, need: [help], avoid: [alarm, music, light, reminder, battery, tv]}
+
+  # ---------------------------------------------------------------- alarms
+  - {intent: AlarmStop, need: [alarm, stop, '!#time', '!ask'], avoid: [snooze, music, remove, reminder]}
+  - {intent: AlarmCancel, need: [alarm, remove], avoid: [snooze, music, stop, reminder], slots: {text: $rest}}
+  - {intent: AlarmCancel, need: [alarm, remove, '#time'], avoid: [snooze, music, reminder], slots: {text: $rest}, priority: 1}
+  - {intent: AlarmChange, need: [alarm, earlier], avoid: [snooze, music, remove], slots: {text: $rest}}
+  - {intent: AlarmChange, need: [alarm, later], avoid: [snooze, music, remove], slots: {text: $rest}}
+  - {intent: AlarmMove, need: [alarm, '@area', '!#time'], avoid: [snooze, music, remove, ask], slots: {text: $rest}}
+  - {intent: AlarmQuery, need: [alarm, ask, '!#time'], avoid: [snooze, music, remove, reminder, earlier, later]}
+  - {intent: AlarmSet, need: [alarm, '#time'], avoid: [snooze, remove, ask, earlier, later, reminder], slots: {text: $text}}
+  - {intent: AlarmSnoozeQuery, need: [snooze, how_long, '!#number'], avoid: [limit, alarm]}
+  - {intent: AlarmSnoozeQuery, need: [snooze, ask, '!#number'], avoid: [limit, alarm], priority: -1}
+  - {intent: SnoozeLimitQuery, need: [snooze, limit, '!#number']}
+  - {intent: AlarmSnoozeSet, need: [snooze, '#number', how_long], avoid: [limit], slots: {minutes: '#number'}}
+  - {intent: AlarmSnooze, need: [snooze, '#number', '!how_long'], avoid: [limit, ask], slots: {minutes: '#number'}}
+  - {intent: AlarmSnooze, need: [snooze, '!#number', '!ask'], avoid: [limit, how_long]}
+
+  # ---------------------------------------------------------------- reminders, notes, messages
+  - {intent: ReminderList, need: [reminder, read], avoid: [remove, someone_else, '#time']}
+  - {intent: ReminderCancel, need: [reminder, remove], avoid: [all_things], slots: {text: $rest}}
+  - {intent: NoteFind, need: [where, me], avoid: [alarm, music, reminder, person_word, outside, phone], slots: {text: $rest}}
+  - {intent: NoteRead, need: [note, read], avoid: [remove, remember]}
+  - {intent: MessageRead, need: [message, read], avoid: [remove, someone_else]}
+  - {intent: MessageRead, need: [message, '!someone_else', '!remove'], priority: -1}
+
+  # ---------------------------------------------------------------- stopwatch
+  - {intent: StopwatchStart, need: [stopwatch, start], avoid: [stop, ask]}
+  - {intent: StopwatchStop, need: [stopwatch, stop], avoid: [start, ask]}
+  - {intent: StopwatchRead, need: [stopwatch, ask], avoid: [start, stop]}
+  - {intent: StopwatchRead, need: [stopwatch, how_long], avoid: [start, stop]}
+
+  # ---------------------------------------------------------------- music
+  - {intent: MusicNowPlaying, need: [what_song]}
+  - {intent: MusicNowPlaying, need: [music, ask, '!play'], avoid: [volume, louder, quieter, pause, move_to, alarm], priority: -1}
+  - {intent: MusicSleep, need: [music, pause, '#number'], avoid: [alarm, volume], slots: {minutes: '#number'}}
+  - {intent: MusicMove, need: [music, move_to, '@music_target'], avoid: [alarm, pause, volume, louder, quieter]}
+  - {intent: MusicLouder, need: [music, louder], avoid: [alarm, quieter, pause]}
+  - {intent: MusicLouder, need: [volume, louder], avoid: [alarm, quieter, tv]}
+  - {intent: MusicQuieter, need: [music, quieter], avoid: [alarm, louder, pause]}
+  - {intent: MusicQuieter, need: [volume, quieter], avoid: [alarm, louder, tv]}
+  - {intent: MusicStop, need: [music, pause, '!#number'], avoid: [alarm, play, volume, move_to]}
+  - {intent: MusicPlay, need: [play], avoid: [alarm, tv, ask, pause, what_song], slots: {query: $rest}}
+  - {intent: MusicPlay, need: [music, start, '!pause'], avoid: [alarm, tv, ask, what_song, volume], slots: {query: ""}, priority: -1}
+
+  # ---------------------------------------------------------------- calendar
+  - {intent: CalendarNext, need: [calendar, next], avoid: [remove]}
+  - {intent: CalendarList, need: [calendar, '@cal_range'], avoid: [remove, next]}
+  - {intent: CalendarList, need: [calendar, ask], avoid: [remove, next], priority: -1}
+
+  # ---------------------------------------------------------------- lights
+  - {intent: RoomWhichLights, need: [light, which_lights_on, ask], avoid: [darker, brighter, warmer_light, cooler_light, start, stop]}
+  - {intent: LightDim, need: [light, darker], avoid: [brighter, warmer_light, cooler_light, ask]}
+  - {intent: LightBrighten, need: [light, brighter], avoid: [darker, warmer_light, cooler_light, ask]}
+  - {intent: LightWarmer, need: [light, warmer_light], avoid: [cooler_light, ask]}
+  - {intent: LightCooler, need: [light, cooler_light], avoid: [warmer_light, ask]}
+
+  # ---------------------------------------------------------------- climate
+  - {intent: ClimateMode, need: [thermostat, '@climate_mode'], avoid: [ask]}
+  - {intent: ClimatePreset, need: [thermostat, '@climate_preset'], avoid: [ask]}
+  - {intent: ClimatePreset, need: ['@climate_preset', '!ask'], avoid: [light, music, tv, bed, alarm], priority: -2}
+  - {intent: ClimateIsOn, need: [thermostat, ask, which_lights_on], avoid: [degrees, warmer, cooler], slots: {what: heat}}
+  - {intent: ClimateQuery, need: [thermostat, ask], avoid: [warmer, cooler], priority: -1}
+  - {intent: ClimateQuery, need: [degrees, ask, inside], avoid: [warmer, cooler, outside], priority: -1}
+  - {intent: ClimateWarmer, need: [thermostat, warmer], avoid: [cooler, ask, light]}
+  - {intent: ClimateCooler, need: [thermostat, cooler], avoid: [warmer, ask, light]}
+
+  # ---------------------------------------------------------------- outside and cameras
+  - {intent: CameraClose, need: [camera, pause], avoid: [show]}
+  - {intent: CameraShow, need: ['@camera'], avoid: [pause, battery], slots: {}}
+  - {intent: OutsideMotion, need: [motion, outside], avoid: [camera, music]}
+  - {intent: OutsideAnyone, need: [person_word, outside], avoid: [motion, battery], slots: {place: outside}}
+
+  # ---------------------------------------------------------------- TV
+  - {intent: TvSource, need: ['@tv_source'], avoid: [ask]}
+  - {intent: TvApp, need: ['@tv_app'], avoid: [ask, pause]}
+  - {intent: TvWhatsOn, need: [tv, ask], avoid: ['@tv_app', '@tv_source', camera, volume]}
+
+  # ---------------------------------------------------------------- bed
+  - {intent: BedNumber, need: [sleep_number, '#number'], avoid: [ask], slots: {number: '#number', who: me}}
+  - {intent: BedQuery, need: [sleep_number, ask, '!#number'], avoid: [sleep], slots: {who: me}}
+  - {intent: BedSleep, need: [sleep, ask, me], avoid: [sleep_number, night, alarm, music], slots: {who: me}}
+  - {intent: BedPreset, need: [bed, '@bed_preset'], avoid: [flat, ask], slots: {}}
+  - {intent: BedFlatten, need: [bed, flat], avoid: [ask, raise], slots: {who: all}}
+  - {intent: BedRaise, need: [bed, raise], avoid: [ask, flat], slots: {who: me}}
+
+  # ---------------------------------------------------------------- health and batteries
+  - {intent: BatteryPhone, need: [battery, phone]}
+  - {intent: BatteryOne, need: [battery, '@battery_thing'], avoid: [phone]}
+  - {intent: BatteryLow, need: [battery, low], avoid: [phone, '@battery_thing']}
+  - {intent: BatteryAll, need: [battery, '!low', '!phone'], avoid: ['@battery_thing', car], priority: -1}
+  - {intent: HealthReport, need: [everything_ok], avoid: [battery, alarm, music, light, tv, bed, me, reminder, calendar, camera, outside]}
+
+  # ---------------------------------------------------------------- modes (questions only)
+  - {intent: GuestQuery, need: [guest, ask], avoid: [remove, start]}
+  - {intent: NightQuery, need: [night, ask], avoid: [remove, start]}

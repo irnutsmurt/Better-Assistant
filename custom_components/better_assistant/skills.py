@@ -245,6 +245,11 @@ class Skills(HouseSkills, SecuritySkills):
                 return match
         return sentences.recognize(text, people, lists=lists, disabled=self.disabled_features())
 
+    def recognize_loosely(self, text: str) -> Match | None:
+        """Keyword understanding, once everything stricter has missed ("for tomorrow alarm delete")."""
+        people = sorted({n for n in self.people()}, key=len, reverse=True)
+        return sentences.recognize_loosely(text, people, lists=self.slot_lists(), disabled=self.disabled_features())
+
     async def async_handle(self, match: Match, text: str, user_input: conversation.ConversationInput) -> str:
         if match.intent in TIMER_INTENTS:
             return await self._builtin_timer(match, text, user_input)
@@ -1101,16 +1106,21 @@ class Skills(HouseSkills, SecuritySkills):
 
     async def _ring_tone(self, key: str, players: list[str], url: str, sats: list[str]) -> None:
         """The bundled tone (a minute long) on each player, again whenever it ends, for RING_MINUTES.
-        It waits while the speaker is listening or answering, so a request isn't drowned out."""
+        Played as media, not an announcement: the Voice PE doesn't listen for its wake word during an
+        announcement, but does during media ("Hey Jarvis, stop" / "snooze"). It waits while the speaker
+        is listening or answering, so a request isn't drowned out, and never restarts within a few
+        seconds of going quiet (that was the speaker's own "stop" being checked)."""
         ours = self._own_contexts
         stopped = asyncio.Event()
         started: dict[str, float] = {}
+        quiet: dict[str, float] = {}
 
         def quiet_early(player: str, state: str) -> bool:
-            if state in ("paused", "off"):
-                stopped.set()                                 # the tone never pauses or turns off itself
+            if state not in ("paused", "off", "idle"):
                 return False
-            return state == "idle" and self.hass.loop.time() - started.get(player, -1e9) < ALARM_SECONDS - 4
+            quiet[player] = self.hass.loop.time()
+            # the tone never pauses or turns off itself, and only goes idle at its end
+            return state != "idle" or self.hass.loop.time() - started.get(player, -1e9) < ALARM_SECONDS - 4
 
         unwatch = self._watch_stop(players, sats, stopped, quiet_early)
         try:
@@ -1119,7 +1129,7 @@ class Skills(HouseSkills, SecuritySkills):
                 if len(ours) > 500:
                     ours.clear()
                 now = self.hass.loop.time()
-                due = [p for p in players if now - started.get(p, -1e9) > 3
+                due = [p for p in players if now - started.get(p, -1e9) > 3 and now - quiet.get(p, -1e9) > 3
                        and not ((st := self.hass.states.get(p)) and st.state == "playing")]
                 if due and not self._sats_busy(sats):
                     calls = []
@@ -1129,7 +1139,7 @@ class Skills(HouseSkills, SecuritySkills):
                         started[player] = now
                         calls.append(self._call("media_player", "play_media", {
                             "entity_id": player, "media_content_id": url,
-                            "media_content_type": "music", "announce": True}, ctx))
+                            "media_content_type": "music"}, ctx))
                     await asyncio.gather(*calls)
                 try:
                     await asyncio.wait_for(stopped.wait(), 1)

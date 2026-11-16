@@ -176,7 +176,7 @@ async def _tone(hass):
 
 async def test_the_speakers_own_stop_ends_the_alarm(hass):
     s, task = await _tone(hass)
-    assert s.calls[0][1]["announce"] is True
+    assert "announce" not in s.calls[0][1]                     # media, so the wake word still works
     hass.states.async_set(TONE_PLAYER, "idle")                 # "stop" said to the Voice PE itself
     await asyncio.wait_for(task, 4)
     assert len([c for c in s.calls if c[0] == "tone"]) == 1     # not played again
@@ -228,3 +228,12 @@ async def test_anything_said_while_ringing_stops_or_snoozes(hass):
 def test_stop_alarm_without_the():
     assert recognize("Stop alarm", ["rob"]).intent == "AlarmStop"
     assert recognize("turn the alarm off", ["rob"]).intent == "AlarmStop"
+
+
+async def test_no_restart_right_after_the_speakers_own_stop(hass):
+    """The tone went quiet (the Voice PE's own "stop"): it must not be played again while that's checked."""
+    s, task = await _tone(hass)
+    hass.states.async_set(TONE_PLAYER, "idle")
+    await asyncio.sleep(1.2)                                       # the loop ticks every second
+    assert len([c for c in s.calls if c[0] == "tone"]) == 1
+    await asyncio.wait_for(task, 3)
