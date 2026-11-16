@@ -5,13 +5,6 @@
 # Checked against a corpus of everyday, terse, misheard and non-native requests (tests/test_casual.py, tests/data/phrasings.jsonl).
 language: en
 intents:
-  # ------------------------------------------------------------------ who am I
-  WhoAmI:
-    data:
-      - sentences:
-          - "you know who i am"
-          - "(do|can) you tell me who [you think] (i am|this is)"
-
   # ------------------------------------------------------------------ reminders
   ReminderAdd:
     data:

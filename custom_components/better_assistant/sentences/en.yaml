@@ -2,19 +2,6 @@
 # {text} is free text; {person} and {zone} lists are filled at run time from your person and zone entities.
 language: en
 intents:
-  WhoAmI:
-    data:
-      - sentences:
-          - "who am i [talking|speaking] [to] [right now]"
-          - "(who is|who's) (this|talking|speaking) [to you] [right now]"
-          - "who are you talking to [right now]"
-          - "who (do you think|do you reckon) (i am|this is|is talking|is speaking|you're talking to|you are talking to) [right now]"
-          - "(do|can) you (know|tell|guess) (who|who's) (i am|this is|is talking|is speaking|talking|speaking|you're talking to|you are talking to) [right now]"
-          - "(tell me|guess) who (i am|this is|is talking)"
-          - "(do|can) you (recognize|recognise|know) (me|my voice)"
-          - "whose voice is (this|that)"
-          - "what's my name"
-          - "what is my name"
   ReminderAdd:
     data:
       - sentences:

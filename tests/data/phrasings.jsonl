@@ -1,13 +1,3 @@
-{"intent": "WhoAmI", "style": "casual", "text": "hey who am i"}
-{"intent": "WhoAmI", "style": "casual", "text": "um do you know who's talking right now"}
-{"intent": "WhoAmI", "style": "casual", "text": "can you tell me who you think i am"}
-{"intent": "WhoAmI", "style": "nonnative", "text": "who is speaking now"}
-{"intent": "WhoAmI", "style": "nonnative", "text": "you know who i am"}
-{"intent": "WhoAmI", "style": "nonnative", "text": "which person is talk to you"}
-{"intent": "WhoAmI", "style": "stt", "text": "who am i"}
-{"intent": "WhoAmI", "style": "stt", "text": "who am i talking to you as"}
-{"intent": "WhoAmI", "style": "terse", "text": "who am i"}
-{"intent": "WhoAmI", "style": "terse", "text": "who's this"}
 {"intent": "ReminderAdd", "style": "casual", "text": "hey can you remind me to take the bins out tonight at eight"}
 {"intent": "ReminderAdd", "style": "casual", "text": "could you please remind me to call my mum tomorrow at 6 pm"}
 {"intent": "ReminderAdd", "style": "casual", "text": "okay so remind me to pick up the dry cleaning at five thanks"}

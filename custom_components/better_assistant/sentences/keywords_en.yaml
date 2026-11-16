@@ -91,7 +91,6 @@ concepts:
   guest: [guest, guests, guest mode]
   night: [night mode]
   help: [help, what can you do, what you can do, what you do, commands, abilities]
-  who_me: [who am i, who i am, who is talking, who is speaking, who speak, who talk, recognise me, recognize me, my voice]
   me: [me, i, my]
   someone_else: [sam, alex]
 
@@ -136,8 +135,7 @@ concepts:
   timer_word: [timer]
 
 rules:
-  # ---------------------------------------------------------------- who am I / help
-  - {intent: WhoAmI, need: [who_me]}
+  # ---------------------------------------------------------------- help
   - {intent: Help, need: [help], avoid: [alarm, music, light, reminder, battery, tv]}
 
   # ---------------------------------------------------------------- alarms

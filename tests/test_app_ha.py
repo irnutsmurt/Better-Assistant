@@ -35,7 +35,7 @@ async def app(hass, monkeypatch, options=None, data=None):
     store = BetterAssistantStore(hass, "e")
     await store.async_load()
     entry = types.SimpleNamespace(entry_id="e", options=dict(options or {}), data=dict(data or {}),
-                                  runtime_data=types.SimpleNamespace(store=store, matcher=None, trainer=None))
+                                  runtime_data=types.SimpleNamespace(store=store))
     skills = Skills(hass, entry)
     entry.runtime_data.skills = skills
     monkeypatch.setattr(skills, "_schedule_alarm", lambda key: None)
@@ -175,10 +175,8 @@ async def test_settings_are_for_administrators(hass, monkeypatch):
     assert c.err[0] == "invalid"
     await call(hass, app_panel.ws_app_settings, c, values={"features": {"not_a_feature": True}})
     assert c.err[0] == "invalid"
-    await call(hass, app_panel.ws_app_settings, c, values={"voice_training": False})  # off: More settings only
+    await call(hass, app_panel.ws_app_settings, c, values={"voice_training": True})    # beta only
     assert c.err[0] == "invalid"
-    await call(hass, app_panel.ws_app_settings, c, values={"voice_training": True})
-    assert entry.options["voice_training"] is True and entry.options["voice_training_phone"] is True
 
 
 async def test_fix_points_a_speaker_at_better_assistant(hass, monkeypatch):

@@ -16,24 +16,20 @@ from homeassistant.core import HomeAssistant
 from homeassistant.components.http import StaticPathConfig
 
 from .const import (ALARM_URL, DOMAIN, HISTORY_SIZE, OPT_ALARM_MUSIC, OPT_SNOOZE, OPT_SNOOZE_ENABLED, OPT_SNOOZE_LIMIT,
-                    OPT_VM_ENABLED, OPT_VOICE_PENDING, OPT_VT_ENABLED)
+                    OPT_VOICE_PENDING)
 from .autodetect import AutoDetect
 from .store import BetterAssistantStore
 
 if TYPE_CHECKING:
     from .skills import Skills
-    from .voice_match import VoiceMatcher
-    from .voice_training import VoiceTrainer
 
-PLATFORMS = [Platform.BUTTON, Platform.CONVERSATION, Platform.SENSOR, Platform.STT, Platform.SWITCH, Platform.TODO]
+PLATFORMS = [Platform.CONVERSATION, Platform.SENSOR, Platform.SWITCH, Platform.TODO]
 
 
 @dataclass
 class BetterAssistantRuntimeData:
     store: BetterAssistantStore
     skills: Skills | None = None
-    trainer: VoiceTrainer | None = None
-    matcher: VoiceMatcher | None = None
     options: dict = field(default_factory=dict)        # options the entry was set up with
     heard: deque[str] = field(default_factory=lambda: deque(maxlen=HISTORY_SIZE))
 
@@ -44,6 +40,11 @@ type BetterAssistantConfigEntry = ConfigEntry[BetterAssistantRuntimeData]
 async def async_setup_entry(hass: HomeAssistant, entry: BetterAssistantConfigEntry) -> bool:
     store = BetterAssistantStore(hass, entry.entry_id)
     await store.async_load()
+    from .migrate import async_retire_voice, strip_voice_options  # noqa: PLC0415 - leftovers of a voice beta
+
+    before = dict(entry.options)                           # the voice settings say what to put back
+    if (kept := strip_voice_options(before)) != before:
+        hass.config_entries.async_update_entry(entry, options=kept)
     entry.runtime_data = BetterAssistantRuntimeData(store=store, options=dict(entry.options))
     await _async_register_tone(hass)
     from .skills import Skills  # noqa: PLC0415 - needs runtime_data set first
@@ -51,23 +52,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: BetterAssistantConfigEnt
     skills = Skills(hass, entry)
     await skills.async_start()
     entry.runtime_data.skills = skills
-    from .voice_training import VoiceTrainer  # noqa: PLC0415
-
-    trainer = VoiceTrainer(hass, entry)
-    entry.runtime_data.trainer = trainer
-
-    async def _phone_action(event) -> None:                 # Skip / Stop on the training notification
-        await trainer.async_phone_action(str(event.data.get("action") or ""), skills)
-    entry.async_on_unload(hass.bus.async_listen("mobile_app_notification_action", _phone_action))
-    if entry.options.get(OPT_VT_ENABLED) and entry.options.get(OPT_VM_ENABLED):
-        from .voice_match import VoiceMatcher  # noqa: PLC0415
-
-        matcher = VoiceMatcher(hass, entry)
-        entry.runtime_data.matcher = matcher
-        entry.async_on_unload(matcher.async_stop)
-        entry.async_create_background_task(hass, matcher.async_start(), f"{DOMAIN}_voice_match")
-    if store.data.get("vt_borrowed"):                      # a training session was cut short by a restart
-        entry.async_create_background_task(hass, trainer.async_give_back_leftovers(), f"{DOMAIN}_voice_give_back")
     entry.async_on_unload(skills.async_stop)
     # Detection: now if Home Assistant is already running, else once it has started; again after
     # registry changes. Anything built from detection (hidden doors, lists) is refreshed after each run.
@@ -76,17 +60,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: BetterAssistantConfigEnt
     entry.async_on_unload(auto.async_stop)
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-    if entry.options.get(OPT_VT_ENABLED) or store.data.get("vm_covered"):
-        from .voice_training import async_cover_pipelines  # noqa: PLC0415 - voice match hears every assistant
+    # a voice beta switched assistants to its speech-to-text pass-through: put them back, once started
+    from homeassistant.helpers.start import async_at_started  # noqa: PLC0415
 
-        on = bool(entry.options.get(OPT_VT_ENABLED) and entry.options.get(OPT_VM_ENABLED))
-        entry.async_create_background_task(hass, async_cover_pipelines(hass, entry, on), f"{DOMAIN}_voice_cover")
+    async def _retire(_hass: HomeAssistant) -> None:
+        await async_retire_voice(hass, entry, before)
+    entry.async_on_unload(async_at_started(hass, _retire))
     from .app_panel import async_app_changed, async_setup_panel  # noqa: PLC0415 - the app in the sidebar
 
     entry.async_on_unload(store.async_add_listener(lambda: async_app_changed(hass)))
-    entry.async_on_unload(trainer.add_listener(lambda: async_app_changed(hass)))
-    if entry.runtime_data.matcher:
-        entry.async_on_unload(entry.runtime_data.matcher.add_listener(lambda: async_app_changed(hass)))
     await async_setup_panel(hass)
     if entry.options.get(OPT_VOICE_PENDING):
         entry.async_create_background_task(hass, _async_voice_pending(hass, entry), f"{DOMAIN}_voice_setup")

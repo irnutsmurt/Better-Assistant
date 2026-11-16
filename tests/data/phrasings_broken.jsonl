@@ -1,10 +1,3 @@
-{"intent": "WhoAmI", "style": "nonnative", "text": "who is talking now with you?"}
-{"intent": "WhoAmI", "style": "nonnative", "text": "you know who I am?"}
-{"intent": "WhoAmI", "style": "nonnative", "text": "tell me who is speaking"}
-{"intent": "WhoAmI", "style": "nonnative", "text": "what is my name, who I am?"}
-{"intent": "WhoAmI", "style": "nonnative", "text": "who speak to you now"}
-{"intent": "WhoAmI", "style": "terse", "text": "who am i"}
-{"intent": "WhoAmI", "style": "stt", "text": "o am i"}
 {"intent": "ReminderAdd", "style": "nonnative", "text": "remind to me take the medicine at eight"}
 {"intent": "ReminderAdd", "style": "nonnative", "text": "make remember me call to mother tomorrow morning"}
 {"intent": "ReminderAdd", "style": "nonnative", "text": "when I arrive home remember me for take out the trash"}

@@ -1,5 +1,5 @@
 """The Better Assistant app in the sidebar: Home (what's set up and what needs fixing), Alarms &
-reminders, Voice (training, voice match, recordings; see voice_panel.py) and Settings.
+reminders, and Settings.
 
 Websocket commands:
   better_assistant/app/subscribe  -> the whole app view now and after every change
@@ -26,8 +26,7 @@ from homeassistant.helpers.dispatcher import async_dispatcher_connect, async_dis
 from .const import (
     CONF_API_KEY, DEFAULTS, DOMAIN, FEATURE_DEFAULT_OFF, FEATURE_SECTIONS, OPT_ALARM_MUSIC, OPT_ALARM_SPEAKER,
     OPT_COMPOUND, OPT_FEATURES, OPT_MAX_PARTS, OPT_MONTHLY_CAP, OPT_QUESTION_GUARD, OPT_SNOOZE,
-    OPT_SNOOZE_ENABLED, OPT_SNOOZE_LIMIT, OPT_SPEAK_SOURCE, OPT_VM_ENABLED, OPT_VT_ENABLED, OPT_VT_PHONE,
-    OPT_WEB_SEARCH,
+    OPT_SNOOZE_ENABLED, OPT_SNOOZE_LIMIT, OPT_SPEAK_SOURCE, OPT_WEB_SEARCH,
 )
 
 PANEL_PATH = "better-assistant"
@@ -85,8 +84,6 @@ async def async_setup_panel(hass: HomeAssistant) -> None:
         await hass.http.async_register_static_paths([StaticPathConfig(PANEL_URL, str(PANEL_FILE), False)])
         for command in (ws_app_subscribe, ws_app_alarm, ws_app_item, ws_app_settings, ws_app_fix):
             websocket_api.async_register_command(hass, command)
-        from .voice_panel import async_register_voice_api  # noqa: PLC0415
-        async_register_voice_api(hass)
     if PANEL_PATH not in hass.data.get(frontend.DATA_PANELS, {}):
         # a new address whenever the script changes, so the app never keeps an old copy
         digest = await hass.async_add_executor_job(lambda: hashlib.sha256(PANEL_FILE.read_bytes()).hexdigest()[:12])
@@ -196,8 +193,6 @@ def app_view(hass: HomeAssistant, user) -> dict[str, Any]:
     web_on = bool(_opt(entry, OPT_WEB_SEARCH))
     cap = int(_opt(entry, OPT_MONTHLY_CAP))
     music = skills._ma_ready()
-    match = data.matcher.summary({st.entity_id: st.name for st in hass.states.async_all("person")}) \
-        if data.matcher else {"status": "off"}
 
     attention: list[dict[str, Any]] = []
     if not speakers:
@@ -220,8 +215,6 @@ def app_view(hass: HomeAssistant, user) -> dict[str, Any]:
     elif web_on and store.count >= cap:
         attention.append({"text": f"This month's {cap} web searches are used up. They start again next month.",
                           "goto": "settings"})
-    if match.get("status") == "error":
-        attention.append({"text": f"Voice match couldn't start: {match.get('problem')}", "goto": "voice"})
 
     feats = (entry.options.get(OPT_FEATURES) or {})
     snooze_limit = entry.options.get(OPT_SNOOZE_LIMIT)
@@ -230,7 +223,7 @@ def app_view(hass: HomeAssistant, user) -> dict[str, Any]:
         "home": {
             "speakers": speakers, "attention": attention, "music": music, "calendars": calendars,
             "search": {"on": web_on, "key": has_key, "count": store.count, "cap": cap},
-            "match": match.get("status"), "try": _try(entry),
+            "try": _try(entry),
         },
         "alarms": skills.app_alarms(),
         "alarm_settings": {
@@ -251,8 +244,6 @@ def app_view(hass: HomeAssistant, user) -> dict[str, Any]:
             OPT_QUESTION_GUARD: bool(_opt(entry, OPT_QUESTION_GUARD)), OPT_COMPOUND: bool(_opt(entry, OPT_COMPOUND)),
             OPT_MAX_PARTS: int(_opt(entry, OPT_MAX_PARTS)), "has_key": has_key,
         },
-        "voice": {"training_on": bool(entry.options.get(OPT_VT_ENABLED)),
-                  "match_on": bool(entry.options.get(OPT_VM_ENABLED))},
     }
 
 
@@ -386,7 +377,6 @@ SETTINGS_SCHEMA = vol.Schema({
     vol.Optional(OPT_SNOOZE_LIMIT): vol.Any(None, vol.All(vol.Coerce(int), vol.Range(0, 10))),
     vol.Optional(OPT_ALARM_SPEAKER): vol.Any(None, str),
     vol.Optional(OPT_ALARM_MUSIC): vol.All(str, vol.Length(max=500)),
-    vol.Optional(OPT_VT_ENABLED): vol.In([True]),             # turning it off: More settings (it tidies up)
 })
 
 
@@ -419,8 +409,6 @@ def ws_app_settings(hass: HomeAssistant, connection: websocket_api.ActiveConnect
         options.update({OPT_SNOOZE_ENABLED: enabled, OPT_SNOOZE_LIMIT: limit})
     if OPT_ALARM_MUSIC in values:
         values[OPT_ALARM_MUSIC] = values[OPT_ALARM_MUSIC].strip()
-    if values.get(OPT_VT_ENABLED):
-        options.setdefault(OPT_VT_PHONE, True)
     options.update(values)
     hass.config_entries.async_update_entry(entry, options=options)
     async_app_changed(hass)                                   # live options: no reload to send it

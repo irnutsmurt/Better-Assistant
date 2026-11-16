@@ -127,14 +127,12 @@ the bottom) and a computer. Nothing to set up: it appears as soon as the integra
 
 - **Home:** "All set", or what needs attention with a one-tap fix where there is one (a voice speaker
   using another assistant gets **Use Better Assistant**). Your voice speakers, their rooms and which
-  assistant each uses; the next alarm, Music Assistant, calendars, web searches used this month, voice
-  match and reminders at a glance; and things to try saying, based on the features that are on.
+  assistant each uses; the next alarm, Music Assistant, calendars, web searches used this month and
+  reminders at a glance; and things to try saying, based on the features that are on.
 - **Alarms:** every alarm with its time, repeat, speaker and wake-up music, with **Change**, **Delete**,
   **+ Add** (time, repeat, speaker, and the wake-up music, the tone or something to play) and **Stop**
   while one rings or is snoozed. Snooze on/off, length and limit, the default alarm speaker and the
   wake-up music. Reminders (with **Delete**), notes and messages.
-- **Voice:** voice training, voice match and the Recordings tab (below). With voice training off,
-  a card explains it with a button to turn it on.
 - **Settings:** switch features on and off, web answers (on/off, searches per month, say the source)
   and how requests are understood; **Open all settings** goes to the full settings menu below.
 
@@ -259,79 +257,18 @@ commands locally" on, sentences Home Assistant handled itself never reach the ag
 only text the agent saw. (Home Assistant's pipeline run history is internal and not a stable API for
 custom integrations, so it isn't used.)
 
-## Voice training (experimental)
+## Voice recognition (beta only)
 
-Off by default, and **nothing is recorded until you turn it on**. It collects labelled voice clips for
-a later "who is speaking" (voice match) test. Nothing recognises voices yet.
+Telling voices apart ("who am I?", voice training and voice match) is available in **beta releases**
+only: in HACS, open Better Assistant, choose **Redownload**, turn on **Show beta versions** and pick the
+newest beta.
 
-**Turning it on:** **Turn on voice training** on the app's Voice page, or Settings > Devices & services >
-Better Assistant > Configure > Voice training.
-Tick "Turn on voice training" and tick the voice assistant(s) that should use **Better Assistant
-speech-to-text**. That entity (`stt.better_assistant_speech_to_text`) passes the audio to your real
-engine (Home Assistant Cloud, Whisper, ...; pick one or leave it to choose) and hands back its answer
-unchanged; it only keeps a copy of the audio while a recording is wanted. Unticking a voice assistant,
-or turning voice training off, switches it back to the engine it had before.
-
-**Training:** two ways to start.
-
-- **From the app:** open **Better Assistant** in the sidebar, then **Voice**. Press **Start**, then read each phrase on the screen out loud to your speaker; done ones
-  are crossed out as you go. The speaker plays its listening chime and stays quiet otherwise.
-- **By voice:** say "train my voice", "learn my voice" or "train Rob's voice" to a speaker.
-
-With **Show the phrases on my phone** on (the default), the 8 phrases appear one by one in a
-notification from the Home Assistant app, with **Skip** and **Stop** buttons, and the speaker stays
-silent; you say each phrase to the speaker. Without a linked phone, the speaker reads them out.
-A recording that doesn't sound like the phrase (the TV, someone else) isn't saved and is asked again
-twice, then skipped. What you say during training is never run as a command. Say "stop voice
-training" to stop. Recording only works through a speaker (the same microphone voice match will
-use), not typed chat. The speaker for the phone button is set under Voice training.
-
-**Voice match (experimental, off by default):** recognises who's speaking, so "my calendar", "my
-reminders" and "how did I sleep" work for whoever asks on a shared speaker. Turn it on with **Turn on
-voice match** on the app's Voice page (or under Configure > Voice training). It runs on this machine
-with numpy, which Home Assistant already has; the speaker model (TitaNet-S, about 19 MB) is downloaded
-once from this project's GitHub repository and checked against a checksum. Nothing is sent anywhere.
-
-- **Every assistant:** while voice match is on, each voice assistant's speech-to-text goes through a
-  Better Assistant pass-through for its own engine ("Better Assistant via faster-whisper", "... via Home
-  Assistant Cloud"), so it hears exactly as before and voice match hears it too. Turning voice match off
-  puts every assistant back.
-- **Self-checking:** after each training session every clip is compared with the others and ones that
-  don't sound like the rest (the TV, someone else, the speaker hearing itself) are left out. The
-  threshold for each person is set automatically between how their own clips score and how a bundled
-  set of strangers' voices score, and the page shows **Ready ✓** or **Needs a better sample**.
-- **Not sure means not sure:** a request that doesn't clearly match one person is treated as before
-  (the signed-in user, or asking who you are). It's never used to unlock doors or turn off guest mode.
-- **"Who am I?"** (or "do you recognise my voice") answers with who voice match heard: "You sound like
-  Rob.", "I'm not sure…" or "I don't recognise your voice."
-- **Recordings tab:** what your speakers heard and who voice match thought it was, with **Play**,
-  **That was…** (a person, or "Someone else / the TV") and **Delete**, one at a time or ticked together
-  ("Select all shown" works with the filters: by person, not sure who, not labelled yet, training, someone
-  else; sorted newest, oldest or weakest match first). Labelling a recording teaches voice
-  match. Administrators see everyone's recordings; other users only their own and unassigned ones.
-  Unlabelled everyday recordings are deleted after 14 days. **Delete voice** forgets a person entirely.
-- **Turn off voice match** on the same card stops it listening for voices and recording everyday
-  requests, and deletes the unlabelled ones. Training recordings stay, so turning it back on is instant.
-
-**Everyday clips:** only while voice match is on. Requests heard on a speaker are kept for 14 days so
-you can check them on the Recordings tab. With voice match off, nothing is recorded except training
-sessions you start yourself; **Turn off voice match** also deletes the everyday recordings nobody labelled.
-
-**What is saved, and where:** a 16-bit mono WAV per request, plus a `.json` note (person, label,
-transcript, the phrase asked for, speaker and device when known, length), under
-`/config/better_assistant/voice/<train|test>/<person>/`. Files stay on this machine: nothing is
-uploaded anywhere by this feature (your speech-to-text engine receives the audio exactly as it
-would without it). The settings page shows how many clips each person has.
-
-**Deleting:** tick "Delete all recordings" under Configure > Voice training, or delete the
-`/config/better_assistant/voice` folder. Backups of `/config` include the clips, so delete them
-before making a backup you share.
-
-**Only record people who agree to it.**
-
-Known limits: Home Assistant doesn't tell a speech-to-text engine which speaker the audio came from,
-so a training prompt "arms" the next recording for about 30 seconds. Run one training session at a
-time; someone else speaking to another speaker in those seconds would be saved under the wrong name.
+**Upgrading from a voice beta:** this release puts every voice assistant back on the speech-to-text
+engine it used before the beta switched it, and removes the beta's speech-to-text, button and sensor
+entities. If an assistant can't be put back (its old engine is gone), a notification names it; pick a
+speech-to-text engine for it in Settings > Voice assistants. Recordings and the downloaded voice model
+are left where they were; delete `/config/better_assistant/voice` and `/config/better_assistant/models`
+if you don't want them.
 
 ## Privacy
 
@@ -341,8 +278,6 @@ time; someone else speaking to another speaker in those seconds would be saved u
   Home Assistant companion app.
 - Nothing else leaves your home: no device names, states, locations, voices or audio. Device
   detection reads your local registries only.
-- Voice training (experimental, off by default) saves voice recordings on this machine only; see
-  [Voice training](#voice-training-experimental).
 - The search count is kept in Home Assistant's own storage (`.storage`), not in a file you have to
   manage.
 
@@ -365,6 +300,3 @@ python -m venv .venv && .venv/bin/pip install -r requirements_test.txt
 ## License
 
 MIT. See [LICENSE](LICENSE).
-
-Voice match uses the TitaNet-S speaker model by NVIDIA (NeMo Toolkit, Apache 2.0), converted to run with
-numpy, and reference voiceprints computed from LibriSpeech (Panayotov et al., CC BY 4.0).

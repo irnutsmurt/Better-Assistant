@@ -21,14 +21,6 @@ OPT_ALARM_MUSIC = "alarm_music"            # what alarms play through Music Assi
 OPT_SNOOZE_ENABLED = "snooze_enabled"      # False: no snoozing at all
 OPT_SNOOZE_LIMIT = "snooze_limit"          # 1-10 snoozes per alarm, or None for unlimited
 OPT_VOICE_PENDING = "voice_pending"        # voice setup chosen during first setup, carried out once loaded
-# Voice training (experimental, off by default): nothing is recorded unless OPT_VT_ENABLED.
-OPT_VT_ENABLED = "voice_training"          # training conversation + recording allowed
-OPT_VT_RECORD_TEST = "voice_record_test"   # also record everyday requests (label "test")
-OPT_VT_PHONE = "voice_training_phone"      # show the phrases on the person's phone; the speaker stays silent
-OPT_VT_SATELLITE = "voice_training_satellite"  # speaker the phone's Start button trains on
-OPT_VT_STT = "voice_stt_engine"            # engine the pass-through wraps (None = pick one)
-OPT_VM_ENABLED = "voice_match"            # recognise trained voices (downloads the model once)
-OPT_VT_ORIGINALS = "voice_stt_originals"   # pipeline id -> its speech-to-text before we switched it
 
 DEFAULTS = {
     OPT_WEB_SEARCH: True,

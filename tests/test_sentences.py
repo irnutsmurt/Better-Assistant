@@ -185,12 +185,3 @@ def test_snooze_on_off_vs_limit(text, intent, slots):
 ])
 def test_alarm_speaker_sentences(text, intent, rest):
     assert m(text) == (intent, {"text": rest})
-
-
-@pytest.mark.parametrize("text", [
-    "who am I", "Who am I talking to right now?", "Who do you think you're talking to right now?",
-    "who do you think I am", "do you know who I am", "can you tell who's talking", "who's talking right now",
-    "who are you talking to", "whose voice is this", "guess who this is", "do you recognise my voice",
-])
-def test_who_am_i_wordings(text):
-    assert m(text)[0] == "WhoAmI"
