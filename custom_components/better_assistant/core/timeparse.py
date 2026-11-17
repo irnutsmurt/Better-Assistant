@@ -2,7 +2,7 @@
 
     parse("tomorrow at 3", now)          -> (datetime 15:00 tomorrow, "once")
     parse("every weekday at 6:45", now)  -> (next weekday 06:45, "weekdays")
-    world_clock("tokyo", now)            -> "It's 3 PM tomorrow in Tokyo, 14 hours ahead of us."
+    world_clock("tokyo", now, tz)        -> "It's 3 PM tomorrow in Tokyo, 14 hours ahead of us."
 
 Spoken times: "in 20 minutes", "in an hour and a half", "at 7", "6:30 a.m.", "7 pm tomorrow", "noon",
 "tonight at 8", "monday at 9", "every weekday at 6:45", "november 20th at 3", "the 20th", "11/28".
@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import datetime as dt
 import re
-from zoneinfo import ZoneInfo
 
 WORDNUM = {w: i for i, w in enumerate("zero one two three four five six seven eight nine ten eleven twelve "
                                       "thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty".split())}
@@ -227,18 +226,26 @@ def parse(text, now, alarm=False):
     return min(c for c in cands if c > now and ok_day(c)), repeat
 
 
-def world_clock(place: str, now: dt.datetime | None = None) -> str | None:
-    """Spoken local time in a city or country, or None when the place is unknown.
-
-    `now` is an aware datetime for "here" (defaults to the system local time)."""
+def city_zone(place: str) -> tuple[str, str] | None:
+    """('tokyo', 'Asia/Tokyo') for a spoken city or country, or None when the place is unknown."""
     p = re.sub(r"[^a-z ]", "", place.lower()).strip()
     p = re.sub(r"^(the|in) ", "", p)
     key = p if p in CITIES else next((c for c in sorted(CITIES, key=len, reverse=True)
                                       if re.search(rf"\b{c}\b", p)), None)
-    if not key:
+    return (key, CITIES[key]) if key else None
+
+
+def world_clock(place: str, now: dt.datetime, tz: dt.tzinfo) -> str | None:
+    """Spoken local time in a city or country, or None when the place is unknown.
+
+    `now` is an aware datetime for "here"; `tz` is the place's time zone (city_zone()'s name, loaded by
+    the caller: the first load of a zone reads a file, which mustn't happen on Home Assistant's loop)."""
+    found = city_zone(place)
+    if not found:
         return None
-    here = now if now is not None and now.tzinfo else dt.datetime.now().astimezone()
-    there = here.astimezone(ZoneInfo(CITIES[key]))
+    key = found[0]
+    here = now
+    there = here.astimezone(tz)
     diff = round((there.utcoffset() - here.utcoffset()).total_seconds() / 3600, 1)
     day = "" if there.date() == here.date() else (" tomorrow" if there.date() > here.date() else " yesterday")
     rel = "the same time as here" if diff == 0 else \

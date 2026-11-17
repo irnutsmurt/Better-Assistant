@@ -3,7 +3,7 @@ from zoneinfo import ZoneInfo
 
 import pytest
 
-from core.timeparse import parse, say_when, world_clock
+from core.timeparse import city_zone, parse, say_when, world_clock
 
 NOW = dt.datetime(2026, 11, 12, 10, 0)          # a Thursday morning
 
@@ -80,12 +80,16 @@ def test_say_when():
 
 def test_world_clock_offsets():
     here = dt.datetime(2026, 11, 12, 20, 0, tzinfo=ZoneInfo("America/Chicago"))
-    assert world_clock("tokyo", here) == "It's 11 AM tomorrow in Tokyo, 15 hours ahead of us."
-    assert world_clock("London", here) == "It's 2 AM tomorrow in London, 6 hours ahead of us."
-    assert world_clock("the los angeles", here) == "It's 6 PM in Los Angeles, 2 hours behind us."
-    assert world_clock("india", here).endswith("11.5 hours ahead of us.")
-    assert world_clock("dallas", here) == "It's 8 PM in Dallas, the same time as here."
-    assert world_clock("atlantis", here) is None
+
+    def clock(place):
+        found = city_zone(place)
+        return world_clock(place, here, ZoneInfo(found[1])) if found else None
+    assert clock("tokyo") == "It's 11 AM tomorrow in Tokyo, 15 hours ahead of us."
+    assert clock("London") == "It's 2 AM tomorrow in London, 6 hours ahead of us."
+    assert clock("the los angeles") == "It's 6 PM in Los Angeles, 2 hours behind us."
+    assert clock("india").endswith("11.5 hours ahead of us.")
+    assert clock("dallas") == "It's 8 PM in Dallas, the same time as here."
+    assert city_zone("atlantis") is None and clock("atlantis") is None
 
 
 @pytest.mark.parametrize("when,expected", [
