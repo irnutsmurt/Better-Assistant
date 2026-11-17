@@ -135,6 +135,11 @@ def pull_date(t, now):
 
 def parse(text, now, alarm=False):
     t = clean(text)
+    if alarm:
+        # an alarm is all time, so a bare number is one: speech-to-text writes two twenty as "220" or
+        # "2-20", and ten thirty as "1030" (not "120 minutes", a 13-23 o'clock or a year like 2026)
+        t = re.sub(r"\b(0?[1-9]|1[0-2])-?([0-5]\d)(?:\b|(?=[ap]m))"
+                   r"(?!\s?(?:hours?|hrs?|minutes?|mins?|seconds?|secs?))", r"\1:\2", t)
     repeat = "once"
     on_date, t = pull_date(t, now)
     if on_date:

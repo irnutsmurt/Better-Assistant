@@ -21,6 +21,28 @@ def test_speech_to_text_dots_are_clock_times(text, expected):
     assert parse(text, NOW, alarm=True)[0] == expected
 
 
+@pytest.mark.parametrize("text,expected", [
+    ("220", dt.datetime(2026, 11, 14, 14, 20)),         # two twenty, as speech-to-text often writes it
+    ("220 p.m.", dt.datetime(2026, 11, 14, 14, 20)),
+    ("2-20", dt.datetime(2026, 11, 14, 14, 20)),
+    ("two-twenty", dt.datetime(2026, 11, 14, 14, 20)),
+    ("1030 am", dt.datetime(2026, 11, 14, 10, 30)),
+    ("tomorrow at 645", dt.datetime(2026, 11, 15, 6, 45)),
+])
+def test_speech_to_text_run_together_clock_times(text, expected):
+    assert parse(text, NOW, alarm=True)[0] == expected
+
+
+@pytest.mark.parametrize("text", ["2026", "the year 2026"])
+def test_run_together_numbers_that_are_not_times(text):
+    assert parse(text, NOW, alarm=True)[0] is None
+
+
+def test_run_together_minutes_stay_a_length():
+    assert parse("120 minutes", NOW, alarm=True)[0] == NOW + dt.timedelta(minutes=120)
+    assert parse("220", NOW)[0] is None                 # a reminder's text can hold any number
+
+
 def test_decimal_durations_still_work():
     assert parse("in 1.50 hours", NOW)[0] == NOW + dt.timedelta(minutes=90)
 
