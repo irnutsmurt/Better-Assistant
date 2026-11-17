@@ -38,7 +38,7 @@ from .core.guards import is_question, looks_like_command, plan_compound
 from .core.normalize import tidy
 from .core.router import local_answer
 from .core.security import split_oneshot
-from .core.timeparse import world_clock
+from .core.timeparse import city_zone, world_clock
 from .sensor import device_info
 
 _LOGGER = logging.getLogger(__name__)
@@ -132,10 +132,13 @@ class BetterAssistantAgent(conversation.ConversationEntity):
         return ". ".join(spoken) + "." if spoken else "Done."
 
     # ----------------------------------------------------------- answers
-    def _local(self, text: str) -> str | None:
+    async def _local(self, text: str) -> str | None:
         place = time_in_place(text)
         if place:
-            return world_clock(place, dt_util.now()) or f"Sorry, I don't know the time zone for {place}."
+            found = city_zone(place)
+            tz = await dt_util.async_get_time_zone(found[1]) if found else None   # reads the zone off the loop
+            return (world_clock(place, dt_util.now(), tz) if tz else None) or \
+                f"Sorry, I don't know the time zone for {place}."
         return fun_answer(text) or local_answer(text, dt_util.now().date())
 
     async def _web(self, text: str) -> str:
@@ -171,7 +174,7 @@ class BetterAssistantAgent(conversation.ConversationEntity):
             done = await self._compound(text, user_input)
             if done:
                 return done, False
-        local = self._local(text)
+        local = await self._local(text)
         if local:
             return local, False
         tidied = tidy(text)

@@ -22,7 +22,7 @@ from homeassistant.util import dt as dt_util
 
 from .const import (ALARM_SECONDS, ALARM_URL, DEFAULTS, DOMAIN, OPT_ALARM_MUSIC, OPT_ALARM_SPEAKER, OPT_SNOOZE,
                     OPT_SNOOZE_ENABLED, OPT_SNOOZE_LIMIT, RAMP_FROM, RAMP_SECONDS, RING_MINUTES, SNOOZE_GRACE)
-from .core import intents as sentences
+from .core import intents as sentences, keywords
 from .core.features import (
     ALL_SPEAKERS,
     DEFAULT_MUSIC,
@@ -95,6 +95,7 @@ class Skills(HouseSkills, SecuritySkills):
     # ------------------------------------------------------------ lifecycle
     async def async_start(self) -> None:
         await self.hass.async_add_executor_job(sentences.load, "en")   # read sentence files off the loop
+        await self.hass.async_add_executor_job(keywords.language, "en")  # ... and the keyword file
         self._unsubs.append(self.store.async_add_listener(self._reconcile))
         for uid in list(self.store.data["reminders"]):
             self._schedule_reminder(uid)
