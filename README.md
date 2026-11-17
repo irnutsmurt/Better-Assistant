@@ -42,10 +42,11 @@ Requires **Home Assistant 2025.11 or newer** (the agent uses the conversation dr
 `async_debug_recognize` added in 2025.11, and `satellite_id` routing added in 2025.10).
 
 
-1. HACS > three-dot menu > **Custom repositories** > add
-   `https://github.com/irnutsmurt/Better-Assistant` as type **Integration**.
-2. Install **Better Assistant**, then restart Home Assistant.
+1. In HACS, search for **Better Assistant** and download it (it's in the HACS default list).
+2. Restart Home Assistant.
 3. **Settings > Devices & services > Add integration > Better Assistant.**
+
+[![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=irnutsmurt&repository=Better-Assistant&category=integration)
 
 Manual install: copy `custom_components/better_assistant` into your `config/custom_components/`
 folder and restart.
